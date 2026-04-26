@@ -4,8 +4,20 @@
 
 :root {
   --robusta-canvas: #FFFCEB;
-  --robusta-ink: #1A1A1A;
-  --robusta-accent: #F4B400;
+  --robusta-ink: #15140E;
+  --robusta-ink-dim: #5C5849;
+  --robusta-divider: #EAE3C7;
+  --robusta-accent: #C9A227;
+  --robusta-accent-soft: #F1E1A1;
+}
+
+[data-theme="dark"] {
+  --robusta-canvas: #1A1814;
+  --robusta-ink: #F1E9CC;
+  --robusta-ink-dim: #A39A7E;
+  --robusta-divider: #2E2A20;
+  --robusta-accent: #E2B946;
+  --robusta-accent-soft: #3A3320;
 }
 
 html,

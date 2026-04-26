@@ -5,7 +5,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        robustaCanvas: "#FFFCEB",
+        robusta: {
+          canvas: "var(--robusta-canvas)",
+          ink: "var(--robusta-ink)",
+          inkDim: "var(--robusta-ink-dim)",
+          divider: "var(--robusta-divider)",
+          accent: "var(--robusta-accent)",
+          accentSoft: "var(--robusta-accent-soft)",
+        },
       },
     },
   },
