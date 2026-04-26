@@ -1,3 +1,5 @@
+import { maskApiKey } from "../src/modules/api-keys/api-key-mask";
+import { validateApiKeyFormat } from "../src/modules/api-keys/api-key-validate";
 import { composeSystemPrompt } from "../src/modules/conversation/system-prompt-composer";
 import {
   hueToHsl,
@@ -100,6 +102,48 @@ function check(label: string, ok: boolean, detail?: string) {
 {
   check("color: hueToHsl(-30) → hsl 양수", hueToHsl(-30) === "hsl(330 65% 55%)");
   check("color: hueToHsl(390) → hsl(30 …)", hueToHsl(390) === "hsl(30 65% 55%)");
+}
+
+{
+  const empty = validateApiKeyFormat("anthropic", "   ");
+  check(
+    "apiKey: 빈 문자열 → empty",
+    !empty.ok && empty.reason === "empty",
+  );
+
+  const wrongPrefix = validateApiKeyFormat("anthropic", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+  check(
+    "apiKey: sk-ant- 접두 없음 → wrong-prefix",
+    !wrongPrefix.ok && wrongPrefix.reason === "wrong-prefix",
+  );
+
+  const tooShort = validateApiKeyFormat("anthropic", "sk-ant-shortkey");
+  check(
+    "apiKey: 50자 미만 → too-short",
+    !tooShort.ok && tooShort.reason === "too-short",
+  );
+
+  const longKey = "sk-ant-" + "a".repeat(60);
+  const ok = validateApiKeyFormat("anthropic", longKey);
+  check("apiKey: sk-ant- + 50자 이상 → ok", ok.ok);
+
+  check(
+    "apiKey: 마스킹 형식 sk-ant-...{4자}",
+    maskApiKey(longKey) === "sk-ant-...aaaa",
+    `got=${maskApiKey(longKey)}`,
+  );
+
+  const sample = "sk-ant-abcdefghij1234567890klmnop4xY9";
+  check(
+    "apiKey: 마스킹 prefix7 + ... + suffix4",
+    maskApiKey(sample) === "sk-ant-...4xY9",
+    `got=${maskApiKey(sample)}`,
+  );
+
+  check(
+    "apiKey: 짧은 키는 그대로 노출(마스킹 단축 방어)",
+    maskApiKey("short") === "short",
+  );
 }
 
 process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);

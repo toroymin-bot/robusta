@@ -6,6 +6,7 @@ import type { Participant } from "@/modules/participants/participant-types";
 export interface StoredApiKey {
   provider: string;
   key: string;
+  savedAt: number;
 }
 
 export interface StoredMessage {
