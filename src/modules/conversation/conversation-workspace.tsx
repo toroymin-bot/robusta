@@ -5,6 +5,7 @@ import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
 import { maskApiKey } from "@/modules/api-keys/api-key-mask";
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
 import { ToastViewport } from "@/modules/ui/toast";
+import { useThemeStore } from "@/modules/ui/theme";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { useParticipantStore } from "@/stores/participant-store";
 import { useConversationStore } from "@/stores/conversation-store";
@@ -18,6 +19,11 @@ export function ConversationWorkspace() {
   const anthropicKey = useApiKeyStore((s) => s.keys.anthropic);
   const conversationsHydrated = useConversationStore((s) => s.hydrated);
   const loadConversations = useConversationStore((s) => s.loadFromDb);
+  // D-8.6: 다크모드 toggle store + hydrate (layout.tsx의 inline script와 동기화)
+  const themeMode = useThemeStore((s) => s.theme);
+  const themeHydrated = useThemeStore((s) => s.hydrated);
+  const hydrateTheme = useThemeStore((s) => s.hydrate);
+  const toggleTheme = useThemeStore((s) => s.toggle);
 
   const [keysOpen, setKeysOpen] = useState(false);
 
@@ -45,6 +51,14 @@ export function ConversationWorkspace() {
     }
   }, [conversationsHydrated, loadConversations]);
 
+  // D-8.6: 클라이언트 마운트 시 1회 hydrate. 이미 layout inline script가 DOM 적용했으므로
+  // store 상태만 동기화 (깜빡임 추가 없음).
+  useEffect(() => {
+    if (!themeHydrated) {
+      hydrateTheme();
+    }
+  }, [themeHydrated, hydrateTheme]);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-robusta-canvas text-robusta-ink">
       <ParticipantsPanel />
@@ -53,8 +67,21 @@ export function ConversationWorkspace() {
           <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs uppercase tracking-widest text-robusta-inkDim">
-              Day 2 · 3-way Conversation
+              Day 3 · Round-robin
             </span>
+            {/* D-8.6: 다크모드 토글 (☀ ⇄ 🌙) — hydration 전에는 비활성 */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              disabled={!themeHydrated}
+              className="rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent disabled:opacity-50"
+              aria-label={
+                themeMode === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"
+              }
+              title={themeMode === "dark" ? "라이트 모드" : "다크 모드"}
+            >
+              {themeMode === "dark" ? "☀" : "🌙"}
+            </button>
             <button
               type="button"
               onClick={() => setKeysOpen(true)}

@@ -12,10 +12,11 @@ import { useParticipantStore } from "@/stores/participant-store";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { useToastStore } from "@/modules/ui/toast";
 import { streamMessage } from "./conversation-api";
-import { pickNextSpeaker } from "./turn-controller";
+import { pickNextSpeaker, type TurnMode } from "./turn-controller";
 import { InputBar } from "./input-bar";
 import { MessageBubble } from "./message-bubble";
 import type { Message } from "./conversation-types";
+import type { Participant } from "@/modules/participants/participant-types";
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -34,6 +35,11 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
   const setAbortController = useConversationStore((s) => s.setAbortController);
   const abortStreaming = useConversationStore((s) => s.abortStreaming);
   const createMessageId = useConversationStore((s) => s.createMessageId);
+  // D-8.2: turnMode + lock 상태 + 액션
+  const turnMode = useConversationStore((s) => s.turnMode);
+  const lockedAfterHuman = useConversationStore((s) => s.lockedAfterHuman);
+  const setTurnMode = useConversationStore((s) => s.setTurnMode);
+  const setLockedAfterHuman = useConversationStore((s) => s.setLockedAfterHuman);
 
   const participants = useParticipantStore((s) => s.participants);
   const participantsHydrated = useParticipantStore((s) => s.hydrated);
@@ -58,8 +64,9 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
 
   useEffect(() => {
     if (!speakerId && participantsHydrated && participants.length > 0) {
-      const ai = participants.find((p) => p.kind === "ai");
-      setSpeakerId(ai?.id ?? participants[0]!.id);
+      // 첫 발언자 기본값: 인간 우선 (round-robin 시작점)
+      const human = participants.find((p) => p.kind === "human");
+      setSpeakerId(human?.id ?? participants[0]!.id);
     }
   }, [speakerId, participants, participantsHydrated]);
 
@@ -79,6 +86,12 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     [conversations, activeId],
   );
 
+  // 현재 conversation의 participantIds (D-8.2 round-robin 순서)
+  const participantIds = useMemo(() => {
+    const conv = conversations.find((c) => c.id === activeId);
+    return conv?.participantIds ?? participants.map((p) => p.id);
+  }, [conversations, activeId, participants]);
+
   // auto-scroll on new content
   useEffect(() => {
     const el = scrollRef.current;
@@ -95,29 +108,14 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     autoScrollRef.current = distance < SCROLL_THRESHOLD_PX;
   }
 
-  const onSend = useCallback(
-    async (text: string) => {
-      const speaker = participants.find((p) => p.id === speakerId);
-      if (!speaker) {
-        pushToast({ tone: "error", message: "발언자가 선택되지 않았습니다." });
-        return;
-      }
+  /**
+   * AI 발언 1회 실행 — speaker가 AI일 때 호출.
+   * D-8.3: fallback 토스트 처리. D-8.2: 완료 후 lock 정책 적용.
+   */
+  const runAiTurn = useCallback(
+    async (speaker: Participant) => {
+      if (speaker.kind !== "ai") return;
 
-      const userMessage: Message = {
-        id: createMessageId(),
-        conversationId: activeId,
-        participantId: speaker.id,
-        content: text,
-        createdAt: Date.now(),
-        status: "done",
-      };
-      await appendMessage(userMessage);
-
-      if (speaker.kind !== "ai") {
-        return; // 인간 발언 → API 호출 X
-      }
-
-      // AI 답변
       if (!apiKey) {
         onRequestApiKeyModal();
         pushToast({
@@ -142,12 +140,10 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       setAbortController(controller);
       setIsStreaming(true);
 
-      // history: 마지막 사용자 메시지(userMessage) 까지만 (placeholder 제외)
-      const historyForApi = [
-        ...(useConversationStore.getState().messages[activeId] ?? []).filter(
-          (m) => m.id !== placeholderId,
-        ),
-      ];
+      // history: placeholder 제외한 현재 활성 conversation 메시지
+      const historyForApi = (
+        useConversationStore.getState().messages[activeId] ?? []
+      ).filter((m) => m.id !== placeholderId);
 
       let accumulated = "";
       let lastError: { reason: string; status?: number } | null = null;
@@ -177,6 +173,12 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
           } else if (chunk.kind === "error") {
             lastError = { reason: chunk.reason, status: chunk.status };
             break;
+          } else if (chunk.kind === "fallback") {
+            // D-8.3: 모델 ID 폴백 발생 → info 토스트만, bubble은 그대로 (명세 §11.3)
+            pushToast({
+              tone: "info",
+              message: `${chunk.from} 미사용 → ${chunk.to} 폴백`,
+            });
           } else if (chunk.kind === "done") {
             break;
           }
@@ -240,11 +242,10 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       });
     },
     [
-      participants,
-      speakerId,
       apiKey,
       activeId,
       conversationTitle,
+      participants,
       appendMessage,
       updateMessage,
       setAbortController,
@@ -254,12 +255,117 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     ],
   );
 
+  /**
+   * 사용자가 입력바에서 메시지 전송 시 호출.
+   * D-8.2: 인간 발언 시 lock=true (round-robin 자동 진행 차단).
+   *        AI 발언 시 그대로 1회 turn 실행.
+   */
+  const onSend = useCallback(
+    async (text: string) => {
+      const speaker = participants.find((p) => p.id === speakerId);
+      if (!speaker) {
+        pushToast({ tone: "error", message: "발언자가 선택되지 않았습니다." });
+        return;
+      }
+
+      const userMessage: Message = {
+        id: createMessageId(),
+        conversationId: activeId,
+        participantId: speaker.id,
+        content: text,
+        createdAt: Date.now(),
+        status: "done",
+      };
+      await appendMessage(userMessage);
+
+      if (speaker.kind !== "ai") {
+        // D-8.2: 인간 발언 → round-robin 자동 진행 차단 (사용자 [▶ 다음 발언] 클릭 필요)
+        setLockedAfterHuman(true);
+        return;
+      }
+
+      // AI 발언 — 그대로 turn 실행
+      await runAiTurn(speaker);
+    },
+    [
+      participants,
+      speakerId,
+      activeId,
+      appendMessage,
+      pushToast,
+      createMessageId,
+      runAiTurn,
+      setLockedAfterHuman,
+    ],
+  );
+
+  /**
+   * D-8.2 [▶ 다음 발언] 버튼 핸들러.
+   * round-robin 다음 발언자 선택 → AI면 1회 turn 실행 → lock=true 유지 (안전 기본값).
+   */
+  const onNextTurn = useCallback(async () => {
+    if (isStreaming) return;
+    // 마지막 발언자 id (chronological 마지막 메시지 또는 currently selected speaker)
+    const lastMsg = messages[messages.length - 1];
+    const lastSpeakerId = lastMsg?.participantId ?? null;
+
+    let nextId: string;
+    try {
+      nextId = pickNextSpeaker({
+        mode: "round-robin",
+        lastSpeakerId,
+        participants,
+        participantIds,
+      });
+    } catch (err) {
+      pushToast({
+        tone: "error",
+        message: err instanceof Error ? err.message : "다음 발언자 선택 실패",
+      });
+      return;
+    }
+
+    const next = participants.find((p) => p.id === nextId);
+    if (!next) {
+      pushToast({ tone: "error", message: "다음 발언자를 찾을 수 없습니다." });
+      return;
+    }
+
+    // UI select도 동기화 (사용자가 다음 발언자를 인식할 수 있도록)
+    setSpeakerId(next.id);
+
+    if (next.kind !== "ai") {
+      // round-robin 순환에 인간이 다음이면 → 다시 lock 유지하고 사용자에게 입력 요청
+      pushToast({
+        tone: "info",
+        message: `${next.name}의 차례입니다. 메시지를 입력하세요.`,
+      });
+      // lock 유지 — 사용자가 직접 입력해야
+      return;
+    }
+
+    // AI 차례 — 1회 turn 실행 + 끝나면 lock 유지 (안전 기본값, 명세 §3)
+    await runAiTurn(next);
+    // AI 발언 완료 후에도 lockedAfterHuman 그대로 유지 (자동 chain 방지)
+    setLockedAfterHuman(true);
+  }, [
+    isStreaming,
+    messages,
+    participants,
+    participantIds,
+    pushToast,
+    runAiTurn,
+    setLockedAfterHuman,
+  ]);
+
   function handleSpeakerChange(id: string) {
     try {
+      // manual 모드 검증 — manualPick으로 우선 적용
       const validated = pickNextSpeaker({
         mode: "manual",
         lastSpeakerId: speakerId,
         participants,
+        participantIds,
         manualPick: id,
       });
       setSpeakerId(validated);
@@ -268,6 +374,22 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
         tone: "error",
         message: err instanceof Error ? err.message : "발언자 변경 실패",
       });
+    }
+  }
+
+  function handleTurnModeChange(mode: TurnMode) {
+    if (mode === "trigger") {
+      // D4 P1 — Roy_Request 별도 큐
+      pushToast({
+        tone: "info",
+        message: "trigger(스케줄) 모드는 D4에서 제공됩니다.",
+      });
+      return;
+    }
+    setTurnMode(mode);
+    // 모드 전환 시 lock 초기화 (manual에서는 lock 무관)
+    if (mode === "manual") {
+      setLockedAfterHuman(false);
     }
   }
 
@@ -282,6 +404,12 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     }
     return result;
   }, [messages]);
+
+  // [▶ 다음 발언] 버튼 노출/활성 조건 (명세 §3)
+  // - round-robin 모드일 때만 노출
+  // - 비활성: lockedAfterHuman === false || isStreaming
+  const showNextTurnButton = turnMode === "round-robin";
+  const nextTurnDisabled = !lockedAfterHuman || isStreaming;
 
   return (
     <section className="flex flex-1 flex-col overflow-hidden">
@@ -325,16 +453,45 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       </div>
 
       {participantsHydrated && participants.length > 0 && speakerId && (
-        <InputBar
-          participants={participants}
-          speakerId={speakerId}
-          onSpeakerChange={handleSpeakerChange}
-          onSend={onSend}
-          onAbort={abortStreaming}
-          isStreaming={isStreaming}
-          hasApiKey={Boolean(apiKey)}
-          onRequestApiKeyModal={onRequestApiKeyModal}
-        />
+        <div className="border-t border-robusta-divider bg-robusta-canvas">
+          {/* D-8.2: 발언 모드 선택 + [▶ 다음 발언] 버튼 (round-robin 시) */}
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-2 text-xs text-robusta-inkDim">
+            <label className="flex items-center gap-2">
+              <span>발언 모드</span>
+              <select
+                value={turnMode}
+                onChange={(e) => handleTurnModeChange(e.target.value as TurnMode)}
+                disabled={isStreaming}
+                className="rounded border border-robusta-divider bg-transparent px-2 py-1 text-xs text-robusta-ink disabled:opacity-60"
+                aria-label="발언 모드 선택"
+              >
+                <option value="manual">수동</option>
+                <option value="round-robin">순환 (round-robin)</option>
+              </select>
+            </label>
+            {showNextTurnButton && (
+              <button
+                type="button"
+                onClick={() => void onNextTurn()}
+                disabled={nextTurnDisabled}
+                className="rounded border border-robusta-divider px-3 py-1 text-xs text-robusta-ink hover:border-robusta-accent disabled:opacity-50"
+                aria-label="다음 발언자에게 차례 넘기기"
+              >
+                ▶ 다음 발언
+              </button>
+            )}
+          </div>
+          <InputBar
+            participants={participants}
+            speakerId={speakerId}
+            onSpeakerChange={handleSpeakerChange}
+            onSend={onSend}
+            onAbort={abortStreaming}
+            isStreaming={isStreaming}
+            hasApiKey={Boolean(apiKey)}
+            onRequestApiKeyModal={onRequestApiKeyModal}
+          />
+        </div>
       )}
     </section>
   );

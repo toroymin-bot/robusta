@@ -6,7 +6,12 @@
  *
  * 키가 없으면 skip 모드로 PASS 출력 후 종료.
  * (PR2 self-check 34/34는 키 없이 통과해야 한다.)
+ *
+ * D3 추가 (2026-04-27): ESM 모듈 선언 — verify-d3.ts와 top-level 선언 충돌 회피.
  */
+
+// ESM 모듈로 인식 — verify-d3.ts와 KEY/ENDPOINT/VERSION 선언 충돌 회피
+export {};
 
 const KEY = process.env["ANTHROPIC_API_KEY"]?.trim();
 

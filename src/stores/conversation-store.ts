@@ -7,6 +7,7 @@ import {
   type Conversation,
   type Message,
 } from "@/modules/conversation/conversation-types";
+import type { TurnMode } from "@/modules/conversation/turn-controller";
 import { DEFAULT_PARTICIPANTS } from "@/modules/participants/participant-seed";
 
 const PERSIST_DEBOUNCE_MS = 200;
@@ -58,6 +59,17 @@ interface ConversationStore {
   hydrated: boolean;
   activeConversationId: string;
   abortController: AbortController | null;
+  /**
+   * D-8.2 발언 모드 — default 'manual'. round-robin 시 자동 진행 가능.
+   * 메모리만 (새로고침 시 'manual'로 초기화 — 명세 §11.2 의도된 동작).
+   */
+  turnMode: TurnMode;
+  /**
+   * D-8.2 lock-after-human — 사용자(human) 발언 직후 true.
+   * round-robin 모드에서도 true 동안 자동 진행 X — 사용자가 [▶ 다음 발언] 클릭 필요.
+   * AI 발언 완료 시 자동 false (다음 AI 자동 진행 가능).
+   */
+  lockedAfterHuman: boolean;
 
   loadFromDb: () => Promise<void>;
   appendMessage: (msg: Message) => Promise<void>;
@@ -66,6 +78,8 @@ interface ConversationStore {
   setAbortController: (controller: AbortController | null) => void;
   abortStreaming: () => void;
   createMessageId: () => string;
+  setTurnMode: (mode: TurnMode) => void;
+  setLockedAfterHuman: (locked: boolean) => void;
 }
 
 export const useConversationStore = create<ConversationStore>((set, get) => ({
@@ -74,6 +88,10 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   hydrated: false,
   activeConversationId: DEFAULT_CONVERSATION_ID,
   abortController: null,
+  // D-8.2: 기본 manual — 안전한 기본값. 사용자가 round-robin 토글 시 변경.
+  turnMode: "manual",
+  // D-8.2: 초기 false (사용자가 첫 메시지 보내기 전).
+  lockedAfterHuman: false,
 
   async loadFromDb() {
     const db = getDb();
@@ -176,6 +194,18 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
 
   createMessageId() {
     return newId("m");
+  },
+
+  // D-8.2: 발언 모드 변경 (manual / round-robin / trigger).
+  setTurnMode(mode) {
+    set({ turnMode: mode });
+  },
+
+  // D-8.2: lock 상태 직접 변경.
+  // - 사용자 발언 후: true (자동 진행 차단)
+  // - [▶ 다음 발언] 클릭 또는 AI 발언 완료 후: false
+  setLockedAfterHuman(locked) {
+    set({ lockedAfterHuman: locked });
   },
 }));
 

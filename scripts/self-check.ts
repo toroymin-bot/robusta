@@ -48,18 +48,19 @@ async function asyncCheck(label: string, fn: () => Promise<boolean>, detail?: st
     participants: DEFAULT_PARTICIPANTS,
     locale: "ko",
   });
-  check("composer: 자기 정체 카피", out.includes('너는 "똘이"이다'));
+  // D-8.1: 본문 카피 변경. 기존 ~~`너는 "똘이"이다`~~ → `당신은 똘이입니다` (명세 §2)
+  check("composer: 자기 정체 카피 (D-8.1)", out.includes("당신은 똘이입니다"));
   check(
     "composer: 참여자 3명 모두 표시",
     out.includes("로이") && out.includes("똘이") && out.includes("꼬미"),
   );
-  const markerMatches = out.match(/← 너/g) ?? [];
+  // D-8.1: ~~`← 너` 마커 1개~~ → others 섹션에 자기(똘이) 제외 (명세 §2)
   check(
-    "composer: 발언자 마커 정확히 1개",
-    markerMatches.length === 1,
-    `count=${markerMatches.length}`,
+    "composer: 자기는 # 다른 참여자 섹션에서 제외 (D-8.1)",
+    out.includes("# 다른 참여자") && !/^- 똘이/m.test(out),
   );
-  check("composer: [규칙] 섹션 포함", out.includes("[규칙]"));
+  // D-8.1: ~~`[규칙]`~~ → `# 행동 원칙` (명세 §2)
+  check("composer: # 행동 원칙 섹션 포함 (D-8.1)", out.includes("# 행동 원칙"));
 }
 
 {
@@ -89,7 +90,11 @@ async function asyncCheck(label: string, fn: () => Promise<boolean>, detail?: st
     participants: DEFAULT_PARTICIPANTS,
     locale: "en",
   });
-  check("composer: en locale → ko fallback", out.includes("[규칙]"));
+  // D-8.1: ~~en locale → ko fallback~~ → 본격 영문 본문 (명세 §2 의미 동일 번역)
+  check(
+    "composer: en locale 본격 영문 본문 (D-8.1)",
+    out.includes("You are 똘이") && out.includes("# Behavior principles"),
+  );
 }
 
 {
@@ -357,6 +362,131 @@ await asyncCheck("stream-parser: ReadableStream 1 이벤트 추출", async () =>
   return events.length === 1;
 });
 
+// D-8 §5: streamMessage fallback — mock fetch 400 invalid_request_error /model/ → fallback yield
+{
+  const realFetch = globalThis.fetch;
+  let callCount = 0;
+  // 1차 4xx invalid_request_error /model/ → 폴백 트리거. 2차 200 SSE.
+  globalThis.fetch = (async () => {
+    callCount++;
+    if (callCount === 1) {
+      return new Response(
+        JSON.stringify({
+          error: { type: "invalid_request_error", message: "model not found" },
+        }),
+        { status: 400, headers: { "content-type": "application/json" } },
+      );
+    }
+    const sse = [
+      "event: message_start",
+      'data: {"type":"message_start","message":{"id":"x","role":"assistant","content":[]}}',
+      "",
+      "event: content_block_delta",
+      'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"hi"}}',
+      "",
+      "event: message_stop",
+      'data: {"type":"message_stop"}',
+      "",
+      "",
+    ].join("\n");
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(sse));
+        controller.close();
+      },
+    });
+    return new Response(stream, {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    });
+  }) as typeof fetch;
+
+  await asyncCheck(
+    "D-8.3 #5 streamMessage: 4xx invalid_request /model/ → fallback yield + 200 재호출",
+    async () => {
+      const tori = DEFAULT_PARTICIPANTS.find((p) => p.id === "tori")!;
+      const gen = streamMessage({
+        apiKey: "sk-ant-test",
+        speaker: { ...tori, model: "claude-fake-9999" },
+        participants: DEFAULT_PARTICIPANTS,
+        history: [
+          {
+            id: "1",
+            conversationId: "c",
+            participantId: "roy",
+            content: "hi",
+            createdAt: 1,
+            status: "done",
+          },
+        ],
+      });
+      let sawFallback = false;
+      let sawDelta = false;
+      let sawDone = false;
+      for await (const chunk of gen) {
+        if (chunk.kind === "fallback") {
+          sawFallback =
+            chunk.from === "claude-fake-9999" &&
+            chunk.to === "claude-3-5-sonnet-latest";
+        } else if (chunk.kind === "delta") {
+          sawDelta = chunk.text === "hi";
+        } else if (chunk.kind === "done") {
+          sawDone = true;
+        }
+      }
+      return sawFallback && sawDelta && sawDone && callCount === 2;
+    },
+  );
+  globalThis.fetch = realFetch;
+}
+
+// D-8 §6: streamMessage 폴백 후 또 4xx → 재폴백 X (error로 종료, 무한루프 차단)
+{
+  const realFetch = globalThis.fetch;
+  let callCount = 0;
+  // 매번 400 invalid_request_error /model/ — 무한루프 방지 검증
+  globalThis.fetch = (async () => {
+    callCount++;
+    return new Response(
+      JSON.stringify({
+        error: { type: "invalid_request_error", message: "model not found again" },
+      }),
+      { status: 400, headers: { "content-type": "application/json" } },
+    );
+  }) as typeof fetch;
+
+  await asyncCheck(
+    "D-8.3 #6 streamMessage: 폴백 후 또 4xx → 재폴백 X, error yield",
+    async () => {
+      const tori = DEFAULT_PARTICIPANTS.find((p) => p.id === "tori")!;
+      const gen = streamMessage({
+        apiKey: "sk-ant-test",
+        speaker: { ...tori, model: "claude-fake-9999" },
+        participants: DEFAULT_PARTICIPANTS,
+        history: [
+          {
+            id: "1",
+            conversationId: "c",
+            participantId: "roy",
+            content: "hi",
+            createdAt: 1,
+            status: "done",
+          },
+        ],
+      });
+      let fallbackCount = 0;
+      let errorStatus: number | undefined;
+      for await (const chunk of gen) {
+        if (chunk.kind === "fallback") fallbackCount++;
+        if (chunk.kind === "error") errorStatus = chunk.status;
+      }
+      // 정확히 1번 fallback, 그 후 error로 종료, 총 fetch 호출 2번 (1차 + 폴백 1번)
+      return fallbackCount === 1 && errorStatus === 400 && callCount === 2;
+    },
+  );
+  globalThis.fetch = realFetch;
+}
+
 }
 
 {
@@ -383,19 +513,99 @@ await asyncCheck("stream-parser: ReadableStream 1 이벤트 추출", async () =>
   check("turn-controller: manual + manualPick=undefined → throw", threw);
 }
 
+// D2: ~~round-robin → throw~~ 였으나 D-8.2에서 본격 구현. 신규 round-robin 테스트로 대체.
+// (아래 D-8 추가 §3 self-check #3에서 round-robin 정상 동작 검증.)
+
+// ---------- D-8 추가 6개 (D3, 41/41) ----------
+
+// D-8 §1: composeSystemPrompt 자기 정체 + 다른 참여자 표시 (명세 §8 #1)
 {
+  const tori = DEFAULT_PARTICIPANTS.find((p) => p.id === "tori")!;
+  const out = composeSystemPrompt({
+    speaker: tori,
+    participants: DEFAULT_PARTICIPANTS,
+    locale: "ko",
+  });
+  check(
+    "D-8.1 #1 composer: '당신은 똘이입니다' 본격 카피",
+    out.includes("당신은 똘이입니다"),
+  );
+  check(
+    "D-8.1 #1 composer: 다른 참여자에 로이/꼬미 표시 + 똘이 자기 제외",
+    out.includes("# 다른 참여자") &&
+      out.includes("로이") &&
+      out.includes("꼬미") &&
+      !/^- 똘이/m.test(out),
+  );
+}
+
+// D-8 §2: human speaker → throw (이미 위에서 검증되었지만 명세 §8 #2로 명시 박음)
+{
+  const roy = DEFAULT_PARTICIPANTS.find((p) => p.id === "roy")!;
   let threw = false;
   try {
-    pickNextSpeaker({
-      mode: "round-robin",
-      lastSpeakerId: "roy",
+    composeSystemPrompt({
+      speaker: roy,
       participants: DEFAULT_PARTICIPANTS,
+      locale: "ko",
     });
   } catch {
     threw = true;
   }
-  check("turn-controller: round-robin → throw 'mode not implemented'", threw);
+  check("D-8.1 #2 composer: human speaker → throw (명세 §8 #2)", threw);
 }
+
+// D-8 §3: pickNextSpeaker round-robin 3 participants 순환
+{
+  const ids = DEFAULT_PARTICIPANTS.map((p) => p.id); // [roy, tori, komi]
+  const next1 = pickNextSpeaker({
+    mode: "round-robin",
+    lastSpeakerId: "roy",
+    participants: DEFAULT_PARTICIPANTS,
+    participantIds: ids,
+  });
+  check("D-8.2 #3a round-robin: lastSpeakerId='roy' → 'tori'", next1 === "tori");
+
+  const next2 = pickNextSpeaker({
+    mode: "round-robin",
+    lastSpeakerId: "komi",
+    participants: DEFAULT_PARTICIPANTS,
+    participantIds: ids,
+  });
+  check(
+    "D-8.2 #3b round-robin: lastSpeakerId='komi' → 'roy' (modulo 순환)",
+    next2 === "roy",
+  );
+
+  const next3 = pickNextSpeaker({
+    mode: "round-robin",
+    lastSpeakerId: null,
+    participants: DEFAULT_PARTICIPANTS,
+    participantIds: ids,
+  });
+  check(
+    "D-8.2 #3c round-robin: lastSpeakerId=null → 첫 번째 'roy'",
+    next3 === "roy",
+  );
+}
+
+// D-8 §4: round-robin + manualPick 우선 override (모드 무관)
+{
+  const ids = DEFAULT_PARTICIPANTS.map((p) => p.id);
+  const out = pickNextSpeaker({
+    mode: "round-robin",
+    lastSpeakerId: "roy",
+    participants: DEFAULT_PARTICIPANTS,
+    participantIds: ids,
+    manualPick: "komi",
+  });
+  check(
+    "D-8.2 #4 round-robin + manualPick='komi' → 'komi' (사용자 명시 우선)",
+    out === "komi",
+  );
+}
+
+// D-8 §5/§6 (streamMessage fallback) — runAsyncChecks 함수 안으로 옮김 (top-level await 회피)
 
 runAsyncChecks()
   .then(() => {
