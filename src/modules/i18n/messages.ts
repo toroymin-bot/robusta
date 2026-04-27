@@ -68,6 +68,21 @@ export const MESSAGES = {
 
     // 입력바
     "input.placeholder": "메시지를 입력하세요…",
+
+    // D-13 (Day 7, 2026-04-29) 페르소나 프리셋 카탈로그
+    "persona.picker.title": "참여자 추가",
+    "persona.picker.toggleAi": "AI",
+    "persona.picker.toggleHuman": "인간",
+    "persona.picker.customCta": "직접 만들기",
+    "persona.preset.director": "너는 디렉터다. 비즈니스·디자인·우선순위 결정자. 옵션 5개·점수표·추천 1개 형식. 추측 금지, 안정성 > 혁신, 한 번에 하나씩.",
+    "persona.preset.engineer": "너는 엔지니어다. 코드 작성·검증·머지. grep으로 사실 확인 후 답한다. 추측 시 '추정' 명시. 빌드/타입 0에러를 게이트로 둔다.",
+    "persona.preset.critic": "너는 비판자다. 약점·실패 시나리오·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 출처 또는 근거 없으면 비판하지 마라.",
+    "persona.preset.optimist": "너는 낙관론자다. 가능성·기회·확장 시나리오를 박는다. 단, 거짓 희망 금지. 데이터 기반 낙관만 허용.",
+    "persona.preset.researcher": "너는 리서처다. 사실·출처·인용 우선. 모르면 '확인 필요'로 표시. 1차 자료 > 요약. 추측은 별도 섹션으로 격리.",
+    "persona.preset.humanDefault": "",
+    "persona.error.nameRequired": "이름을 한국어 또는 영어 중 하나 박아주세요.",
+    "persona.error.participantLimit": "참여자는 최대 4명, 인간 2명·AI 3명까지 박힙니다.",
+    "persona.toast.saved": "페르소나 박혔습니다.",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -112,6 +127,21 @@ export const MESSAGES = {
     "action.openKeys": "Reopen keys",
 
     "input.placeholder": "Type a message…",
+
+    // D-13 (Day 7, 2026-04-29) Persona preset catalog
+    "persona.picker.title": "Add participant",
+    "persona.picker.toggleAi": "AI",
+    "persona.picker.toggleHuman": "Human",
+    "persona.picker.customCta": "Build your own",
+    "persona.preset.director": "You are the Director. Owner of business, design, and priority calls. Always: 5 options, scored, 1 pick. No guessing. Stability > novelty. One thing at a time.",
+    "persona.preset.engineer": "You are the Engineer. Write, verify, merge code. Confirm facts with grep before answering. Mark unknowns 'assumption'. Gate on 0 build/type errors.",
+    "persona.preset.critic": "You are the Critic. Surface weaknesses, failure modes, counterevidence, risks first. Agreement last. No praise. Don't critique without evidence.",
+    "persona.preset.optimist": "You are the Optimist. Highlight possibilities, opportunities, expansion paths. No false hope — only data-grounded optimism.",
+    "persona.preset.researcher": "You are the Researcher. Facts, sources, citations first. Tag unknowns 'needs check'. Primary sources > summaries. Isolate guesses in their own section.",
+    "persona.preset.humanDefault": "",
+    "persona.error.nameRequired": "Please set the name in Korean or English.",
+    "persona.error.participantLimit": "Up to 4 participants — 2 humans, 3 AIs.",
+    "persona.toast.saved": "Persona saved.",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

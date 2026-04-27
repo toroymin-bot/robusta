@@ -1324,10 +1324,213 @@ async function runD11D12Checks(): Promise<void> {
   }
 }
 
+// === D-13 (Day 7, 2026-04-29) 페르소나 프리셋 카탈로그 ===
+
+import {
+  PERSONA_PRESETS,
+  ensurePresetSeed,
+} from "../src/modules/personas/preset-catalog";
+import {
+  PERSONA_COLOR_TOKENS,
+  PresetImmutableError,
+  colorTokenToCssVar,
+} from "../src/modules/personas/persona-types";
+
+async function runD13Checks(): Promise<void> {
+  const projectRoot = resolve(__dirname, "..");
+
+  // 86. (D-13.0) db v5 — personas 테이블 + 인덱스 4종.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/storage/db.ts`,
+      "utf-8",
+    );
+    const hasV5 = /this\.version\(5\)/.test(src);
+    const hasPersonasTable =
+      /personas\s*:\s*"&id, kind, isPreset, createdAt, \[kind\+isPreset\]"/.test(
+        src,
+      );
+    const hasPersonasField = /personas!\s*:\s*Table<Persona,\s*string>/.test(
+      src,
+    );
+    check(
+      "D-13.0 #86 db v5 personas 테이블 (인덱스 4종) + Table<Persona> 필드",
+      hasV5 && hasPersonasTable && hasPersonasField,
+    );
+  }
+
+  // 87. (D-13.1) PRESETS.length === 6 && human 1 + ai 5
+  {
+    const total = PERSONA_PRESETS.length;
+    const human = PERSONA_PRESETS.filter((p) => p.kind === "human").length;
+    const ai = PERSONA_PRESETS.filter((p) => p.kind === "ai").length;
+    const allPresetIds = PERSONA_PRESETS.every((p) =>
+      p.id.startsWith("preset:"),
+    );
+    const allMarkedPreset = PERSONA_PRESETS.every((p) => p.isPreset === true);
+    check(
+      "D-13.1 #87 프리셋 6종 (ai:5 + human:1) + id prefix 'preset:' + isPreset=true",
+      total === 6 && human === 1 && ai === 5 && allPresetIds && allMarkedPreset,
+    );
+  }
+
+  // 88. (D-13.1) 프리셋 colorToken이 모두 PERSONA_COLOR_TOKENS에 존재.
+  {
+    const allTokensValid = PERSONA_PRESETS.every((p) =>
+      (PERSONA_COLOR_TOKENS as readonly string[]).includes(p.colorToken),
+    );
+    check(
+      "D-13.1 #88 프리셋 colorToken 7종 토큰 카탈로그 내 존재",
+      allTokensValid,
+    );
+  }
+
+  // 89. (D-13.2) preset-store: PresetImmutableError 클래스 export + name === 'PresetImmutableError'
+  {
+    const err = new PresetImmutableError("remove", "preset:director");
+    check(
+      "D-13.2 #89 PresetImmutableError export + name + message format",
+      err.name === "PresetImmutableError" &&
+        err.message.includes("preset_immutable") &&
+        err.message.includes("preset:director"),
+    );
+  }
+
+  // 90. (D-13.0) ensurePresetSeed 함수 export.
+  {
+    check(
+      "D-13.0 #90 ensurePresetSeed export 함수",
+      typeof ensurePresetSeed === "function",
+    );
+  }
+
+  // 91. (D-13.6) tokens v2 — globals.css에 participant-1~5 + human-1/2 = 7 토큰 박힘.
+  {
+    const css = readFileSync(`${projectRoot}/src/app/globals.css`, "utf-8");
+    const tokens = [
+      "--robusta-color-participant-1",
+      "--robusta-color-participant-2",
+      "--robusta-color-participant-3",
+      "--robusta-color-participant-4",
+      "--robusta-color-participant-5",
+      "--robusta-color-participant-human-1",
+      "--robusta-color-participant-human-2",
+    ];
+    const allPresent = tokens.every((tk) => css.includes(tk));
+    check(
+      "D-13.6 #91 globals.css participant-1~5 + human-1/2 = 7 토큰 정의",
+      allPresent,
+    );
+  }
+
+  // 92. (D-13.0) Persona 타입의 필드 셋 명세 §1과 동기화.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/personas/persona-types.ts`,
+      "utf-8",
+    );
+    const fields = [
+      /id\s*:\s*string/,
+      /kind\s*:\s*PersonaKind/,
+      /isPreset\s*:\s*boolean/,
+      /nameKo\s*:\s*string/,
+      /nameEn\s*:\s*string/,
+      /colorToken\s*:\s*string/,
+      /iconMonogram\s*:\s*string/,
+      /systemPromptKo\s*:\s*string/,
+      /systemPromptEn\s*:\s*string/,
+      /defaultProvider\?\s*:\s*PersonaProvider/,
+      /createdAt\s*:\s*number/,
+      /updatedAt\s*:\s*number/,
+    ];
+    const ok = fields.every((re) => re.test(src));
+    check("D-13.0 #92 Persona 인터페이스 12 필드 박힘", ok);
+  }
+
+  // 93. (D-13.5) ParticipantsPanel — PersonaPickerModal/PersonaEditModal import + 참여자 제한 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/participants/participants-panel.tsx`,
+      "utf-8",
+    );
+    const hasPicker =
+      /import\s*\{\s*PersonaPickerModal\s*\}/.test(src);
+    const hasEdit = /import\s*\{\s*PersonaEditModal\s*\}/.test(src);
+    const hasLimitTotal = /PARTICIPANT_LIMIT_TOTAL\s*=\s*4/.test(src);
+    const hasLimitHuman = /PARTICIPANT_LIMIT_HUMAN\s*=\s*2/.test(src);
+    const hasLimitAi = /PARTICIPANT_LIMIT_AI\s*=\s*3/.test(src);
+    check(
+      "D-13.5 #93 ParticipantsPanel: 픽커/편집 import + 제한 4/2/3 박힘",
+      hasPicker && hasEdit && hasLimitTotal && hasLimitHuman && hasLimitAi,
+    );
+  }
+
+  // 94. (D-13.5) [+참여자 추가] 버튼이 whitespace-nowrap 가드 박혀있음 (모바일 320px 줄바꿈 0).
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/participants/participants-panel.tsx`,
+      "utf-8",
+    );
+    const ok =
+      /참여자 추가/.test(src) && /whitespace-nowrap/.test(src);
+    check(
+      "D-13.5 #94 [+참여자 추가] whitespace-nowrap 가드 박힘 (Roy Do #9)",
+      ok,
+    );
+  }
+
+  // 95. (D-13) i18n 13건 ko/en 모두 박힘.
+  {
+    const ko = MESSAGES.ko;
+    const en = MESSAGES.en;
+    const keys: (keyof typeof ko)[] = [
+      "persona.picker.title",
+      "persona.picker.toggleAi",
+      "persona.picker.toggleHuman",
+      "persona.picker.customCta",
+      "persona.preset.director",
+      "persona.preset.engineer",
+      "persona.preset.critic",
+      "persona.preset.optimist",
+      "persona.preset.researcher",
+      "persona.preset.humanDefault",
+      "persona.error.nameRequired",
+      "persona.error.participantLimit",
+      "persona.toast.saved",
+    ];
+    const allKoBoxed = keys.every((k) => typeof ko[k] === "string");
+    const allEnBoxed = keys.every((k) => typeof en[k] === "string");
+    // 본문 ≤200자 가드 (humanDefault는 빈 문자열 허용)
+    const presetBodyKeys = [
+      "persona.preset.director",
+      "persona.preset.engineer",
+      "persona.preset.critic",
+      "persona.preset.optimist",
+      "persona.preset.researcher",
+    ] as const;
+    const koUnder200 = presetBodyKeys.every((k) => ko[k].length > 0 && ko[k].length <= 200);
+    const enUnder200 = presetBodyKeys.every((k) => en[k].length > 0 && en[k].length <= 200);
+    check(
+      "D-13 #95 i18n 13건 ko/en 박힘 + 프리셋 본문 1~200자",
+      allKoBoxed && allEnBoxed && koUnder200 && enUnder200,
+    );
+  }
+
+  // 96. (D-13.2) colorTokenToCssVar 합성 결과 'var(--token-name)' 형식.
+  {
+    const out = colorTokenToCssVar("robusta-color-participant-1");
+    check(
+      "D-13.2 #96 colorTokenToCssVar('foo') === 'var(--foo)'",
+      out === "var(--robusta-color-participant-1)",
+    );
+  }
+}
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
   .then(() => runD10AsyncChecks())
   .then(() => runD11D12Checks())
+  .then(() => runD13Checks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);

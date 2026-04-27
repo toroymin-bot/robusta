@@ -7,16 +7,53 @@
  *     · AI + systemPrompt 비어있지 않음 → 이름 옆 작은 점 시그널 (hue dim).
  *     · role 입력됨 → 이름 아래 1줄 표시 (12px inkDim, ellipsis).
  *   - 모바일 반응형 (Do 4/27 #9): 텍스트 오버플로우 방지 — truncate 유지.
+ *   - D7 (D-13.5, P0, 2026-04-29): [+참여자 추가] → PersonaPickerModal 진입.
+ *     · 프리셋 카드 1클릭 → 해당 페르소나로 Participant 즉시 생성.
+ *     · "직접 만들기" → PersonaEditModal 빈 폼 → 저장 후 Participant 생성.
+ *     · 참여자 제한 (Roy `Do` #10): 총 ≤4 / 인간 ≤2 / AI ≤3. 초과 시 picker 진입 차단 + 토스트.
  */
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParticipantStore } from "@/stores/participant-store";
 import { ParticipantForm } from "./participant-form";
 import { PersonaModal } from "@/modules/conversation/persona-modal";
+import { PersonaPickerModal } from "@/modules/personas/persona-picker-modal";
+import { PersonaEditModal } from "@/modules/personas/persona-edit-modal";
+import { usePersonaStore } from "@/modules/personas/persona-store";
+import {
+  colorTokenToCssVar,
+  type Persona,
+  type PersonaKind,
+} from "@/modules/personas/persona-types";
+import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
 import type { Participant } from "./participant-types";
+
+/** 참여자 제한 — Roy `Do` 메모 #10. */
+const PARTICIPANT_LIMIT_TOTAL = 4;
+const PARTICIPANT_LIMIT_HUMAN = 2;
+const PARTICIPANT_LIMIT_AI = 3;
+
+/** 페르소나 → 참여자 추가 변환. colorToken은 CSS var로 박음. */
+function personaToParticipantInput(p: Persona): {
+  name: string;
+  kind: Participant["kind"];
+  color: string;
+  role?: string;
+  model?: string;
+  systemPrompt?: string;
+} {
+  return {
+    name: p.nameKo || p.nameEn,
+    kind: p.kind,
+    color: colorTokenToCssVar(p.colorToken),
+    role: p.nameEn || undefined,
+    model: p.kind === "ai" ? "claude-sonnet-4-6" : undefined,
+    systemPrompt: p.kind === "ai" ? p.systemPromptKo || "" : undefined,
+  };
+}
 
 function buildDisplayNames(participants: Participant[]): Map<string, string> {
   const counts = new Map<string, number>();
@@ -39,15 +76,99 @@ function buildDisplayNames(participants: Participant[]): Map<string, string> {
 
 export function ParticipantsPanel() {
   const participants = useParticipantStore((s) => s.participants);
+  const add = useParticipantStore((s) => s.add);
   const remove = useParticipantStore((s) => s.remove);
+  // D-13.5: 페르소나 카탈로그 hydrate + lookup.
+  const personaHydrated = usePersonaStore((s) => s.hydrated);
+  const hydratePersonas = usePersonaStore((s) => s.hydrate);
+  const personasFromStore = usePersonaStore((s) => s.personas);
+  const pushToast = useToastStore((s) => s.push);
 
+  // ~~D-9.2 ParticipantForm 모달~~ → D7부터 PersonaPickerModal 진입. 기존 ParticipantForm은 fallback 보류.
   const [showForm, setShowForm] = useState(false);
+  // D-13.5: PersonaPickerModal 표시 여부.
+  const [showPicker, setShowPicker] = useState(false);
+  // D-13.5: PersonaEditModal "직접 만들기" 진입용 — null이면 닫힘, kind 박혀있으면 빈 폼 진입.
+  const [editKind, setEditKind] = useState<PersonaKind | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // D-9.2: persona modal 대상 참여자 (null = 닫힘)
   const [personaTarget, setPersonaTarget] = useState<Participant | null>(null);
 
   const displayNames = useMemo(() => buildDisplayNames(participants), [participants]);
+
+  // D-13.5: 페르소나 카탈로그 1회 hydrate.
+  useEffect(() => {
+    if (!personaHydrated) void hydratePersonas();
+  }, [personaHydrated, hydratePersonas]);
+
+  /**
+   * D-13.5: 참여자 제한 검증. kind에 따라 허용/거부.
+   * 거부 시 토스트 노출, 호출자는 false를 받아 picker 닫지 않음.
+   */
+  function canAddParticipant(kind: Participant["kind"]): boolean {
+    if (participants.length >= PARTICIPANT_LIMIT_TOTAL) return false;
+    if (kind === "human") {
+      const humans = participants.filter((p) => p.kind === "human").length;
+      if (humans >= PARTICIPANT_LIMIT_HUMAN) return false;
+    } else {
+      const ais = participants.filter((p) => p.kind === "ai").length;
+      if (ais >= PARTICIPANT_LIMIT_AI) return false;
+    }
+    return true;
+  }
+
+  function showLimitToast() {
+    pushToast({
+      tone: "info",
+      message: t("persona.error.participantLimit"),
+    });
+  }
+
+  async function handlePickPreset(personaId: string) {
+    const persona = personasFromStore.find((p) => p.id === personaId);
+    if (!persona) return;
+    if (!canAddParticipant(persona.kind)) {
+      showLimitToast();
+      return;
+    }
+    try {
+      await add(personaToParticipantInput(persona));
+      setShowPicker(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "추가 실패");
+    }
+  }
+
+  function handleCreateCustom(kind: PersonaKind) {
+    if (!canAddParticipant(kind)) {
+      showLimitToast();
+      return;
+    }
+    setShowPicker(false);
+    setEditKind(kind);
+  }
+
+  /** PersonaEditModal 저장 후 호출 — 새 커스텀 페르소나로 즉시 Participant 추가. */
+  async function handleEditSaved(persona: Persona) {
+    if (!canAddParticipant(persona.kind)) {
+      showLimitToast();
+      return;
+    }
+    try {
+      await add(personaToParticipantInput(persona));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "추가 실패");
+    }
+  }
+
+  function handleAddClick() {
+    if (participants.length >= PARTICIPANT_LIMIT_TOTAL) {
+      showLimitToast();
+      return;
+    }
+    setShowPicker(true);
+  }
 
   async function handleRemove(id: string) {
     setError(null);
@@ -154,7 +275,7 @@ export function ParticipantsPanel() {
       <div className="border-t border-robusta-divider p-3">
         <button
           type="button"
-          onClick={() => setShowForm(true)}
+          onClick={handleAddClick}
           className="
             w-full rounded
             border border-dashed border-robusta-divider
@@ -167,6 +288,25 @@ export function ParticipantsPanel() {
         </button>
       </div>
 
+      {/* D-13.5: 신규 픽커 — 프리셋 6종 카드 + "직접 만들기" */}
+      {showPicker && (
+        <PersonaPickerModal
+          onPick={(id) => void handlePickPreset(id)}
+          onCreateCustom={handleCreateCustom}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+
+      {/* D-13.5: "직접 만들기" 진입 — 빈 폼 + 저장 후 Participant 자동 추가 */}
+      {editKind && (
+        <PersonaEditModal
+          initialKind={editKind}
+          onClose={() => setEditKind(null)}
+          onSaved={(p) => void handleEditSaved(p)}
+        />
+      )}
+
+      {/* ~~D-9.2 ParticipantForm fallback~~ — D7부터 비활성. 코드는 보존(다른 진입점 부활 대비). */}
       {showForm && (
         <ParticipantForm onClose={() => setShowForm(false)} />
       )}

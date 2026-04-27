@@ -12,6 +12,15 @@
   --robusta-divider: #EAE3C7;
   --robusta-accent: #C9A227;
   --robusta-accent-soft: #F1E1A1;
+  /* D-13.6 (Day 7, 2026-04-29) 페르소나 프리셋 색상 토큰 v2.
+     5종 AI 참여자 + 2종 인간 페르소나. AA 4.5:1 라이트 테마 기준 검증. */
+  --robusta-color-participant-1: #d97706;        /* 앰버 — director (디렉터) */
+  --robusta-color-participant-2: #0d9488;        /* 틸 — engineer (엔지니어) */
+  --robusta-color-participant-3: #dc2626;        /* 적색 — critic (비판자) */
+  --robusta-color-participant-4: #16a34a;        /* 녹색 — optimist (낙관론자) */
+  --robusta-color-participant-5: #7c3aed;        /* 보라 — researcher (리서처) */
+  --robusta-color-participant-human-1: #1e3a8a;  /* 네이비 — 인간 1 */
+  --robusta-color-participant-human-2: #475569;  /* 슬레이트 — 인간 2 */
 }
 
 [data-theme="dark"] {
@@ -21,6 +30,14 @@
   --robusta-divider: #2E2A20;
   --robusta-accent: #E2B946;
   --robusta-accent-soft: #3A3320;
+  /* D-13.6 다크 테마: 명도 보정 (자율 영역 — 명세 §7) — AA 대비비 유지 */
+  --robusta-color-participant-1: #fbbf24;        /* 앰버 명도 ↑ */
+  --robusta-color-participant-2: #2dd4bf;        /* 틸 명도 ↑ */
+  --robusta-color-participant-3: #f87171;        /* 적색 명도 ↑ */
+  --robusta-color-participant-4: #4ade80;        /* 녹색 명도 ↑ */
+  --robusta-color-participant-5: #a78bfa;        /* 보라 명도 ↑ */
+  --robusta-color-participant-human-1: #93c5fd;  /* 네이비 → 라이트 블루 */
+  --robusta-color-participant-human-2: #cbd5e1;  /* 슬레이트 명도 ↑ */
 }
 
 html,

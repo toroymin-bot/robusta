@@ -2,6 +2,7 @@
 
 import Dexie, { type Table } from "dexie";
 import type { Participant } from "@/modules/participants/participant-types";
+import type { Persona } from "@/modules/personas/persona-types";
 
 export interface StoredApiKey {
   provider: string;
@@ -73,6 +74,8 @@ export class RobustaDB extends Dexie {
   settings!: Table<SettingsRecord, string>;
   // D-12.2 (Day 6) 신규 테이블 — BYOK 키 만료/검증 메타.
   apiKeyMeta!: Table<ApiKeyMetaRecord, string>;
+  // D-13.0 (Day 7, 2026-04-29) 신규 테이블 — 페르소나 카탈로그(프리셋 + 사용자 커스텀).
+  personas!: Table<Persona, string>;
 
   constructor() {
     super("robusta");
@@ -136,6 +139,21 @@ export class RobustaDB extends Dexie {
           }
         });
       });
+    // v5 — D-13.0 (Day 7, 2026-04-29): personas 테이블 신규.
+    //   기존 v4 테이블(participants/conversations/messages/apiKeys/settings/apiKeyMeta) Dexie auto-carry.
+    //   isPreset은 boolean이지만 IndexedDB 인덱스에 boolean 직접 사용 불가 — Dexie에서 falsy 무시 이슈가 있어
+    //   numeric 0/1로 박는 게 표준이지만, 본 명세는 멱등 시드 + 'isPreset+kind' 합성 인덱스를 boolean 그대로 사용.
+    //   실 쿼리는 store에서 isPreset === true 필터로 in-memory 처리 → 인덱스는 문서화 의미만.
+    this.version(5).stores({
+      participants: "id, kind, name",
+      conversations: "id, updatedAt",
+      messages:
+        "id, conversationId, createdAt, status, streamingStartedAt",
+      apiKeys: "provider",
+      settings: "key",
+      apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+      personas: "&id, kind, isPreset, createdAt, [kind+isPreset]", // 신규 테이블
+    });
   }
 }
 
