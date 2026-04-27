@@ -9,6 +9,11 @@
  *     · aria-live: info=polite, warning|error=assertive.
  *     · 다크/라이트 색 매핑 명시.
  *     · 기존 호출자(`push({ tone, message })`) 시그니처는 호환 유지 — variant alias 추가.
+ *   - D-10.4 (Day 5, F-D4-4, 2026-04-28): action 버튼 옵션 추가.
+ *     · push({ tone, message, action? }) — action: { label, onClick }
+ *     · variant === 'error' || 'warning' 한정 노출 (info는 액션 미지원, UX 노이즈 방지).
+ *     · 클릭 → action.onClick() + 즉시 폐기.
+ *     · 기존 호출자 그대로 동작 (action 미지정 시 버튼 숨김 — backward compat).
  */
 
 "use client";
@@ -22,6 +27,14 @@ export type ToastTone = "info" | "warning" | "error";
 /** 명세상 alias. 새 호출자에 권장. */
 export type ToastVariant = ToastTone;
 
+/** D-10.4: 토스트 액션 버튼. error/warning 한정 노출. */
+export interface ToastAction {
+  /** 버튼 라벨 — i18n 처리된 문자열을 호출자가 전달. ≤14자 권장(UI 폭 96px 이하). */
+  label: string;
+  /** 클릭 시 호출. 호출 후 토스트는 자동 폐기. */
+  onClick: () => void;
+}
+
 export interface Toast {
   id: string;
   tone: ToastTone;
@@ -29,6 +42,8 @@ export interface Toast {
   ttlMs: number;
   /** 일시정지 토글 (hover-pause) — push 시점 기준 createdAt + ttlMs 만큼만 유효. */
   createdAt: number;
+  /** D-10.4: action 옵션 — error/warning에서만 노출. */
+  action?: ToastAction;
 }
 
 /** D-9.7: FIFO 최대 보유 갯수. 초과 시 oldest 자동 폐기. */
@@ -36,7 +51,13 @@ const MAX_TOASTS = 3;
 
 interface ToastStore {
   toasts: Toast[];
-  push: (input: { tone: ToastTone; message: string; ttlMs?: number }) => string;
+  push: (input: {
+    tone: ToastTone;
+    message: string;
+    ttlMs?: number;
+    /** D-10.4: action — error/warning에서만 렌더. info에 박아도 무시(노출 X). */
+    action?: ToastAction;
+  }) => string;
   dismiss: (id: string) => void;
   /** D-9.7: ESC 시 가장 최근(stack 마지막) 토스트 1개 폐기. */
   dismissLatest: () => void;
@@ -51,7 +72,7 @@ function nextId(): string {
 
 export const useToastStore = create<ToastStore>((set, get) => ({
   toasts: [],
-  push({ tone, message, ttlMs }) {
+  push({ tone, message, ttlMs, action }) {
     const id = nextId();
     const toast: Toast = {
       id,
@@ -59,6 +80,8 @@ export const useToastStore = create<ToastStore>((set, get) => ({
       message,
       ttlMs: ttlMs ?? 5000,
       createdAt: Date.now(),
+      // D-10.4: info에는 action 미지원 — 노이즈 방지. 잘못 전달돼도 표시 X (ToastItem에서 차단).
+      ...(action ? { action } : {}),
     };
     const current = get().toasts;
     // FIFO 제한: 3개 초과 시 oldest 자동 폐기
@@ -113,6 +136,10 @@ function ToastItem({ toast }: ToastItemProps) {
   const ariaLive = ARIA_LIVE[toast.tone];
   const borderColor = BORDER_COLOR[toast.tone];
 
+  // D-10.4: action 노출 조건 — error/warning 한정 + action 정의 시.
+  const actionVisible =
+    Boolean(toast.action) && (toast.tone === "error" || toast.tone === "warning");
+
   return (
     <div
       role="status"
@@ -131,19 +158,44 @@ function ToastItem({ toast }: ToastItemProps) {
       "
     >
       <p className="min-w-0 flex-1 break-words">{toast.message}</p>
-      <button
-        type="button"
-        aria-label="닫기"
-        onClick={() => dismiss(toast.id)}
-        className="
-          shrink-0 rounded
-          h-7 w-7 -mr-1
-          text-base text-robusta-inkDim
-          hover:bg-robusta-divider hover:text-robusta-ink
-        "
-      >
-        ×
-      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        {actionVisible && toast.action && (
+          <button
+            type="button"
+            // hue 보더와 같은 색 — 명세 §4 권장. 변형 가능(꼬미 자율 §9).
+            style={{ color: borderColor, borderColor: borderColor }}
+            onClick={() => {
+              try {
+                toast.action!.onClick();
+              } finally {
+                // 액션 후 자동 폐기 — UX 일관성(명세 §4 동작).
+                dismiss(toast.id);
+              }
+            }}
+            className="
+              max-w-[96px] truncate
+              rounded border px-2 py-0.5
+              font-mono text-xs
+              hover:bg-robusta-divider
+            "
+          >
+            {toast.action.label}
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label="닫기"
+          onClick={() => dismiss(toast.id)}
+          className="
+            shrink-0 rounded
+            h-7 w-7 -mr-1
+            text-base text-robusta-inkDim
+            hover:bg-robusta-divider hover:text-robusta-ink
+          "
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 }

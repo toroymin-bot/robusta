@@ -7,6 +7,9 @@ import {
 import type { Participant } from "@/modules/participants/participant-types";
 import type { Message } from "./conversation-types";
 import { StreamingCaret } from "./streaming-caret";
+// D-10.3 (Day 5, 2026-04-28): error/aborted 메시지에 [↻ 재전송] 버튼 노출.
+import { useConversationStore } from "@/stores/conversation-store";
+import { t } from "@/modules/i18n/messages";
 
 interface MessageBubbleProps {
   message: Message;
@@ -44,12 +47,19 @@ export function MessageBubble({
   const isError = message.status === "error";
   const isAborted = message.status === "aborted";
   const isStreaming = message.status === "streaming";
+  // D-10.3: 재전송 가능 = AI 발언이면서 error/aborted 상태. (사용자 발언은 buildRetryPlan에서도 차단.)
+  const canRetry = isAi && (isError || isAborted);
 
   const errorRing = isError
     ? "border-l-[3px] border-l-red-500"
     : "";
 
   const tokens = formatTokens(message.usage);
+
+  // D-10.3: 버튼 클릭 → store.retry. 동시 streaming 가드는 store가 처리.
+  function handleRetry() {
+    void useConversationStore.getState().retry(message.id);
+  }
 
   return (
     <div className="px-4">
@@ -106,6 +116,23 @@ export function MessageBubble({
         {tokens && (
           <div className="mt-1 px-1 text-[10px] uppercase tracking-wider text-robusta-inkDim">
             {tokens}
+          </div>
+        )}
+
+        {canRetry && (
+          <div className="mt-1 px-1">
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="
+                rounded border border-robusta-divider
+                px-2 py-0.5 font-mono text-[11px]
+                text-robusta-inkDim hover:border-robusta-accent hover:text-robusta-ink
+              "
+              aria-label={t("action.retry")}
+            >
+              {t("action.retry")}
+            </button>
           </div>
         )}
       </div>

@@ -7,6 +7,10 @@ import {
   validateApiKeyFormat,
 } from "./api-key-validate";
 import { maskApiKey } from "./api-key-mask";
+// D-10.2: BYOK 키 ping 검증 — 저장 직전 1회 호출
+import { pingApiKey } from "./api-key-ping";
+import { useToastStore } from "@/modules/ui/toast";
+import { t } from "@/modules/i18n/messages";
 import type { ApiKeyProvider } from "./api-key-types";
 
 interface ApiKeysViewProps {
@@ -27,6 +31,9 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [reveal, setReveal] = useState(false);
   const [saving, setSaving] = useState(false);
+  // D-10.2: ping 진행 상태 — 버튼 라벨 변경용. saving과 별개로 표시 (ping 중에는 "확인 중…").
+  const [pinging, setPinging] = useState(false);
+  const pushToast = useToastStore((s) => s.push);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -44,11 +51,45 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
       setError(describeValidationReason("anthropic", result.reason));
       return;
     }
+    // D-10.2: 저장 직전 1글자 ping 호출. 401/403 → 저장 차단 + 인라인 에러 + 에러 토스트.
+    //         그 외(verified/unknown) → 저장 진행 + 결과별 토스트.
     setSaving(true);
+    setPinging(true);
+    let pingResult;
+    try {
+      pingResult = await pingApiKey({ provider: "anthropic", key: draft });
+    } catch (err) {
+      // pingApiKey는 throw하지 않도록 설계되었지만 안전망.
+      pingResult = {
+        status: "unknown" as const,
+        reason: err instanceof Error ? err.message : "ping failed",
+      };
+    } finally {
+      setPinging(false);
+    }
+
+    if (pingResult.status === "unauthorized") {
+      // 저장 차단 — 인라인 에러 + 에러 토스트 (모달이 열린 상태이므로 action 미부착).
+      setSaving(false);
+      const reasonSuffix = pingResult.reason ? ` (${pingResult.reason})` : "";
+      setError(t("toast.byok.unauthorized") + reasonSuffix);
+      pushToast({
+        tone: "error",
+        message: t("toast.byok.unauthorized"),
+      });
+      return;
+    }
+
     try {
       await save("anthropic", draft);
       setDraft("");
       setReveal(false);
+      // 결과 토스트: verified → info, unknown → warning.
+      if (pingResult.status === "verified") {
+        pushToast({ tone: "info", message: t("toast.byok.verified") });
+      } else {
+        pushToast({ tone: "warning", message: t("toast.byok.checkLater") });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "저장 실패");
     } finally {
@@ -165,7 +206,7 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
                 disabled={!hydrated || saving || draft.trim().length === 0}
                 className="rounded bg-robusta-accent px-3 py-2 text-sm font-medium text-black disabled:opacity-60"
               >
-                {saving ? "저장 중…" : "저장"}
+                {pinging ? "키 확인 중…" : saving ? "저장 중…" : "저장"}
               </button>
             </div>
           </form>

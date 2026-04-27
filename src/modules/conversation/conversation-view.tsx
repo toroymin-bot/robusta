@@ -17,6 +17,8 @@ import { InputBar } from "./input-bar";
 import { MessageBubble } from "./message-bubble";
 import type { Message } from "./conversation-types";
 import type { Participant } from "@/modules/participants/participant-types";
+// D-10.3 (Day 5, 2026-04-28): 토스트 액션 라벨용 i18n.
+import { t } from "@/modules/i18n/messages";
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -179,6 +181,13 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
               tone: "info",
               message: `${chunk.from} 미사용 → ${chunk.to} 폴백`,
             });
+          } else if (chunk.kind === "retrying") {
+            // D-10.3: 5xx 자동 재시도 진행 중 — 별도 토스트는 X (자동이므로 노이즈 방지).
+            // bubble은 streaming 상태 유지. 진단 로그만 콘솔에 박음.
+            // eslint-disable-next-line no-console
+            console.info(
+              `[robusta] 5xx 자동 재시도 ${chunk.attempt}/3 (status=${chunk.status})`,
+            );
           } else if (chunk.kind === "done") {
             break;
           }
@@ -214,6 +223,19 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
           pushToast({
             tone: "error",
             message: "Anthropic 한도 초과. 잠시 후 다시 시도하세요.",
+          });
+        } else if (status && status >= 500) {
+          // D-10.3 + D-10.4: 5xx 자동 재시도 한도 초과 → 사용자가 액션 버튼으로 즉시 재전송.
+          pushToast({
+            tone: "error",
+            message: t("toast.error.retryExhausted"),
+            action: {
+              label: t("action.retry"),
+              onClick: () => {
+                // store.retry는 placeholder의 새 row를 추가 (원본 error는 보존).
+                void useConversationStore.getState().retry(placeholderId);
+              },
+            },
           });
         } else if (status && status >= 400 && status < 500) {
           pushToast({

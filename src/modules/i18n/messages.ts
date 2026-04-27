@@ -39,11 +39,19 @@ export const MESSAGES = {
     "toast.persona.saved": "{name} 저장됨",
     "toast.fallback": "{from} 미사용 → {to} 폴백",
     "toast.error.network": "네트워크 오류 — 재시도하세요",
+    // D-10.2 (Day 5, F-D4-1) BYOK 키 ping 결과 카피 3종
+    "toast.byok.verified": "API 키 확인 완료",
+    "toast.byok.unauthorized": "API 키 인증 실패 — 키 확인 필요",
+    "toast.byok.checkLater": "키 저장됨 — 인증 확인은 첫 호출 시",
+    // D-10.3 (Day 5) 5xx 백오프 한계 도달
+    "toast.error.retryExhausted": "재시도 한도 초과 — 잠시 후 다시 시도하세요",
 
     // 버튼
     "action.nextTurn": "▶ 다음 발언",
     "action.retry": "↻ 재전송",
     "action.stop": "⏹ 정지",
+    // D-10.4 (Day 5, F-D4-4) 토스트 액션 라벨
+    "action.openKeys": "키 다시 열기",
 
     // 입력바
     "input.placeholder": "메시지를 입력하세요…",
@@ -71,10 +79,15 @@ export const MESSAGES = {
     "toast.persona.saved": "{name} saved",
     "toast.fallback": "{from} unavailable → fell back to {to}",
     "toast.error.network": "Network error — please retry",
+    "toast.byok.verified": "API key verified",
+    "toast.byok.unauthorized": "Unauthorized — please check the key",
+    "toast.byok.checkLater": "Key saved — auth will be checked on first use",
+    "toast.error.retryExhausted": "Retry limit exceeded — please try again later",
 
     "action.nextTurn": "▶ Next turn",
     "action.retry": "↻ Retry",
     "action.stop": "⏹ Stop",
+    "action.openKeys": "Reopen keys",
 
     "input.placeholder": "Type a message…",
   },

@@ -6,7 +6,13 @@
  *   - 1차 4xx + invalid_request_error + /model/i → claude-3-5-sonnet-latest 폴백.
  *   - 폴백 yield {kind:'fallback', from, to} → conversation-view에서 info 토스트.
  *   - 폴백 후도 4xx → 재폴백 X (무한루프 차단).
- *   - 5xx는 폴백 X (D4 자동 재시도 큐).
+ *   - ~~5xx는 폴백 X (D4 자동 재시도 큐).~~
+ * D-10.3 (Day 5, 2026-04-28): 5xx 자동 재시도 + retrying yield 추가.
+ *   - 5xx 응답 시 500ms × 2^attempt backoff 후 자동 재시도, 최대 3회.
+ *   - 매 재시도 직전 yield {kind:'retrying', attempt, status} → view가 progress 표시.
+ *   - 3회 모두 실패 시 yield {kind:'error', status:5xx} → view가 토스트 + 재전송 액션.
+ *   - 4xx는 자동 재시도 X (D-8.3 폴백 분리 유지).
+ *   - AbortController 신호 발사 시 backoff 중에도 즉시 abort yield.
  */
 
 import { composeSystemPrompt } from "./system-prompt-composer";
@@ -39,7 +45,14 @@ export type StreamChunk =
   | { kind: "aborted" }
   | { kind: "error"; reason: string; status?: number }
   // D-8.3: 모델 ID 폴백 발생 시 view가 info 토스트 띄우도록 알림.
-  | { kind: "fallback"; from: string; to: string };
+  | { kind: "fallback"; from: string; to: string }
+  // D-10.3: 5xx 자동 재시도 직전 알림 (attempt: 1-based, status: 5xx 코드).
+  | { kind: "retrying"; attempt: number; status: number };
+
+/** D-10.3: 5xx 백오프 재시도 최대 횟수. 초과 시 error 전파. */
+const MAX_SERVER_RETRIES = 3;
+/** D-10.3: 5xx 백오프 base — 500ms × 2^attempt (0,1,2 → 500,1000,2000ms). */
+const SERVER_RETRY_BASE_MS = 500;
 
 export interface AnthropicMessage {
   role: "user" | "assistant";
@@ -162,9 +175,10 @@ export async function* streamMessage(
     return;
   }
 
-  let attempts = 0;
-  // 무한루프 방지 — 최대 2회 시도 (1차 + 폴백 1회)
-  while (attempts < 2) {
+  // D-10.3: 폴백/5xx 카운터를 분리하여 가드. 폴백 1회 + 5xx 재시도 3회 = 최대 4 fetch 루프.
+  let fallbackUsed = false;
+  let serverRetries = 0;
+  while (true) {
     let response: Response;
     try {
       response = await fetch(ANTHROPIC_URL, {
@@ -207,23 +221,69 @@ export async function* streamMessage(
       return;
     }
 
-    // 5) D-8.3 폴백 분기: 1차 4xx + invalid_request + /model/ → 폴백 1회만
-    if (attempts === 0) {
+    // 5) D-10.3 5xx 분기: 백오프 후 자동 재시도 (최대 3회)
+    if (response.status >= 500 && serverRetries < MAX_SERVER_RETRIES) {
+      // 응답 본문은 폐기 (재시도하므로 잡아둘 필요 없음 — GC가 회수).
+      const backoff = SERVER_RETRY_BASE_MS * Math.pow(2, serverRetries);
+      // attempt는 1-based로 yield (사용자 표시용 — "재시도 1/3").
+      yield {
+        kind: "retrying",
+        attempt: serverRetries + 1,
+        status: response.status,
+      };
+      try {
+        await sleepWithAbort(backoff, input.signal);
+      } catch {
+        // sleepWithAbort는 abort 시 throw — view가 aborted로 분기.
+        yield { kind: "aborted" };
+        return;
+      }
+      serverRetries++;
+      continue;
+    }
+
+    // 6) D-8.3 폴백 분기: 4xx invalid_request + /model/ → 폴백 1회만 (5xx 재시도와 분리)
+    if (!fallbackUsed) {
       const decision = await shouldFallbackModel(response);
       if (decision.ok && model !== FALLBACK_MODEL) {
         // 폴백 알림 yield → view에서 info 토스트
         yield { kind: "fallback", from: model, to: FALLBACK_MODEL };
         model = FALLBACK_MODEL;
-        attempts++;
+        fallbackUsed = true;
         continue;
       }
     }
 
-    // 6) 그 외 4xx/5xx 또는 폴백 후 재실패 → 에러로 전파 (재폴백 X)
+    // 7) 그 외 4xx/5xx (재시도 한도 초과 포함) 또는 폴백 후 재실패 → 에러로 전파
     const reason = await describeErrorResponse(response);
     yield { kind: "error", reason, status: response.status };
     return;
   }
+}
+
+/**
+ * D-10.3: AbortSignal을 존중하는 sleep — backoff 중에도 사용자 abort 즉시 반응.
+ * abort 시 AbortError throw → 호출자가 aborted yield.
+ */
+function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("aborted", "AbortError"));
+      return;
+    }
+    const handle = setTimeout(() => {
+      if (signal && onAbort) signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    let onAbort: (() => void) | null = null;
+    if (signal) {
+      onAbort = () => {
+        clearTimeout(handle);
+        reject(new DOMException("aborted", "AbortError"));
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  });
 }
 
 /**
@@ -300,5 +360,9 @@ export const __conversation_api_internal = {
   ANTHROPIC_URL,
   ANTHROPIC_VERSION,
   FALLBACK_MODEL,
+  // D-10.3 노출 — self-check가 검증.
+  MAX_SERVER_RETRIES,
+  SERVER_RETRY_BASE_MS,
   shouldFallbackModel,
+  sleepWithAbort,
 };

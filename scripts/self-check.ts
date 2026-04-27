@@ -767,8 +767,346 @@ async function runD9AsyncChecks(): Promise<void> {
   });
 }
 
+// ---------- D-10 추가 6개 (Day 5, 2026-04-28, 60/60) ----------
+
+// D-10.4 #60 toast action 옵션 — error/warning 한정 노출 + 폐기 동작 (sync 검증).
+{
+  useToastStore.setState({ toasts: [] });
+  let onClickCalled = 0;
+  const action = {
+    label: "재시도",
+    onClick: () => {
+      onClickCalled++;
+    },
+  };
+  // info에는 action을 박아도 ToastItem이 노출 X. 검증은 push 결과 객체.
+  useToastStore.getState().push({ tone: "info", message: "i", action });
+  // error는 push 후 toast.action 보존
+  useToastStore.getState().push({ tone: "error", message: "e", action });
+  const after = useToastStore.getState().toasts;
+  check(
+    "D-10.4 #60 toast: error variant — action 보존 (label='재시도')",
+    after[1]?.action?.label === "재시도",
+    `got=${JSON.stringify(after[1]?.action)}`,
+  );
+  check(
+    "D-10.4 #60 toast: info variant도 action 객체는 보존 (렌더에서만 차단)",
+    after[0]?.action?.label === "재시도",
+  );
+  // onClick 직접 호출 (UI 클릭 시뮬)
+  after[1]?.action?.onClick();
+  check(
+    "D-10.4 #60 toast: action.onClick 호출 가능",
+    onClickCalled === 1,
+    `got=${onClickCalled}`,
+  );
+}
+
+// D-10.3 #59 buildRetryPlan — 순수 함수, 모든 분기 검증 (브라우저/db 없이 동작).
+{
+  const tori = DEFAULT_PARTICIPANTS.find((p) => p.id === "tori")!;
+  const roy = DEFAULT_PARTICIPANTS.find((p) => p.id === "roy")!;
+  const errMsg: Message = {
+    id: "m-err",
+    conversationId: "c1",
+    participantId: tori.id,
+    content: "fail",
+    createdAt: 1000,
+    status: "error",
+    errorReason: "5xx exhausted",
+  };
+  const userMsg: Message = {
+    id: "m-user",
+    conversationId: "c1",
+    participantId: roy.id,
+    content: "안녕",
+    createdAt: 500,
+    status: "done",
+  };
+  // (a) 정상: error 메시지 → ok=true, speaker=tori, history는 원본 그대로(2건), placeholder 신규
+  const planOk = buildRetryPlan({
+    messages: [userMsg, errMsg],
+    messageId: "m-err",
+    participants: DEFAULT_PARTICIPANTS,
+    apiKey: "sk-ant-" + "x".repeat(60),
+    conversationId: "c1",
+    createMessageId: () => "m-new",
+    now: () => 9999,
+  });
+  check(
+    "D-10.3 #59a buildRetryPlan: ok=true + speaker=tori",
+    planOk.ok && planOk.speaker.id === "tori",
+  );
+  check(
+    "D-10.3 #59b buildRetryPlan: history 그대로 (원본 error row 보존, 2건)",
+    planOk.ok && planOk.history.length === 2 && planOk.history[1]?.id === "m-err",
+  );
+  check(
+    "D-10.3 #59c buildRetryPlan: placeholder 신규 id + status='streaming'",
+    planOk.ok &&
+      planOk.placeholder.id === "m-new" &&
+      planOk.placeholder.status === "streaming",
+  );
+  check(
+    "D-10.3 #59d buildRetryPlan: placeholder.createdAt > 원본 error.createdAt",
+    planOk.ok && planOk.placeholder.createdAt > errMsg.createdAt,
+  );
+
+  // (b) not-found
+  const planNotFound = buildRetryPlan({
+    messages: [userMsg],
+    messageId: "missing",
+    participants: DEFAULT_PARTICIPANTS,
+    apiKey: "sk-ant-x",
+    conversationId: "c1",
+    createMessageId: () => "m-x",
+  });
+  check(
+    "D-10.3 #59e buildRetryPlan: not-found",
+    !planNotFound.ok && planNotFound.reason === "not-found",
+  );
+
+  // (c) speaker-not-ai (사용자 발언 retry 시도)
+  const planHuman = buildRetryPlan({
+    messages: [{ ...userMsg, status: "error" as const }],
+    messageId: "m-user",
+    participants: DEFAULT_PARTICIPANTS,
+    apiKey: "sk-ant-x",
+    conversationId: "c1",
+    createMessageId: () => "m-x",
+  });
+  check(
+    "D-10.3 #59f buildRetryPlan: speaker-not-ai",
+    !planHuman.ok && planHuman.reason === "speaker-not-ai",
+  );
+
+  // (d) no-api-key
+  const planNoKey = buildRetryPlan({
+    messages: [errMsg],
+    messageId: "m-err",
+    participants: DEFAULT_PARTICIPANTS,
+    apiKey: "",
+    conversationId: "c1",
+    createMessageId: () => "m-x",
+  });
+  check(
+    "D-10.3 #59g buildRetryPlan: no-api-key",
+    !planNoKey.ok && planNoKey.reason === "no-api-key",
+  );
+
+  // (e) not-retryable (status='done' 메시지)
+  const planDone = buildRetryPlan({
+    messages: [{ ...errMsg, status: "done" as const }],
+    messageId: "m-err",
+    participants: DEFAULT_PARTICIPANTS,
+    apiKey: "sk-ant-x",
+    conversationId: "c1",
+    createMessageId: () => "m-x",
+  });
+  check(
+    "D-10.3 #59h buildRetryPlan: not-retryable (status=done)",
+    !planDone.ok && planDone.reason === "not-retryable",
+  );
+}
+
+async function runD10AsyncChecks(): Promise<void> {
+  // D-10.2 #55 pingApiKey: mock 200 → verified
+  await asyncCheck("D-10.2 #55 pingApiKey: mock 200 → verified", async () => {
+    const fakeFetch = (async () =>
+      new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })) as typeof fetch;
+    const result = await pingApiKey({
+      provider: "anthropic",
+      key: "sk-ant-test",
+      fetchImpl: fakeFetch,
+    });
+    return result.status === "verified" && result.httpStatus === 200;
+  });
+
+  // D-10.2 #56 pingApiKey: mock 401 → unauthorized
+  await asyncCheck(
+    "D-10.2 #56 pingApiKey: mock 401 → unauthorized + httpStatus=401",
+    async () => {
+      const fakeFetch = (async () =>
+        new Response(
+          JSON.stringify({
+            error: { type: "authentication_error", message: "invalid x-api-key" },
+          }),
+          {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          },
+        )) as typeof fetch;
+      const result = await pingApiKey({
+        provider: "anthropic",
+        key: "sk-ant-bad",
+        fetchImpl: fakeFetch,
+      });
+      return (
+        result.status === "unauthorized" &&
+        result.httpStatus === 401 &&
+        typeof result.reason === "string" &&
+        result.reason.includes("invalid")
+      );
+    },
+  );
+
+  // D-10.2 #56b pingApiKey: timeout → unknown
+  await asyncCheck(
+    "D-10.2 #56b pingApiKey: timeout(50ms) → unknown",
+    async () => {
+      const fakeFetch = ((_url: unknown, init: { signal?: AbortSignal }) =>
+        new Promise<Response>((resolve, reject) => {
+          // 영원히 응답 안 함 — abort 신호로만 종료
+          if (init.signal) {
+            init.signal.addEventListener("abort", () => {
+              reject(new DOMException("aborted", "AbortError"));
+            });
+          }
+          // resolve 미호출 (intentional)
+          void resolve;
+        })) as unknown as typeof fetch;
+      const result = await pingApiKey({
+        provider: "anthropic",
+        key: "sk-ant-test",
+        fetchImpl: fakeFetch,
+        timeoutMs: 50,
+      });
+      return (
+        result.status === "unknown" &&
+        typeof result.reason === "string" &&
+        result.reason.includes("timeout")
+      );
+    },
+  );
+
+  // D-10.3 #57 streamMessage: 5xx 1회 + 200 1회 → retrying yield + delta + done
+  {
+    const realFetch = globalThis.fetch;
+    let callCount = 0;
+    globalThis.fetch = (async () => {
+      callCount++;
+      if (callCount === 1) {
+        return new Response(JSON.stringify({ error: { message: "server" } }), {
+          status: 503,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      const sse = [
+        "event: message_start",
+        'data: {"type":"message_start","message":{"id":"x","role":"assistant","content":[]}}',
+        "",
+        "event: content_block_delta",
+        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}',
+        "",
+        "event: message_stop",
+        'data: {"type":"message_stop"}',
+        "",
+        "",
+      ].join("\n");
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(sse));
+          controller.close();
+        },
+      });
+      return new Response(stream, {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      });
+    }) as typeof fetch;
+
+    await asyncCheck(
+      "D-10.3 #57 streamMessage: 503 1회 → retrying yield, 200 재호출 정상",
+      async () => {
+        const tori = DEFAULT_PARTICIPANTS.find((p) => p.id === "tori")!;
+        const gen = streamMessage({
+          apiKey: "sk-ant-test",
+          speaker: tori,
+          participants: DEFAULT_PARTICIPANTS,
+          history: [
+            {
+              id: "u1",
+              conversationId: "c",
+              participantId: "roy",
+              content: "hi",
+              createdAt: 1,
+              status: "done",
+            },
+          ],
+        });
+        let retryingCount = 0;
+        let sawDelta = false;
+        let sawDone = false;
+        for await (const chunk of gen) {
+          if (chunk.kind === "retrying") {
+            retryingCount++;
+          } else if (chunk.kind === "delta" && chunk.text === "ok") {
+            sawDelta = true;
+          } else if (chunk.kind === "done") {
+            sawDone = true;
+          }
+        }
+        return retryingCount === 1 && sawDelta && sawDone && callCount === 2;
+      },
+    );
+    globalThis.fetch = realFetch;
+  }
+
+  // D-10.3 #58 streamMessage: 5xx 4회 → retrying 3회 + error yield
+  {
+    const realFetch = globalThis.fetch;
+    let callCount = 0;
+    globalThis.fetch = (async () => {
+      callCount++;
+      return new Response(JSON.stringify({ error: { message: "down" } }), {
+        status: 502,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    await asyncCheck(
+      "D-10.3 #58 streamMessage: 502 4회 → retrying 3회 + error yield",
+      async () => {
+        const tori = DEFAULT_PARTICIPANTS.find((p) => p.id === "tori")!;
+        const gen = streamMessage({
+          apiKey: "sk-ant-test",
+          speaker: tori,
+          participants: DEFAULT_PARTICIPANTS,
+          history: [
+            {
+              id: "u1",
+              conversationId: "c",
+              participantId: "roy",
+              content: "hi",
+              createdAt: 1,
+              status: "done",
+            },
+          ],
+        });
+        let retryingCount = 0;
+        let errorStatus: number | undefined;
+        for await (const chunk of gen) {
+          if (chunk.kind === "retrying") retryingCount++;
+          if (chunk.kind === "error") errorStatus = chunk.status;
+        }
+        // 4 fetch 호출 (초기 1 + 재시도 3), retrying 3회, error 502
+        return retryingCount === 3 && errorStatus === 502 && callCount === 4;
+      },
+    );
+    globalThis.fetch = realFetch;
+  }
+}
+
+// 추가 import — D-10 검증용 모듈 (top-level static import)
+import { pingApiKey } from "../src/modules/api-keys/api-key-ping";
+import { buildRetryPlan } from "../src/modules/conversation/retry-plan";
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
+  .then(() => runD10AsyncChecks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);
