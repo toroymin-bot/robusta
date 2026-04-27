@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* D-11.4 (Day 6, 2026-04-28) BYOK 모달 마이크로 인터랙션 키프레임 */
+@import "../styles/animations.css";
+
 :root {
   --robusta-canvas: #FFFCEB;
   --robusta-ink: #15140E;

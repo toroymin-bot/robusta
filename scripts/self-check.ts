@@ -1104,9 +1104,230 @@ async function runD10AsyncChecks(): Promise<void> {
 import { pingApiKey } from "../src/modules/api-keys/api-key-ping";
 import { buildRetryPlan } from "../src/modules/conversation/retry-plan";
 
+// D-11/D-12 검증용 (Day 6, 2026-04-28). MESSAGES는 위에서 이미 import 됨.
+import { execSync } from "node:child_process";
+import { readFileSync, statSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  isMaybeExpired,
+  __api_key_meta_internal,
+} from "../src/modules/api-keys/api-key-meta";
+
+async function runD11D12Checks(): Promise<void> {
+  const projectRoot = resolve(__dirname, "..");
+
+  // 71. (D-11.0) decide-track.sh KEY 부재 시 stdout '[track] B'
+  await asyncCheck(
+    "D-11.0 #71 decide-track.sh KEY 부재 → '[track] B' 출력",
+    async () => {
+      const out = execSync(`bash ${projectRoot}/scripts/decide-track.sh`, {
+        env: { ...process.env, ANTHROPIC_API_KEY: "" },
+        encoding: "utf-8",
+      });
+      return out.includes("[track] B");
+    },
+  );
+
+  // 72. (D-11.0) KEY 더미 박음 → '[track] A'
+  await asyncCheck(
+    "D-11.0 #72 decide-track.sh KEY 더미 → '[track] A' 출력",
+    async () => {
+      const out = execSync(`bash ${projectRoot}/scripts/decide-track.sh`, {
+        env: { ...process.env, ANTHROPIC_API_KEY: "sk-ant-dummy-key-for-test-12345" },
+        encoding: "utf-8",
+      });
+      return out.includes("[track] A");
+    },
+  );
+
+  // 73. (D-11.3) BYOK 모달 안내 박스 — 키 0건 시 노출, 1건 이상 시 숨김.
+  //     showGuide 표현식과 testid grep으로 검증.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/api-keys/api-keys-view.tsx`,
+      "utf-8",
+    );
+    check(
+      "D-11.3 #73 BYOK 모달 안내 박스 showGuide = hydrated && !stored",
+      /showGuide\s*=\s*hydrated\s*&&\s*!stored/.test(src) &&
+        /data-testid="byok-guide-panel"/.test(src),
+    );
+  }
+
+  // 74. (D-11.3) i18n ko/en 5건 박혀 있음 (guide 3 + modal 2)
+  {
+    const koHas =
+      "byok.guide.headline" in MESSAGES.ko &&
+      "byok.guide.body" in MESSAGES.ko &&
+      "byok.guide.cta" in MESSAGES.ko &&
+      "byok.modal.verifying" in MESSAGES.ko &&
+      "byok.modal.unauthorized" in MESSAGES.ko;
+    const enHas =
+      "byok.guide.headline" in MESSAGES.en &&
+      "byok.guide.body" in MESSAGES.en &&
+      "byok.guide.cta" in MESSAGES.en &&
+      "byok.modal.verifying" in MESSAGES.en &&
+      "byok.modal.unauthorized" in MESSAGES.en;
+    check("D-11.3 #74 i18n byok.guide/modal 5건 ko/en 박힘", koHas && enHas);
+  }
+
+  // 75. (D-11.4) BORDER_BY_STATE 4 + idle = 5 키 모두 매핑 (api-keys-view export)
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/api-keys/api-keys-view.tsx`,
+      "utf-8",
+    );
+    const states = ["idle", "verifying", "verified", "unauthorized", "unknown"];
+    const ok = states.every((s) => new RegExp(`^\\s*${s}:\\s*"border-`, "m").test(src));
+    check("D-11.4 #75 BORDER_BY_STATE 5상태 매핑 (idle/verifying/verified/unauthorized/unknown)", ok);
+  }
+
+  // 76. (D-11.4) animations.css @keyframes 3종 + .robusta-* 클래스 정의.
+  {
+    const css = readFileSync(`${projectRoot}/src/styles/animations.css`, "utf-8");
+    const hasKeyframes =
+      /@keyframes\s+robusta-pulse-check/.test(css) &&
+      /@keyframes\s+robusta-shake/.test(css) &&
+      /@keyframes\s+robusta-spinner-rotate/.test(css);
+    const hasClasses =
+      /\.robusta-pulse-check\b/.test(css) &&
+      /\.robusta-shake\b/.test(css) &&
+      /\.robusta-spinner\b/.test(css);
+    check("D-11.4 #76 animations.css @keyframes 3종 + .robusta-* 3클래스", hasKeyframes && hasClasses);
+  }
+
+  // 77. (D-11.4) prefers-reduced-motion: reduce 미디어쿼리 가드 존재.
+  {
+    const css = readFileSync(`${projectRoot}/src/styles/animations.css`, "utf-8");
+    check(
+      "D-11.4 #77 animations.css prefers-reduced-motion 가드 + animation: none",
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(css) &&
+        /animation:\s*none/.test(css),
+    );
+  }
+
+  // 78. (D-11.0) scripts/decide-track.sh 실행 권한 +x.
+  {
+    const stat = statSync(`${projectRoot}/scripts/decide-track.sh`);
+    // mode mask 0o111 — owner/group/other 중 하나 이상 +x
+    check("D-11.0 #78 decide-track.sh 실행 권한 +x", (stat.mode & 0o111) !== 0);
+  }
+
+  // === TRACK_B 회복탄력성 P1 (D-12) ===
+
+  // 79. (D-12.1) cleanStaleStreamingMessages export + STREAMING_STALE_MS = 5min.
+  {
+    const src = readFileSync(`${projectRoot}/src/modules/storage/db.ts`, "utf-8");
+    const hasFn = /export\s+async\s+function\s+cleanStaleStreamingMessages\s*\(/.test(src);
+    const hasConst = /export\s+const\s+STREAMING_STALE_MS\s*=\s*5\s*\*\s*60\s*\*\s*1000/.test(src);
+    const hasV4 = /this\.version\(4\)/.test(src);
+    const hasMetaTable = /apiKeyMeta\s*:\s*"/.test(src);
+    const hasStartedAtIndex = /streamingStartedAt/.test(src);
+    check(
+      "D-12.1 #79 db v4 + cleanStaleStreamingMessages + apiKeyMeta + streamingStartedAt 인덱스",
+      hasFn && hasConst && hasV4 && hasMetaTable && hasStartedAtIndex,
+    );
+  }
+
+  // 80. (D-12.1) Message 타입에 streamingStartedAt 추가됨.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-types.ts`,
+      "utf-8",
+    );
+    check(
+      "D-12.1 #80 Message 타입에 streamingStartedAt?: number 추가",
+      /streamingStartedAt\?\s*:\s*number/.test(src),
+    );
+  }
+
+  // 81. (D-12.2) markUnauthorized / markVerified / getKeyMeta export.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/api-keys/api-key-meta.ts`,
+      "utf-8",
+    );
+    const hasMU = /export\s+async\s+function\s+markUnauthorized/.test(src);
+    const hasMV = /export\s+async\s+function\s+markVerified/.test(src);
+    const hasGet = /export\s+async\s+function\s+getKeyMeta/.test(src);
+    const hasRecheck = /export\s+async\s+function\s+recheckKey/.test(src);
+    check(
+      "D-12.2 #81 api-key-meta.ts: markUnauthorized + markVerified + getKeyMeta + recheckKey export",
+      hasMU && hasMV && hasGet && hasRecheck,
+    );
+  }
+
+  // 82. (D-12.2) UNAUTHORIZED_TTL_MS = 24h.
+  check(
+    "D-12.2 #82 UNAUTHORIZED_TTL_MS = 24h (24*60*60*1000ms)",
+    __api_key_meta_internal.UNAUTHORIZED_TTL_MS === 24 * 60 * 60 * 1000,
+  );
+
+  // 83. (D-12.2) isMaybeExpired 순수 함수 — 24h 이내 true / null·undefined·이후 false.
+  {
+    const now = 1_000_000_000_000;
+    const t1 = isMaybeExpired(
+      {
+        pk: "anthropic::sk-ant-...XXXX",
+        provider: "anthropic",
+        keyMask: "sk-ant-...XXXX",
+        lastUnauthorizedAt: now - 60 * 60 * 1000, // 1h ago
+        updatedAt: now,
+      },
+      now,
+    );
+    const t2 = isMaybeExpired(
+      {
+        pk: "anthropic::sk-ant-...XXXX",
+        provider: "anthropic",
+        keyMask: "sk-ant-...XXXX",
+        lastUnauthorizedAt: now - 25 * 60 * 60 * 1000, // 25h ago
+        updatedAt: now,
+      },
+      now,
+    );
+    const t3 = isMaybeExpired(null, now);
+    check("D-12.2 #83 isMaybeExpired: 1h true / 25h false / null false", t1 === true && t2 === false && t3 === false);
+  }
+
+  // 84. (D-12.3) online-listener.ts: registerOnlineListener / unregisterOnlineListener export +
+  //     ONLINE_THROTTLE_MS = 3000.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/ui/online-listener.ts`,
+      "utf-8",
+    );
+    const hasReg = /export\s+function\s+registerOnlineListener/.test(src);
+    const hasUnreg = /export\s+function\s+unregisterOnlineListener/.test(src);
+    const hasThrottle = /ONLINE_THROTTLE_MS\s*=\s*3000/.test(src);
+    const hasWindow = /ONLINE_RETRY_WINDOW_MS\s*=\s*5\s*\*\s*60\s*\*\s*1000/.test(src);
+    check(
+      "D-12.3 #84 online-listener.ts: register/unregister + 3s throttle + 5min window",
+      hasReg && hasUnreg && hasThrottle && hasWindow,
+    );
+  }
+
+  // 85. (D-12.3) conversation-store.retryAll: maxCount default 5 + intervalMs default 200.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/stores/conversation-store.ts`,
+      "utf-8",
+    );
+    const hasRetryAll = /async\s+retryAll\s*\(\s*filter\s*\)/.test(src);
+    const hasMax5 = /filter\.maxCount\s*\?\?\s*5/.test(src);
+    const hasInt200 = /filter\.intervalMs\s*\?\?\s*200/.test(src);
+    const hasMarkUnauth = /markUnauthorized\("anthropic",\s*apiKey!\)/.test(src);
+    check(
+      "D-12.3 #85 conversation-store.retryAll: maxCount=5 + intervalMs=200 + 401→markUnauthorized",
+      hasRetryAll && hasMax5 && hasInt200 && hasMarkUnauth,
+    );
+  }
+}
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
   .then(() => runD10AsyncChecks())
+  .then(() => runD11D12Checks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);

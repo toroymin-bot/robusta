@@ -10,6 +10,8 @@ import { useApiKeyStore } from "@/stores/api-key-store";
 import { useParticipantStore } from "@/stores/participant-store";
 import { useConversationStore } from "@/stores/conversation-store";
 import { ConversationView } from "./conversation-view";
+// D-12.3 (Day 6): 부트 시 1회 등록. 이미 등록되어 있으면 noop.
+import { registerOnlineListener } from "@/modules/ui/online-listener";
 
 export function ConversationWorkspace() {
   const participantsHydrated = useParticipantStore((s) => s.hydrated);
@@ -58,6 +60,11 @@ export function ConversationWorkspace() {
       hydrateTheme();
     }
   }, [themeHydrated, hydrateTheme]);
+
+  // D-12.3 (Day 6): online 이벤트 리스너 1회 등록 — 모듈 가드로 중복 안전.
+  useEffect(() => {
+    registerOnlineListener();
+  }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-robusta-canvas text-robusta-ink">

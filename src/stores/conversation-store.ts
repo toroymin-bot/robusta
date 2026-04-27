@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { getDb } from "@/modules/storage/db";
+import { getDb, cleanStaleStreamingMessages } from "@/modules/storage/db";
 import {
   DEFAULT_CONVERSATION_ID,
   type Conversation,
@@ -16,6 +16,8 @@ import { useParticipantStore } from "@/stores/participant-store";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
+// D-12.2 (Day 6): 첫 401 발생 시 키 메타에 마킹.
+import { markUnauthorized } from "@/modules/api-keys/api-key-meta";
 
 const PERSIST_DEBOUNCE_MS = 200;
 
@@ -95,6 +97,19 @@ interface ConversationStore {
    *   - 키/참여자/유효성 실패 시 토스트만 표시, throw 안 함.
    */
   retry: (messageId: string) => Promise<void>;
+  /**
+   * D-12.3 (Day 6, 2026-04-28): network/timeout 사유의 error 메시지 일괄 재전송.
+   *   - 호출자: online-listener (window 'online' 이벤트 → 토스트 action).
+   *   - filter.since 이후 createdAt + filter.reasons 매치 + status='error' 만 대상.
+   *   - 최대 5건만 처리 (UX·비용 안전판), 200ms 간격 순차 retry.
+   *   - 진행 중 abortController 살아있으면 즉시 skipped 카운트만 증가.
+   */
+  retryAll: (filter: {
+    since: number;
+    reasons: ReadonlyArray<"network" | "timeout">;
+    maxCount?: number;
+    intervalMs?: number;
+  }) => Promise<{ retried: number; skipped: number }>;
 }
 
 export const useConversationStore = create<ConversationStore>((set, get) => ({
@@ -110,6 +125,12 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
 
   async loadFromDb() {
     const db = getDb();
+    // D-12.1: 부팅 직후 streaming 잔재 정리 (5분 임계). v4 upgrade 후 재로드.
+    try {
+      await cleanStaleStreamingMessages();
+    } catch (err) {
+      console.warn("[robusta] cleanStaleStreamingMessages skipped", err);
+    }
     const count = await db.conversations.count();
     if (count === 0) {
       const now = Date.now();
@@ -156,14 +177,20 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   },
 
   async appendMessage(msg) {
+    // D-12.1: status='streaming'인 신규 메시지는 streamingStartedAt 박음.
+    //   기존에 streamingStartedAt이 있으면 보존(재시도 placeholder 등이 명시 박은 케이스).
+    const enriched: Message =
+      msg.status === "streaming" && msg.streamingStartedAt === undefined
+        ? { ...msg, streamingStartedAt: Date.now() }
+        : msg;
     const messages = { ...get().messages };
-    const list = messages[msg.conversationId] ?? [];
-    messages[msg.conversationId] = [...list, msg];
+    const list = messages[enriched.conversationId] ?? [];
+    messages[enriched.conversationId] = [...list, enriched];
     set({ messages });
-    if (msg.status === "streaming") {
-      schedulePersist(msg);
+    if (enriched.status === "streaming") {
+      schedulePersist(enriched);
     } else {
-      await getDb().messages.put(msg);
+      await getDb().messages.put(enriched);
     }
   },
 
@@ -341,6 +368,9 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
           },
         });
       } else if (status === 401) {
+        // D-12.2: 첫 401 → 키 메타에 lastUnauthorizedAt 박음. BYOK 모달 재진입 시 ⚠ 배지.
+        // markUnauthorized는 throw 안 함 (silent fallback 내장).
+        void markUnauthorized("anthropic", apiKey!);
         pushToast({
           tone: "error",
           message: "Anthropic 키 인증 실패. 키를 다시 등록하세요.",
@@ -372,6 +402,57 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
       content: accumulated,
       ...(usagePatch ? { usage: usagePatch } : {}),
     });
+  },
+
+  // D-12.3: 네트워크 회복 자동 재개 — 5분 이내 network/timeout error 메시지 일괄 retry.
+  //   호출자: online-listener (window 'online' → 토스트 action).
+  //   abortController 진행 중이면 skipped만 누적, 새 retry는 시작하지 않음.
+  //   maxCount/intervalMs 미지정 시 권장값 사용 (5건 / 200ms — 명세 §9 자율 영역).
+  async retryAll(filter) {
+    const maxCount = filter.maxCount ?? 5;
+    const intervalMs = filter.intervalMs ?? 200;
+    const reasonSet = new Set<string>(filter.reasons);
+    const state = get();
+    const conversationId = state.activeConversationId;
+    const messages = state.messages[conversationId] ?? [];
+
+    const candidates = messages.filter(
+      (m) =>
+        m.status === "error" &&
+        m.createdAt >= filter.since &&
+        typeof m.errorReason === "string" &&
+        // 사유 매칭 — errorReason 내부에 network/timeout 단어 포함 시 매치.
+        // (Anthropic SDK/fetch가 정규화된 코드를 주지 않으므로 substring 매치가 현실적.)
+        Array.from(reasonSet).some((r) =>
+          (m.errorReason ?? "").toLowerCase().includes(r),
+        ),
+    );
+
+    let retried = 0;
+    let skipped = 0;
+
+    for (const m of candidates) {
+      if (retried >= maxCount) {
+        skipped++;
+        continue;
+      }
+      // 매 retry 사이클마다 진행 중 streaming 가드 재확인.
+      if (get().abortController !== null) {
+        skipped++;
+        continue;
+      }
+      try {
+        await get().retry(m.id);
+        retried++;
+      } catch {
+        skipped++;
+      }
+      if (retried < maxCount && intervalMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+    }
+
+    return { retried, skipped };
   },
 }));
 

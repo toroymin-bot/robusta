@@ -45,6 +45,19 @@ export const MESSAGES = {
     "toast.byok.checkLater": "키 저장됨 — 인증 확인은 첫 호출 시",
     // D-10.3 (Day 5) 5xx 백오프 한계 도달
     "toast.error.retryExhausted": "재시도 한도 초과 — 잠시 후 다시 시도하세요",
+    // D-11.3 (Day 6, 2026-04-28) BYOK 모달 인라인 키 발급 가이드 (모든 키 0건 시 노출)
+    "byok.guide.headline": "API 키가 없으세요?",
+    "byok.guide.body": "Anthropic Console에서 무료로 발급받을 수 있습니다.",
+    "byok.guide.cta": "발급받기",
+    // D-11.4 (Day 6) BYOK 모달 마이크로 인터랙션 4상태
+    "byok.modal.verifying": "키 확인 중…",
+    "byok.modal.unauthorized": "인증 실패 — 키를 다시 확인하세요",
+    // D-12.2 (Day 6) BYOK 키 만료 자동 감지 + recheck
+    "toast.byok.maybeExpired": "키 만료 가능성 — 재확인 권장",
+    "action.recheck": "재확인",
+    // D-12.3 (Day 6) 네트워크 회복 자동 재개
+    "toast.network.restored": "네트워크 복구됨",
+    "action.retryAll": "모두 재전송",
 
     // 버튼
     "action.nextTurn": "▶ 다음 발언",
@@ -83,6 +96,15 @@ export const MESSAGES = {
     "toast.byok.unauthorized": "Unauthorized — please check the key",
     "toast.byok.checkLater": "Key saved — auth will be checked on first use",
     "toast.error.retryExhausted": "Retry limit exceeded — please try again later",
+    "byok.guide.headline": "Don't have an API key?",
+    "byok.guide.body": "Get one free at the Anthropic Console.",
+    "byok.guide.cta": "Get the key",
+    "byok.modal.verifying": "Verifying…",
+    "byok.modal.unauthorized": "Unauthorized — please re-check the key",
+    "toast.byok.maybeExpired": "Key may have expired — recheck recommended",
+    "action.recheck": "Recheck",
+    "toast.network.restored": "Network restored",
+    "action.retryAll": "Retry all",
 
     "action.nextTurn": "▶ Next turn",
     "action.retry": "↻ Retry",
