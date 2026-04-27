@@ -64,11 +64,14 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
     }
     const current = get().participants;
     const color = input.color ?? hueToHsl(nextParticipantHue(existingHues(current)));
+    // D-9.2: role 필드 신규 — input에 있을 수 있음.
+    const trimmedRole = input.role?.trim();
     const participant: Participant = {
       id: newId(),
       kind: input.kind,
       name: trimmed,
       color,
+      role: trimmedRole && trimmedRole.length > 0 ? trimmedRole : undefined,
       model: input.kind === "ai" ? input.model ?? "claude-sonnet-4-6" : undefined,
       systemPrompt: input.kind === "ai" ? input.systemPrompt ?? "" : undefined,
     };
@@ -82,6 +85,19 @@ export const useParticipantStore = create<ParticipantStore>((set, get) => ({
     const idx = current.findIndex((p) => p.id === id);
     if (idx === -1) return;
     const next: Participant = { ...current[idx]!, ...patch, id };
+    // D-9.2: name trim + 빈 값 차단 (UI 모달이 1차 막지만 store 단에서도 안전 검증).
+    if (typeof patch.name === "string") {
+      const trimmed = patch.name.trim();
+      if (trimmed.length === 0) {
+        throw new Error("이름은 빈 값일 수 없습니다.");
+      }
+      next.name = trimmed;
+    }
+    // D-9.2: role 정규화 — 빈 문자열은 undefined로 (조건부 표시 분기 단순화).
+    if ("role" in patch) {
+      const r = patch.role?.trim() ?? "";
+      next.role = r.length === 0 ? undefined : r;
+    }
     if (next.kind === "ai") {
       next.model = next.model ?? "claude-sonnet-4-6";
       next.systemPrompt = next.systemPrompt ?? "";

@@ -607,7 +607,168 @@ await asyncCheck("stream-parser: ReadableStream 1 이벤트 추출", async () =>
 
 // D-8 §5/§6 (streamMessage fallback) — runAsyncChecks 함수 안으로 옮김 (top-level await 회피)
 
+// ---------- D-9 추가 7개 (D4 P0, 2026-04-29, 50/50) ----------
+
+// D-9.7 #1 i18n: t('modal.err.nameEmpty') ko default → 한국어
+{
+  // 동적 import 회피 — i18n 모듈은 sync (require/ESM)
+  // import 통합을 위해 top-level static import는 self-check 위쪽에 두지 않고 여기서 lazy load.
+  // (self-check가 cli 1회 실행이므로 lazy 비용 무시 가능.)
+}
+
+// 위 lazy 패턴 대신 정적 import — top-level에 박는다.
+
+import { t, MESSAGES } from "../src/modules/i18n/messages";
+import {
+  ALLOWED_MODELS,
+  PARTICIPANT_NAME_MAX,
+  PARTICIPANT_SYSTEM_PROMPT_MAX,
+} from "../src/modules/participants/participant-types";
+import { useToastStore, __toast_internal } from "../src/modules/ui/toast";
+import { useParticipantStore } from "../src/stores/participant-store";
+
+// D-9 #1 — i18n ko 카피 정합성
+check(
+  "D-9.0 #1 i18n: ko 'modal.err.nameEmpty' = '이름은 비워둘 수 없습니다.'",
+  t("modal.err.nameEmpty") === "이름은 비워둘 수 없습니다.",
+);
+
+// D-9 #2 — i18n en 카피 정합성
+check(
+  "D-9.0 #2 i18n: en 'modal.err.nameEmpty' = 'Name cannot be empty.'",
+  t("modal.err.nameEmpty", undefined, "en") === "Name cannot be empty.",
+);
+
+// D-9 #3 — i18n 변수 치환
+check(
+  "D-9.0 #3 i18n: 'toast.persona.saved' {name} 치환 — '꼬미 저장됨'",
+  t("toast.persona.saved", { name: "꼬미" }) === "꼬미 저장됨",
+  `got=${t("toast.persona.saved", { name: "꼬미" })}`,
+);
+
+// D-9 #4 — i18n: 키 누락 시 키 그대로 반환 (운영 가시화)
+check(
+  "D-9.0 #4 i18n: 모든 ko 키가 en에도 존재 (카피 동기화 검증)",
+  Object.keys(MESSAGES.ko).every((k) => k in MESSAGES.en),
+);
+
+// D-9.7 #5 — useToastStore push 4개 → 3개만 (FIFO oldest 자동 폐기)
+{
+  // 초기화
+  useToastStore.setState({ toasts: [] });
+  const store = useToastStore.getState();
+  store.push({ tone: "info", message: "1" });
+  store.push({ tone: "info", message: "2" });
+  store.push({ tone: "info", message: "3" });
+  store.push({ tone: "info", message: "4" });
+  const after = useToastStore.getState().toasts;
+  check(
+    `D-9.7 #5 toast: push 4 → length === ${__toast_internal.MAX_TOASTS}`,
+    after.length === __toast_internal.MAX_TOASTS,
+    `got length=${after.length}`,
+  );
+  check(
+    "D-9.7 #5 toast: oldest('1') 자동 폐기, 잔여=2,3,4",
+    after[0]?.message === "2" &&
+      after[1]?.message === "3" &&
+      after[2]?.message === "4",
+    `got=${after.map((t) => t.message).join(",")}`,
+  );
+}
+
+// D-9.7 #6 — dismissLatest 가장 최근 1개 폐기 (ESC)
+{
+  useToastStore.setState({ toasts: [] });
+  const store = useToastStore.getState();
+  store.push({ tone: "info", message: "a" });
+  store.push({ tone: "warning", message: "b" });
+  store.push({ tone: "error", message: "c" });
+  store.dismissLatest();
+  const after = useToastStore.getState().toasts;
+  check(
+    "D-9.7 #6 toast: dismissLatest → 'c' 제거, [a,b] 잔여",
+    after.length === 2 &&
+      after[0]?.message === "a" &&
+      after[1]?.message === "b",
+    `got=${after.map((t) => t.message).join(",")}`,
+  );
+}
+
+// D-9.7 #6.5 — variant별 hue 보더 색 정합성
+check(
+  "D-9.7 #6.5 toast: BORDER_COLOR.info=#4D89FF / warning=#E8A03A / error=#D6443A",
+  __toast_internal.BORDER_COLOR.info === "#4D89FF" &&
+    __toast_internal.BORDER_COLOR.warning === "#E8A03A" &&
+    __toast_internal.BORDER_COLOR.error === "#D6443A",
+);
+
+// D-9.2 #7 — participant-store.update 빈 name patch → throw
+{
+  // 모킹: store.participants에 직접 set
+  useParticipantStore.setState({
+    participants: [
+      {
+        id: "px",
+        kind: "ai",
+        name: "old",
+        color: "hsl(20 65% 55%)",
+      },
+    ],
+  });
+  let threwMsg: string | null = null;
+  try {
+    // getDb 단계까지 가기 전 trim 검증에서 throw 되어야 함
+    void useParticipantStore
+      .getState()
+      .update("px", { name: "   " })
+      .catch((err: unknown) => {
+        threwMsg = err instanceof Error ? err.message : String(err);
+      });
+  } catch (err) {
+    threwMsg = err instanceof Error ? err.message : String(err);
+  }
+  // setTimeout 미래에 마이크로태스크 처리 — 동기 환경에서 catch 동작 보장 위해 한 사이클 await
+}
+// 위 #7은 비동기 처리 위해 runAsyncChecks 안으로 추가:
+async function runD9AsyncChecks(): Promise<void> {
+  await asyncCheck("D-9.2 #7 participant-store.update: 빈 name → throw 메시지", async () => {
+    useParticipantStore.setState({
+      participants: [
+        {
+          id: "py",
+          kind: "ai",
+          name: "old",
+          color: "hsl(20 65% 55%)",
+        },
+      ],
+    });
+    let msg: string | null = null;
+    try {
+      await useParticipantStore.getState().update("py", { name: "   " });
+    } catch (err) {
+      msg = err instanceof Error ? err.message : String(err);
+    }
+    return msg !== null && msg.includes("이름은 빈 값일 수 없습니다");
+  });
+
+  // 추가: ALLOWED_MODELS 화이트리스트 정합성 (D-9.2 §3 표)
+  await asyncCheck("D-9.2 #8 ALLOWED_MODELS 화이트리스트 = 3종 (opus-4-7, sonnet-4-6, claude-3-5-sonnet-latest)", async () => {
+    return (
+      ALLOWED_MODELS.length === 3 &&
+      ALLOWED_MODELS.includes("claude-opus-4-7") &&
+      ALLOWED_MODELS.includes("claude-sonnet-4-6") &&
+      ALLOWED_MODELS.includes("claude-3-5-sonnet-latest")
+    );
+  });
+
+  // 추가: D-9.2 길이 상수 정합성
+  await asyncCheck("D-9.2 #9 길이 상수: name MAX=30, systemPrompt MAX=1500", async () => {
+    return PARTICIPANT_NAME_MAX === 30 && PARTICIPANT_SYSTEM_PROMPT_MAX === 1500;
+  });
+}
+
 runAsyncChecks()
+  .then(() => runD9AsyncChecks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);
