@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
 import { maskApiKey } from "@/modules/api-keys/api-key-mask";
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
+import { ToastViewport } from "@/modules/ui/toast";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { useParticipantStore } from "@/stores/participant-store";
+import { useConversationStore } from "@/stores/conversation-store";
+import { ConversationView } from "./conversation-view";
 
 export function ConversationWorkspace() {
   const participantsHydrated = useParticipantStore((s) => s.hydrated);
@@ -13,6 +16,8 @@ export function ConversationWorkspace() {
   const apiKeysHydrated = useApiKeyStore((s) => s.hydrated);
   const loadApiKeys = useApiKeyStore((s) => s.loadFromDb);
   const anthropicKey = useApiKeyStore((s) => s.keys.anthropic);
+  const conversationsHydrated = useConversationStore((s) => s.hydrated);
+  const loadConversations = useConversationStore((s) => s.loadFromDb);
 
   const [keysOpen, setKeysOpen] = useState(false);
 
@@ -32,11 +37,19 @@ export function ConversationWorkspace() {
     }
   }, [apiKeysHydrated, loadApiKeys]);
 
+  useEffect(() => {
+    if (!conversationsHydrated) {
+      void loadConversations().catch((err) => {
+        console.error("[robusta] conversation load failed", err);
+      });
+    }
+  }, [conversationsHydrated, loadConversations]);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-robusta-canvas text-robusta-ink">
       <ParticipantsPanel />
       <main className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-robusta-divider px-6 py-3">
+        <header className="flex h-12 items-center justify-between border-b border-robusta-divider px-6 backdrop-blur">
           <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs uppercase tracking-widest text-robusta-inkDim">
@@ -45,30 +58,26 @@ export function ConversationWorkspace() {
             <button
               type="button"
               onClick={() => setKeysOpen(true)}
-              className="rounded border border-robusta-divider px-3 py-1 text-xs text-robusta-ink hover:border-robusta-accent"
+              className="flex items-center gap-2 rounded border border-robusta-divider px-3 py-1 text-xs text-robusta-ink hover:border-robusta-accent"
               aria-label="API 키 관리"
             >
-              {anthropicKey
-                ? `⚙ Keys · ${maskApiKey(anthropicKey)}`
-                : "⚙ Keys"}
+              {anthropicKey ? (
+                <>
+                  <span className="font-mono">⚙ Keys · {maskApiKey(anthropicKey)}</span>
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </>
+              ) : (
+                <span>⚙ Keys</span>
+              )}
             </button>
           </div>
         </header>
 
-        <section className="flex flex-1 items-center justify-center px-6 py-12 text-center">
-          <div className="max-w-md">
-            <p className="text-sm text-robusta-inkDim">
-              {participantsHydrated ? (
-                <>참여자 패널이 준비되었습니다. 메시지 모듈은 다음 슬롯에서 추가됩니다.</>
-              ) : (
-                <>참여자 정보를 불러오는 중…</>
-              )}
-            </p>
-          </div>
-        </section>
+        <ConversationView onRequestApiKeyModal={() => setKeysOpen(true)} />
       </main>
 
       {keysOpen && <ApiKeysView onClose={() => setKeysOpen(false)} />}
+      <ToastViewport />
     </div>
   );
 }
