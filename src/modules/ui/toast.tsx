@@ -102,11 +102,16 @@ export const useToastStore = create<ToastStore>((set, get) => ({
   },
 }));
 
-/** variant별 hue 보더 색. 명세 §4 표. */
+/**
+ * variant별 좌측 hue 보더 색.
+ *   - D-9.7 (Day 4) v1: info=blue / warning=amber / error=red.
+ *   - D-14.5 (Day 8) v2 (똘이 디자인 인수): info를 노란색 밴드 yellow-500(#F5C518)로 박음.
+ *     Robusta 노란 톤 일관성. warning/error는 amber-500/red-500 색조 유지.
+ */
 const BORDER_COLOR: Record<ToastTone, string> = {
-  info: "#4D89FF",
-  warning: "#E8A03A",
-  error: "#D6443A",
+  info: "#F5C518",     // D-14.5: was #4D89FF — 노란색 밴드 yellow-500로 통일
+  warning: "#E8A03A",  // amber-500 톤 유지
+  error: "#D6443A",    // red-500 톤 유지
 };
 
 /** aria-live 매핑. info=polite, warning/error=assertive. */
@@ -150,7 +155,7 @@ function ToastItem({ toast }: ToastItemProps) {
       className="
         pointer-events-auto
         flex items-start justify-between gap-2
-        rounded-xl border border-l-[3px] border-robusta-divider
+        rounded-xl border border-l-4 border-robusta-divider
         bg-robusta-canvas
         px-[14px] py-[10px]
         text-sm leading-snug text-robusta-ink

@@ -78,3 +78,87 @@ export class PresetImmutableError extends Error {
     this.name = "PresetImmutableError";
   }
 }
+
+/* -------------------------------------------------------------------------
+ * D-14.3 (Day 8, 2026-04-28) Persona ↔ Participant 변환 헬퍼.
+ *
+ * 명세 §3: PersonaModal과 PersonaEditModal을 잡스식 일원화. PersonaEditModal이
+ * Persona 필드(nameKo/En, colorToken, iconMonogram, systemPromptKo/En, defaultProvider)
+ * 만 노출하므로, Participant(name, role, color, model, systemPrompt)와 매핑이 필요하다.
+ *
+ * 변환은 _lossy_:
+ *   - participant.role / model 은 모달에서 편집 X (prev 값 보존).
+ *   - participant.color (CSS var 문자열) → colorToken 역변환은 휴리스틱.
+ *
+ * 외부 caller (shim, participants-panel)가 사용한다.
+ * ------------------------------------------------------------------------- */
+
+import type { Participant } from "@/modules/participants/participant-types";
+
+/** D-14.3: kind에 따른 fallback colorToken. swatch 풀의 첫 항목. */
+const FALLBACK_COLOR_TOKEN_BY_KIND: Record<PersonaKind, PersonaColorToken> = {
+  ai: "robusta-color-participant-1",
+  human: "robusta-color-participant-human-1",
+};
+
+/**
+ * D-14.3 'var(--token-name)' 형식의 색을 token 이름으로 역변환.
+ *   매칭 실패 시 kind별 fallback 토큰 반환.
+ */
+export function colorCssVarToToken(
+  cssVar: string | undefined,
+  kind: PersonaKind,
+): PersonaColorToken {
+  if (typeof cssVar !== "string") return FALLBACK_COLOR_TOKEN_BY_KIND[kind];
+  const match = cssVar.match(/^var\(--([\w-]+)\)$/);
+  if (!match) return FALLBACK_COLOR_TOKEN_BY_KIND[kind];
+  const candidate = match[1] as PersonaColorToken;
+  if ((PERSONA_COLOR_TOKENS as readonly string[]).includes(candidate)) {
+    return candidate;
+  }
+  return FALLBACK_COLOR_TOKEN_BY_KIND[kind];
+}
+
+/**
+ * D-14.3 Participant → PersonaInput.
+ *   PersonaEditModal initial로 박는다 (편집 모드 표시용).
+ *   - nameKo ← participant.name (단일 언어 → 한국어 슬롯)
+ *   - nameEn ← '' (Participant에 영문 이름 없음 — 사용자가 채울 수 있음)
+ *   - iconMonogram ← name 첫 글자
+ *   - colorToken ← color CSS var 역변환 (실패 시 fallback)
+ *   - systemPromptKo ← participant.systemPrompt
+ *   - defaultProvider ← AI 기본 'anthropic' (모델→프로바이더 매핑은 D9 P1).
+ */
+export function participantToPersonaInput(p: Participant): PersonaInput {
+  const firstChar = (p.name?.[0] ?? "?").slice(0, PERSONA_ICON_MAX);
+  return {
+    kind: p.kind,
+    isPreset: false,
+    nameKo: p.name,
+    nameEn: "",
+    colorToken: colorCssVarToToken(p.color, p.kind),
+    iconMonogram: firstChar,
+    systemPromptKo: p.systemPrompt ?? "",
+    systemPromptEn: "",
+    defaultProvider: p.kind === "ai" ? "anthropic" : undefined,
+  };
+}
+
+/**
+ * D-14.3 PersonaInput → Participant patch.
+ *   기존 prev에 input의 편집 가능 필드만 덮어쓴다.
+ *   role/model은 PersonaEditModal에서 편집 X — prev 값 보존.
+ */
+export function personaInputToParticipant(
+  prev: Participant,
+  input: PersonaInput,
+): Participant {
+  return {
+    ...prev,
+    name: input.nameKo.trim() || input.nameEn.trim() || prev.name,
+    color: colorTokenToCssVar(input.colorToken),
+    // AI에서만 systemPrompt 박음 (PersonaModal 기존 동작과 동일).
+    systemPrompt:
+      prev.kind === "ai" ? input.systemPromptKo : prev.systemPrompt,
+  };
+}

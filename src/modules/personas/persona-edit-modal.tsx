@@ -1,10 +1,17 @@
 /**
- * persona-edit-modal.tsx — D-13.4 (Day 7, 2026-04-29) 페르소나 편집 모달.
+ * persona-edit-modal.tsx
+ *   - D-13.4 (Day 7, 2026-04-29) 페르소나 편집 모달.
+ *   - D-14.3 (Day 8, 2026-04-28) mode/onSubmit/participantId 박음 — 모달 일원화.
+ *     · mode='create' (default): 기존 동작 — usePersonaStore.upsert + onSaved 콜백.
+ *     · mode='edit' + onSubmit 박힘: 내부 upsert 우회. onSubmit(input) 호출 후 토스트/닫힘.
+ *       호출자가 PersonaInput을 받아 Participant.update 등 외부 저장 책임 가짐.
+ *   - 필드는 동일 (잡스식 일원화 — Tori 4/28 #13). create/edit 모드 구분 없이 같은 7필드.
  *
  * 진입점:
- *   - PickerModal "직접 만들기" → 빈 폼 + kind 토글 진입.
- *   - 기존 커스텀 페르소나 편집 (initial prop).
+ *   - PickerModal "직접 만들기" → 빈 폼 + kind 토글 진입 (mode='create').
+ *   - 기존 커스텀 페르소나 편집 (initial prop, mode='create' 또는 'edit').
  *   - 프리셋 클릭 후 편집 흐름은 cloneFromPreset 후 customId로 진입 (호출자 책임).
+ *   - D-14.3: 참여자 ⚙ 클릭 → participantToPersonaInput으로 fakePersona 박음 + mode='edit'.
  *
  * 7필드 (명세 §5):
  *   1. kind (radio AI/인간) — initial 있으면 disabled
@@ -19,7 +26,9 @@
  *   - 33자 이상 입력 → 자동 절단 + 인라인 경고
  *   - iconMonogram ≥3자 → 첫 2자만 박음
  *
- * 저장: usePersonaStore.upsert → 토스트 'persona.toast.saved' → 닫힘.
+ * 저장 (mode 따름):
+ *   - 'create' → usePersonaStore.upsert → 토스트 'persona.toast.saved' → 닫힘.
+ *   - 'edit'   → onSubmit(input) → 토스트 'persona.toast.saved' → 닫힘. upsert 미호출.
  */
 
 "use client";
@@ -35,20 +44,34 @@ import {
   colorTokenToCssVar,
   type Persona,
   type PersonaColorToken,
+  type PersonaInput,
   type PersonaKind,
   type PersonaProvider,
 } from "./persona-types";
 import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
 
-interface PersonaEditModalProps {
+export interface PersonaEditModalProps {
   /** 신규 추가 시 초기 kind. initial이 있으면 무시됨. */
   initialKind?: PersonaKind;
   /** 편집 모드 — 기존 커스텀 페르소나(isPreset=false) 박음. 프리셋은 cloneFromPreset 후 호출자가 처리. */
   initial?: Persona;
   onClose: () => void;
-  /** 저장 후 호출 (옵션) — 부모가 추가된 페르소나로 추가 작업할 수 있게. */
+  /** 저장 후 호출 (옵션) — 부모가 추가된 페르소나로 추가 작업할 수 있게. mode='create'에서만. */
   onSaved?: (persona: Persona) => void;
+  /**
+   * D-14.3 (Day 8) 모드.
+   *   'create' (default) — 내부 usePersonaStore.upsert 호출 (기존 동작).
+   *   'edit'   — 내부 upsert 우회, onSubmit으로 외부 저장 위임.
+   */
+  mode?: "create" | "edit";
+  /**
+   * D-14.3 edit 모드에서 외부 저장. mode='edit' + onSubmit 박힘 시 내부 upsert 미호출.
+   *   onSubmit이 throw하면 모달은 닫히지 않고 인라인 에러 표시.
+   */
+  onSubmit?: (input: PersonaInput) => Promise<void>;
+  /** D-14.3 edit 모드 식별자 — Participant.id 등. 호환용. */
+  participantId?: string;
 }
 
 /**
@@ -78,6 +101,8 @@ export function PersonaEditModal({
   initial,
   onClose,
   onSaved,
+  mode = "create",
+  onSubmit,
 }: PersonaEditModalProps) {
   const upsert = usePersonaStore((s) => s.upsert);
   const pushToast = useToastStore((s) => s.push);
@@ -161,7 +186,8 @@ export function PersonaEditModal({
         iconMonogram.trim().length > 0
           ? iconMonogram.slice(0, PERSONA_ICON_MAX)
           : (trimKo[0] ?? trimEn[0] ?? "?");
-      const saved = await upsert({
+      // D-14.3: 공통 input shape — create/edit 양쪽이 같은 필드를 공유.
+      const inputBase: PersonaInput = {
         id: initial?.id,
         kind,
         isPreset: false,
@@ -172,7 +198,18 @@ export function PersonaEditModal({
         systemPromptKo: systemPromptKo.slice(0, PERSONA_PROMPT_MAX),
         systemPromptEn: systemPromptEn.slice(0, PERSONA_PROMPT_MAX),
         defaultProvider: kind === "ai" ? defaultProvider : undefined,
-      });
+      };
+      // D-14.3: edit 모드 + onSubmit 박힘 → 외부 저장 위임 (내부 upsert 우회).
+      if (mode === "edit" && onSubmit) {
+        await onSubmit(inputBase);
+        pushToast({
+          tone: "info",
+          message: t("persona.toast.saved"),
+        });
+        onClose();
+        return;
+      }
+      const saved = await upsert(inputBase);
       pushToast({
         tone: "info",
         message: t("persona.toast.saved"),

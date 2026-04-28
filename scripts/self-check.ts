@@ -695,9 +695,10 @@ check(
 }
 
 // D-9.7 #6.5 — variant별 hue 보더 색 정합성
+//   D-14.5 (Day 8) info를 노란색 밴드 yellow-500(#F5C518)로 박음 — 똘이 디자인 인수.
 check(
-  "D-9.7 #6.5 toast: BORDER_COLOR.info=#4D89FF / warning=#E8A03A / error=#D6443A",
-  __toast_internal.BORDER_COLOR.info === "#4D89FF" &&
+  "D-9.7 #6.5 toast: BORDER_COLOR.info=#F5C518 / warning=#E8A03A / error=#D6443A (D-14.5 갱신)",
+  __toast_internal.BORDER_COLOR.info === "#F5C518" &&
     __toast_internal.BORDER_COLOR.warning === "#E8A03A" &&
     __toast_internal.BORDER_COLOR.error === "#D6443A",
 );
@@ -1447,20 +1448,29 @@ async function runD13Checks(): Promise<void> {
     check("D-13.0 #92 Persona 인터페이스 12 필드 박힘", ok);
   }
 
-  // 93. (D-13.5) ParticipantsPanel — PersonaPickerModal/PersonaEditModal import + 참여자 제한 박힘.
+  // 93. (D-13.5 → D-14.1) ParticipantsPanel — PersonaPickerModal/PersonaEditModal 박힘 + 제한 박힘.
+  //     D-14.1 (Day 8): PersonaEditModal은 next/dynamic으로 lazy 로드. 정적 import 매칭 → dynamic 매칭으로 갱신.
   {
     const src = readFileSync(
       `${projectRoot}/src/modules/participants/participants-panel.tsx`,
       "utf-8",
     );
+    // D-14.1: 정적 OR dynamic 둘 중 하나 매칭 — Picker/Edit 둘 다 lazy 박음.
     const hasPicker =
-      /import\s*\{\s*PersonaPickerModal\s*\}/.test(src);
-    const hasEdit = /import\s*\{\s*PersonaEditModal\s*\}/.test(src);
+      /import\s*\{\s*PersonaPickerModal\s*\}/.test(src) ||
+      /dynamic\s*\(\s*\(\s*\)\s*=>\s*import\(\s*["']@\/modules\/personas\/persona-picker-modal["']\s*\)/.test(
+        src,
+      );
+    const hasEdit =
+      /import\s*\{\s*PersonaEditModal\s*\}/.test(src) ||
+      /dynamic\s*\(\s*\(\s*\)\s*=>\s*import\(\s*["']@\/modules\/personas\/persona-edit-modal["']\s*\)/.test(
+        src,
+      );
     const hasLimitTotal = /PARTICIPANT_LIMIT_TOTAL\s*=\s*4/.test(src);
     const hasLimitHuman = /PARTICIPANT_LIMIT_HUMAN\s*=\s*2/.test(src);
     const hasLimitAi = /PARTICIPANT_LIMIT_AI\s*=\s*3/.test(src);
     check(
-      "D-13.5 #93 ParticipantsPanel: 픽커/편집 import + 제한 4/2/3 박힘",
+      "D-13.5 #93 ParticipantsPanel: 픽커/편집 박힘(정적 또는 dynamic) + 제한 4/2/3 박힘",
       hasPicker && hasEdit && hasLimitTotal && hasLimitHuman && hasLimitAi,
     );
   }
@@ -1526,11 +1536,128 @@ async function runD13Checks(): Promise<void> {
   }
 }
 
+// === D-14 (Day 8, 2026-04-28) PersonaUnify + Mobile Layout + Yellow Band ===
+
+import { runMobileLayoutCheck } from "./check-mobile-layout";
+
+async function runD14Checks(): Promise<void> {
+  const projectRoot = resolve(__dirname, "..");
+
+  // 97. (D-14.1) PersonaEditModal lazy 로드 — participants-panel.tsx에서 next/dynamic 사용.
+  //     실제 청크 분리는 next build 후 .next/static/chunks/ 검증이지만, 본 self-check는 소스
+  //     레벨 정합성 보장 (dynamic + import('persona-edit-modal') 박혀있음).
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/participants/participants-panel.tsx`,
+      "utf-8",
+    );
+    const hasDynamicImport =
+      /import\s+dynamic\s+from\s+["']next\/dynamic["']/.test(src);
+    const hasLazyEdit =
+      /dynamic\s*\(\s*\(\s*\)\s*=>\s*import\(\s*["']@\/modules\/personas\/persona-edit-modal["']\s*\)/.test(
+        src,
+      );
+    check(
+      "D-14.1 #97 PersonaEditModal lazy: next/dynamic + import('persona-edit-modal') 박힘",
+      hasDynamicImport && hasLazyEdit,
+    );
+  }
+
+  // 98. (D-14.2) Picker disabled 비주얼 + 1회 토스트 + i18n 4건 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/personas/persona-picker-modal.tsx`,
+      "utf-8",
+    );
+    const hasOpacity = /opacity-40/.test(src);
+    const hasCursor = /cursor-not-allowed/.test(src);
+    const hasAriaDisabled = /aria-disabled=/.test(src);
+    const hasToastKey = /toast\.participant\.limit/.test(src);
+    check(
+      "D-14.2 #98 picker disabled: opacity-40 + cursor-not-allowed + aria-disabled + toast.participant.limit 박힘",
+      hasOpacity && hasCursor && hasAriaDisabled && hasToastKey,
+    );
+  }
+
+  // 99. (D-14.3) PersonaModal/EditModal 모달 일원화.
+  //     - conversation/persona-modal.tsx → PersonaEditModal import + 본문에 <input>/<textarea>/<select> 직접 미박힘.
+  //     - participants-panel.tsx → mode="edit" 호출.
+  {
+    const shimSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/persona-modal.tsx`,
+      "utf-8",
+    );
+    const panelSrc = readFileSync(
+      `${projectRoot}/src/modules/participants/participants-panel.tsx`,
+      "utf-8",
+    );
+    const shimImports =
+      /from\s+["']@\/modules\/personas\/persona-edit-modal["']/.test(shimSrc);
+    // shim 본문에 form input element 없음 (PersonaEditModal 내부에만 있음)
+    const shimNoFormElements =
+      !/<input\b/.test(shimSrc) &&
+      !/<textarea\b/.test(shimSrc) &&
+      !/<select\b/.test(shimSrc);
+    const panelHasEditMode = /mode\s*=\s*["']edit["']/.test(panelSrc);
+    check(
+      "D-14.3 #99 모달 일원화: shim import + shim form elements 0 + panel mode='edit' 박힘",
+      shimImports && shimNoFormElements && panelHasEditMode,
+    );
+  }
+
+  // 100. (D-14.4) 모바일 320px 회귀 가드 — data-test 3종 + whitespace-nowrap + truncate|overflow-hidden.
+  {
+    const result = runMobileLayoutCheck();
+    check(
+      "D-14.4 #100 모바일 320px CSS 룰 스캔: 3개 셀렉터 모두 가드 박힘" +
+        (result.ok ? "" : ` — ${result.failures.join(" / ")}`),
+      result.ok,
+    );
+  }
+
+  // 101. (D-14.5) 노란색 밴드 5단계 + canvas alias + 카드 v2 + 토스트 border-l-4.
+  {
+    const css = readFileSync(`${projectRoot}/src/app/globals.css`, "utf-8");
+    const tokens = [
+      "--robusta-yellow-50",
+      "--robusta-yellow-100",
+      "--robusta-yellow-200",
+      "--robusta-yellow-300",
+      "--robusta-yellow-500",
+    ];
+    const allTokens = tokens.every((tk) => css.includes(tk));
+    const hasCanvasAlias =
+      /--robusta-canvas\s*:\s*var\(--robusta-yellow-100\)/.test(css);
+
+    const pickerSrc = readFileSync(
+      `${projectRoot}/src/modules/personas/persona-picker-modal.tsx`,
+      "utf-8",
+    );
+    // 카드 v2 — 모노그램 원 + (이름 truncate) + 2행 systemPrompt 60자 truncate.
+    const hasCardV2 =
+      /\.slice\(\s*\n?\s*0,\s*\n?\s*60,?\s*\n?\s*\)/.test(pickerSrc) ||
+      /slice\(0,\s*60\)/.test(pickerSrc);
+
+    const toastSrc = readFileSync(
+      `${projectRoot}/src/modules/ui/toast.tsx`,
+      "utf-8",
+    );
+    const hasBorderL4 = /border-l-4/.test(toastSrc);
+
+    check(
+      "D-14.5 #101 디자인 토큰: yellow-50~500 5종 + canvas alias + 카드 v2(60자 truncate) + 토스트 border-l-4",
+      allTokens && hasCanvasAlias && hasCardV2 && hasBorderL4,
+      `tokens=${allTokens} alias=${hasCanvasAlias} cardV2=${hasCardV2} border=${hasBorderL4}`,
+    );
+  }
+}
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
   .then(() => runD10AsyncChecks())
   .then(() => runD11D12Checks())
   .then(() => runD13Checks())
+  .then(() => runD14Checks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);

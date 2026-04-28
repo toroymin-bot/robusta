@@ -11,25 +11,53 @@
  *     · 프리셋 카드 1클릭 → 해당 페르소나로 Participant 즉시 생성.
  *     · "직접 만들기" → PersonaEditModal 빈 폼 → 저장 후 Participant 생성.
  *     · 참여자 제한 (Roy `Do` #10): 총 ≤4 / 인간 ≤2 / AI ≤3. 초과 시 picker 진입 차단 + 토스트.
+ *   - D8 (D-14, P0, 2026-04-28):
+ *     · D-14.1: PersonaEditModal을 next/dynamic 으로 lazy 로드 (1st Load JS 회복).
+ *     · D-14.2: 제한 도달 시 picker 진입 유지(닫지 않음). 카드 disabled + 1회 토스트.
+ *     · D-14.3: ⚙ 클릭 → PersonaEditModal mode='edit' 직접 호출 (PersonaModal shim 미사용).
+ *     · D-14.4: data-test='add-participant' / 'settings-button' 박음 (모바일 320px 회귀 자동화).
  */
 
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useParticipantStore } from "@/stores/participant-store";
-import { ParticipantForm } from "./participant-form";
-import { PersonaModal } from "@/modules/conversation/persona-modal";
-import { PersonaPickerModal } from "@/modules/personas/persona-picker-modal";
-import { PersonaEditModal } from "@/modules/personas/persona-edit-modal";
 import { usePersonaStore } from "@/modules/personas/persona-store";
 import {
   colorTokenToCssVar,
+  participantToPersonaInput,
+  personaInputToParticipant,
   type Persona,
+  type PersonaInput,
   type PersonaKind,
 } from "@/modules/personas/persona-types";
 import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
 import type { Participant } from "./participant-types";
+
+/**
+ * D-14.1 (Day 8) PersonaEditModal/PersonaPickerModal 모두 lazy 로드.
+ *   - 사용자가 [+참여자 추가] 클릭 시점에만 Picker 청크 로드.
+ *   - "직접 만들기" 클릭 또는 ⚙ 클릭 시점에만 EditModal 청크 로드.
+ *   - SSR=false: IndexedDB persona-store/participant-store 의존.
+ *   - loading: null — 모달이 로드되기 전엔 렌더 안 함 (오프라인 시 silent fail).
+ *   - 1st Load JS 게이트 ≤155KB 회복 (D7 157→155 이하).
+ */
+const PersonaEditModal = dynamic(
+  () =>
+    import("@/modules/personas/persona-edit-modal").then(
+      (m) => m.PersonaEditModal,
+    ),
+  { ssr: false, loading: () => null },
+);
+const PersonaPickerModal = dynamic(
+  () =>
+    import("@/modules/personas/persona-picker-modal").then(
+      (m) => m.PersonaPickerModal,
+    ),
+  { ssr: false, loading: () => null },
+);
 
 /** 참여자 제한 — Roy `Do` 메모 #10. */
 const PARTICIPANT_LIMIT_TOTAL = 4;
@@ -78,21 +106,23 @@ export function ParticipantsPanel() {
   const participants = useParticipantStore((s) => s.participants);
   const add = useParticipantStore((s) => s.add);
   const remove = useParticipantStore((s) => s.remove);
+  const update = useParticipantStore((s) => s.update);
   // D-13.5: 페르소나 카탈로그 hydrate + lookup.
   const personaHydrated = usePersonaStore((s) => s.hydrated);
   const hydratePersonas = usePersonaStore((s) => s.hydrate);
   const personasFromStore = usePersonaStore((s) => s.personas);
   const pushToast = useToastStore((s) => s.push);
 
-  // ~~D-9.2 ParticipantForm 모달~~ → D7부터 PersonaPickerModal 진입. 기존 ParticipantForm은 fallback 보류.
-  const [showForm, setShowForm] = useState(false);
+  // ~~D-9.2 ParticipantForm 모달~~ → D7부터 PersonaPickerModal 진입.
+  // D-14.1 (Day 8): ParticipantForm fallback 진입점 0건 — 본 컴포넌트에서 import 제거하여
+  //   lazy 청크 분리와 함께 1st Load JS 게이트 회복. 본 코드는 ./participant-form.tsx에 잔존.
   // D-13.5: PersonaPickerModal 표시 여부.
   const [showPicker, setShowPicker] = useState(false);
   // D-13.5: PersonaEditModal "직접 만들기" 진입용 — null이면 닫힘, kind 박혀있으면 빈 폼 진입.
   const [editKind, setEditKind] = useState<PersonaKind | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // D-9.2: persona modal 대상 참여자 (null = 닫힘)
+  // D-9.2 → D-14.3 (Day 8) ⚙ 모달 대상 참여자 (null = 닫힘). PersonaEditModal mode='edit' 직접 진입.
   const [personaTarget, setPersonaTarget] = useState<Participant | null>(null);
 
   const displayNames = useMemo(() => buildDisplayNames(participants), [participants]);
@@ -163,11 +193,22 @@ export function ParticipantsPanel() {
   }
 
   function handleAddClick() {
-    if (participants.length >= PARTICIPANT_LIMIT_TOTAL) {
-      showLimitToast();
-      return;
-    }
+    // D-14.2: 제한 초과여도 picker 진입 유지(닫지 않음). picker 내부에서 카드 disabled + 토스트 1회.
     setShowPicker(true);
+  }
+
+  /**
+   * D-14.3 ⚙ 클릭 → PersonaEditModal mode='edit' 직접 호출.
+   *   PersonaInput을 받아 Participant로 역변환 후 store.update.
+   */
+  async function handleEditSubmit(input: PersonaInput): Promise<void> {
+    if (!personaTarget) return;
+    const next = personaInputToParticipant(personaTarget, input);
+    await update(personaTarget.id, {
+      name: next.name,
+      color: next.color,
+      systemPrompt: next.systemPrompt,
+    });
   }
 
   async function handleRemove(id: string) {
@@ -229,12 +270,14 @@ export function ParticipantsPanel() {
               <span className="rounded border border-robusta-divider px-1.5 py-0.5 text-[10px] uppercase text-robusta-inkDim">
                 {p.kind === "ai" ? "AI" : "Human"}
               </span>
-              {/* D-9.2: ⚙ 인격 모달 트리거 — 카드 우상단 직행 */}
+              {/* D-9.2 / D-14.3: ⚙ 인격 모달 트리거 — PersonaEditModal mode='edit' 직접 진입.
+                  D-14.4: data-test='settings-button' 박음 (모바일 320px 회귀 자동화). */}
               <button
                 type="button"
                 aria-label={t("card.persona")}
                 title={t("card.persona")}
-                className="rounded p-1 text-robusta-inkDim hover:text-robusta-ink"
+                data-test="settings-button"
+                className="rounded overflow-hidden p-1 text-robusta-inkDim hover:text-robusta-ink whitespace-nowrap"
                 onClick={() => {
                   setOpenMenuId(null);
                   setPersonaTarget(p);
@@ -273,15 +316,17 @@ export function ParticipantsPanel() {
       )}
 
       <div className="border-t border-robusta-divider p-3">
+        {/* D-14.4: data-test='add-participant' 박음 (모바일 320px 회귀 자동화 셀렉터). */}
         <button
           type="button"
           onClick={handleAddClick}
+          data-test="add-participant"
           className="
-            w-full rounded
+            w-full overflow-hidden rounded
             border border-dashed border-robusta-divider
             px-3 py-2 text-sm text-robusta-ink
             hover:border-robusta-accent hover:text-robusta-accent
-            whitespace-nowrap
+            truncate whitespace-nowrap
           "
         >
           + 참여자 추가
@@ -306,15 +351,22 @@ export function ParticipantsPanel() {
         />
       )}
 
-      {/* ~~D-9.2 ParticipantForm fallback~~ — D7부터 비활성. 코드는 보존(다른 진입점 부활 대비). */}
-      {showForm && (
-        <ParticipantForm onClose={() => setShowForm(false)} />
-      )}
+      {/* D-14.1: ParticipantForm fallback 진입점 0건 — D7부터 비활성. import 제거(파일은 잔존). */}
 
+      {/* D-14.3: ⚙ 클릭 시 PersonaEditModal mode='edit' 직접 진입.
+          기존 PersonaModal shim은 외부 caller 호환만 위해 잔존(외부 import 없으면 D9에 삭제 예정). */}
       {personaTarget && (
-        <PersonaModal
-          participant={personaTarget}
+        <PersonaEditModal
+          mode="edit"
+          participantId={personaTarget.id}
+          initial={{
+            id: `shim:${personaTarget.id}`,
+            createdAt: 0,
+            updatedAt: 0,
+            ...participantToPersonaInput(personaTarget),
+          }}
           onClose={() => setPersonaTarget(null)}
+          onSubmit={handleEditSubmit}
         />
       )}
     </aside>

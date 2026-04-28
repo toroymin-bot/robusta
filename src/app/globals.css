@@ -6,7 +6,14 @@
 @import "../styles/animations.css";
 
 :root {
-  --robusta-canvas: #FFFCEB;
+  /* D-14.5 (Day 8, 2026-04-28) 노란색 밴드 5단계 — 명세 §5.1 표.
+     기존 --robusta-canvas는 yellow-100 alias로 유지(OCP). */
+  --robusta-yellow-50: #FFFEF7;   /* 최외곽 배경 (body) */
+  --robusta-yellow-100: #FFFCEB;  /* 워크스페이스 캔버스 (= 기존 --robusta-canvas) */
+  --robusta-yellow-200: #FFF7CC;  /* 모달/패널 백그라운드 */
+  --robusta-yellow-300: #FFEFA3;  /* 입력 활성 + 호버 + info 토스트 보더 */
+  --robusta-yellow-500: #F5C518;  /* 강조 액센트 (CTA, 활성 보더) */
+  --robusta-canvas: var(--robusta-yellow-100); /* D-14.5: alias for backward compat (OCP) */
   --robusta-ink: #15140E;
   --robusta-ink-dim: #5C5849;
   --robusta-divider: #EAE3C7;
@@ -24,7 +31,13 @@
 }
 
 [data-theme="dark"] {
-  --robusta-canvas: #1A1814;
+  /* D-14.5 다크 페어 — 명세 §5.1 표 */
+  --robusta-yellow-50: #1A1602;
+  --robusta-yellow-100: #221C03;
+  --robusta-yellow-200: #2E2606;
+  --robusta-yellow-300: #3D310A;
+  --robusta-yellow-500: #F5C518;  /* 강조는 라이트와 동일 (모드 무관 시그널) */
+  --robusta-canvas: var(--robusta-yellow-100); /* D-14.5: alias 유지 */
   --robusta-ink: #F1E9CC;
   --robusta-ink-dim: #A39A7E;
   --robusta-divider: #2E2A20;
@@ -38,6 +51,11 @@
   --robusta-color-participant-5: #a78bfa;        /* 보라 명도 ↑ */
   --robusta-color-participant-human-1: #93c5fd;  /* 네이비 → 라이트 블루 */
   --robusta-color-participant-human-2: #cbd5e1;  /* 슬레이트 명도 ↑ */
+}
+
+/* D-14.5 (Day 8) body는 최외곽 yellow-50 박음 (워크스페이스 캔버스와 분리). */
+html {
+  background-color: var(--robusta-yellow-50);
 }
 
 html,

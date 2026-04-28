@@ -83,6 +83,12 @@ export const MESSAGES = {
     "persona.error.nameRequired": "이름을 한국어 또는 영어 중 하나 박아주세요.",
     "persona.error.participantLimit": "참여자는 최대 4명, 인간 2명·AI 3명까지 박힙니다.",
     "persona.toast.saved": "페르소나 박혔습니다.",
+    // D-14.2 (Day 8, 2026-04-28) 참여자 제한 토스트 3종 — 카드 disabled 클릭 시 1회 노출
+    "toast.participant.limit.total": "참여자는 최대 4명까지 추가할 수 있어요.",
+    "toast.participant.limit.ai": "AI는 최대 3명까지 추가할 수 있어요.",
+    "toast.participant.limit.human": "인간은 최대 2명까지 추가할 수 있어요.",
+    // D-14.1 (Day 8) PersonaEditModal lazy 로드 실패 (오프라인) 토스트
+    "persona.edit.offline": "오프라인이라 편집 화면을 불러올 수 없어요.",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -142,6 +148,12 @@ export const MESSAGES = {
     "persona.error.nameRequired": "Please set the name in Korean or English.",
     "persona.error.participantLimit": "Up to 4 participants — 2 humans, 3 AIs.",
     "persona.toast.saved": "Persona saved.",
+    // D-14.2 (Day 8) participant limit toasts (one-shot per picker session)
+    "toast.participant.limit.total": "You can add up to 4 participants.",
+    "toast.participant.limit.ai": "You can add up to 3 AI participants.",
+    "toast.participant.limit.human": "You can add up to 2 human participants.",
+    // D-14.1 (Day 8) PersonaEditModal lazy load offline failure
+    "persona.edit.offline": "You're offline — edit dialog can't load.",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

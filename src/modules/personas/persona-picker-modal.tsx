@@ -1,5 +1,12 @@
 /**
- * persona-picker-modal.tsx — D-13.3 (Day 7, 2026-04-29) 페르소나 추가 모달.
+ * persona-picker-modal.tsx
+ *   - D-13.3 (Day 7, 2026-04-29) 페르소나 추가 모달.
+ *   - D-14.2 (Day 8, 2026-04-28) limit 시 카드 disabled + 토스트 1회 박음 (꼬미 정정 13.3 + 똘이 보강).
+ *     · 닫지 않고 유지 (마찰 ↓).
+ *     · 카드: opacity-40 + cursor-not-allowed + aria-disabled='true' + tabIndex=-1.
+ *     · 토스트는 picker open 동안 1회만(중복 차단). kind 토글 시 reset.
+ *     · 카드 v2: 1행(circle + 이름 + R&R truncate) + 2행(systemPrompt 60자 truncate) — 명세 §5.2.
+ *   - D-14.4 (Day 8) data-test='picker-card' 박음 (모바일 320px 회귀 자동화).
  *
  * 진입점: 워크스페이스 [+참여자 추가] 버튼.
  * 구성:
@@ -21,13 +28,41 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useParticipantStore } from "@/stores/participant-store";
+import { useToastStore } from "@/modules/ui/toast";
 import { usePersonaStore } from "./persona-store";
 import {
   colorTokenToCssVar,
   type Persona,
   type PersonaKind,
 } from "./persona-types";
-import { t } from "@/modules/i18n/messages";
+import { t, type MessageKey } from "@/modules/i18n/messages";
+
+/** D-14.2 참여자 제한 상수 — participants-panel과 동기화. */
+const PARTICIPANT_LIMIT_TOTAL = 4;
+const PARTICIPANT_LIMIT_HUMAN = 2;
+const PARTICIPANT_LIMIT_AI = 3;
+
+/** D-14.2 카드 disabled 사유 — 어떤 토스트 키를 박을지 결정. */
+type LimitReason = "total" | "ai" | "human" | null;
+
+/**
+ * D-14.2 카드 disabled 판정.
+ *   total ≥4 → 모든 카드 disabled
+ *   kind='ai' && ai ≥3 → AI 카드 disabled
+ *   kind='human' && human ≥2 → human 카드 disabled
+ */
+function computeLimitReason(
+  cardKind: PersonaKind,
+  counts: { total: number; ai: number; human: number },
+): LimitReason {
+  if (counts.total >= PARTICIPANT_LIMIT_TOTAL) return "total";
+  if (cardKind === "ai" && counts.ai >= PARTICIPANT_LIMIT_AI) return "ai";
+  if (cardKind === "human" && counts.human >= PARTICIPANT_LIMIT_HUMAN) {
+    return "human";
+  }
+  return null;
+}
 
 interface PersonaPickerModalProps {
   /** 카드 클릭 시 호출 — preset id 또는 사용자 커스텀 페르소나 id. */
@@ -45,9 +80,14 @@ export function PersonaPickerModal({
   const personas = usePersonaStore((s) => s.personas);
   const hydrated = usePersonaStore((s) => s.hydrated);
   const hydrate = usePersonaStore((s) => s.hydrate);
+  // D-14.2: 참여자 store에서 현재 카운트 도출 (selector — getCounts() 미존재로 직접 계산).
+  const participants = useParticipantStore((s) => s.participants);
+  const pushToast = useToastStore((s) => s.push);
 
   const [kind, setKind] = useState<PersonaKind>("ai");
   const firstCardRef = useRef<HTMLButtonElement | null>(null);
+  // D-14.2: limit 카드 클릭 시 토스트 1회만 노출. picker close 또는 kind 토글 시 reset.
+  const toastShownRef = useRef<boolean>(false);
 
   // hydrate 보장 — 워크스페이스에서 이미 호출했어도 멱등.
   useEffect(() => {
@@ -66,6 +106,8 @@ export function PersonaPickerModal({
   useEffect(() => {
     // toggle 변경 시 첫 카드로 포커스 이동
     firstCardRef.current?.focus();
+    // D-14.2: kind 전환 시 토스트 1회 차단 reset (다른 종류 카드는 다시 1회 노출 가능)
+    toastShownRef.current = false;
   }, [kind]);
 
   // 프리셋만 박음 (커스텀은 별도 흐름 — 명세 §4)
@@ -73,6 +115,34 @@ export function PersonaPickerModal({
     () => personas.filter((p) => p.isPreset && p.kind === kind),
     [personas, kind],
   );
+
+  // D-14.2: 현재 참여자 수 (총/AI/인간) 계산 — limit 판정에 사용.
+  const counts = useMemo(() => {
+    let ai = 0;
+    let human = 0;
+    for (const p of participants) {
+      if (p.kind === "ai") ai += 1;
+      else human += 1;
+    }
+    return { total: participants.length, ai, human };
+  }, [participants]);
+
+  // D-14.2: 카드별 limit 사유 (null = 클릭 가능)
+  const cardLimitReason: LimitReason = computeLimitReason(kind, counts);
+
+  /** D-14.2: limit 카드 클릭 시 호출 — 1회만 토스트 노출. */
+  function handleLimitedClick(reason: LimitReason) {
+    if (toastShownRef.current) return;
+    if (!reason) return;
+    const key: MessageKey =
+      reason === "total"
+        ? "toast.participant.limit.total"
+        : reason === "ai"
+          ? "toast.participant.limit.ai"
+          : "toast.participant.limit.human";
+    pushToast({ tone: "info", message: t(key) });
+    toastShownRef.current = true;
+  }
 
   return (
     <div
@@ -141,54 +211,84 @@ export function PersonaPickerModal({
           })}
         </div>
 
-        {/* 프리셋 카드 grid: 모바일 1열, ≥768px 3열 */}
+        {/* D-13.3 / D-14.5 카드 v2: 1행(circle + 이름 + R&R) + 2행(systemPrompt 60자 truncate).
+            D-14.2 disabled 비주얼 + 1회 토스트 + D-14.4 data-test='picker-card'. */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {cards.map((p, idx) => (
-            <button
-              key={p.id}
-              ref={idx === 0 ? firstCardRef : undefined}
-              type="button"
-              role="button"
-              tabIndex={0}
-              onClick={() => onPick(p.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
+          {cards.map((p, idx) => {
+            // D-14.2: disabled = cardLimitReason !== null (kind 단위 통일 — total/ai/human 각각).
+            const disabled = cardLimitReason !== null;
+            // D-14.5 §5.2: 2행 systemPrompt 60자 truncate — locale ko 우선, 없으면 en fallback.
+            const promptLine = (p.systemPromptKo || p.systemPromptEn || "").slice(
+              0,
+              60,
+            );
+            return (
+              <button
+                key={p.id}
+                ref={idx === 0 ? firstCardRef : undefined}
+                type="button"
+                role="button"
+                tabIndex={disabled ? -1 : 0}
+                aria-disabled={disabled || undefined}
+                data-test="picker-card"
+                onClick={() => {
+                  if (disabled) {
+                    handleLimitedClick(cardLimitReason);
+                    return;
+                  }
                   onPick(p.id);
-                }
-              }}
-              className="
-                flex items-center gap-3
-                rounded-md border border-robusta-divider
-                bg-robusta-canvas p-3 text-left
-                hover:border-robusta-accent
-                focus:border-robusta-accent focus:outline-none
-              "
-              style={{
-                borderLeftColor: colorTokenToCssVar(p.colorToken),
-                borderLeftWidth: 4,
-              }}
-            >
-              <span
-                aria-hidden
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                }}
+                onKeyDown={(e) => {
+                  if (disabled) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onPick(p.id);
+                  }
+                }}
+                className={`
+                  flex flex-col gap-1
+                  overflow-hidden whitespace-nowrap
+                  rounded-md border border-robusta-divider
+                  bg-robusta-canvas p-3 sm:p-4 text-left
+                  ${
+                    disabled
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:border-robusta-accent focus:border-robusta-accent focus:outline-none"
+                  }
+                `}
                 style={{
-                  backgroundColor: colorTokenToCssVar(p.colorToken),
-                  whiteSpace: "nowrap",
+                  borderLeftColor: colorTokenToCssVar(p.colorToken),
+                  borderLeftWidth: 4,
                 }}
               >
-                {p.iconMonogram}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-robusta-ink">
-                  {p.nameKo}
+                {/* 1행: 모노그램 원 + 이름(ko) + R&R(en) truncate */}
+                <span className="flex items-center gap-3 whitespace-nowrap">
+                  <span
+                    aria-hidden
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                    style={{
+                      backgroundColor: colorTokenToCssVar(p.colorToken),
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {p.iconMonogram}
+                  </span>
+                  <span className="block min-w-0 flex-1 truncate text-sm font-semibold text-robusta-ink">
+                    {p.nameKo || p.nameEn}
+                  </span>
+                  <span className="block min-w-0 truncate text-xs text-robusta-inkDim">
+                    {p.nameEn}
+                  </span>
                 </span>
-                <span className="block truncate text-xs text-robusta-inkDim">
-                  {p.nameEn}
-                </span>
-              </span>
-            </button>
-          ))}
+                {/* 2행: systemPrompt 60자 truncate. 빈 문자열(human default 등)은 행 자체 숨김. */}
+                {promptLine.length > 0 && (
+                  <span className="block truncate overflow-hidden whitespace-nowrap text-xs leading-tight text-robusta-inkDim">
+                    {promptLine}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* 구분선 */}
