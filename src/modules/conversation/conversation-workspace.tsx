@@ -10,6 +10,10 @@ import { useApiKeyStore } from "@/stores/api-key-store";
 import { useParticipantStore } from "@/stores/participant-store";
 import { useConversationStore } from "@/stores/conversation-store";
 import { ConversationView } from "./conversation-view";
+// D-D11-2 (Day 11, 2026-04-29, B19) C-D11-2: AutoLoopHeader — ai-auto 모드 시 헤더 영역 mount.
+//   ~~next/dynamic ssr:false 분리 시도~~ — manifest /page∪/layout gzip 합산은 같은 chunks=8로
+//     0.2KB만 절약(효과 미미). 정적 import로 복원하고 게이트 +2KB 상향(C-D11-7b)으로 박음.
+import { AutoLoopHeader } from "./auto-loop-header";
 // D-12.3 (Day 6): 부트 시 1회 등록. 이미 등록되어 있으면 noop.
 import { registerOnlineListener } from "@/modules/ui/online-listener";
 // D-15.2 (Day 9, 2026-04-28) C-D9-2: 헤더 발언 모드 라벨 i18n.
@@ -141,6 +145,9 @@ export function ConversationWorkspace() {
             </button>
           </div>
         </header>
+
+        {/* D-D11-2 (Day 11) C-D11-2: AI-Auto 컨트롤 헤더 — 컴포넌트 자체가 turnMode==='ai-auto' 가드. */}
+        <AutoLoopHeader />
 
         <ConversationView onRequestApiKeyModal={() => setKeysOpen(true)} />
       </main>

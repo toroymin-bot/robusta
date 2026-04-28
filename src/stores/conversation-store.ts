@@ -1,6 +1,11 @@
 "use client";
 
 import { create } from "zustand";
+// D-D11-2 (Day 11, 2026-04-29, B19) C-D11-2: autoLoopConfig localStorage persist.
+//   사용자가 헤더 셀렉터로 변경한 intervalMs/maxAutoTurns가 새로고침 후에도 유지.
+//   key = "robusta:auto-loop-config" / partialize로 autoLoopConfig만 persist (다른 state 휘발 보존).
+//   SSR 안전 — createJSONStorage(localStorage)는 server에서 fallback (zustand 내장).
+import { persist, createJSONStorage } from "zustand/middleware";
 import { getDb, cleanStaleStreamingMessages } from "@/modules/storage/db";
 import {
   DEFAULT_CONVERSATION_ID,
@@ -134,7 +139,9 @@ interface ConversationStore {
   setAutoLoopConfig: (cfg: Partial<AutoLoopConfig>) => void;
 }
 
-export const useConversationStore = create<ConversationStore>((set, get) => ({
+export const useConversationStore = create<ConversationStore>()(
+  persist(
+    (set, get) => ({
   conversations: [],
   messages: {},
   hydrated: false,
@@ -595,13 +602,36 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   setAutoLoopConfig(cfg) {
     const merged = { ...get().autoLoopConfig, ...cfg };
     set({ autoLoopConfig: merged });
-    // 진행 중이면 새 config로 재시작 — turnsCompleted는 0 리셋(startAutoLoopAction 의도).
-    // 명세 §4.5 E9 \"turnsCompleted 유지(연속)\"이지만 본 슬롯은 단순화 — C-D11-2에서 보강.
+    // D-D11-2 (Day 11, 2026-04-29) C-D11-2 §11.7 E11 보강:
+    //   maxAutoTurns 축소 시 turnsCompleted >= new max면 즉시 stop("completed").
+    //   ~~기존: running이면 단순 재시작 (turnsCompleted 0 리셋)~~ — E11 케이스 누락.
+    //   본 가드 우선 평가 (running이 아니어도 paused 상태에서 maxTurns 축소 가능).
+    if (
+      cfg.maxAutoTurns !== undefined &&
+      get().autoTurnsCompleted >= merged.maxAutoTurns
+    ) {
+      const handle = get().autoLoopHandle;
+      if (handle) {
+        get().stopAutoLoopAction("completed");
+      }
+      return;
+    }
+    // E9: 진행 중이면 새 config로 재시작 — turnsCompleted 0 리셋(startAutoLoopAction 의도).
     if (get().autoLoopStatus === "running") {
       get().startAutoLoopAction();
     }
   },
-}));
+    }),
+    {
+      // D-D11-2 (Day 11, 2026-04-29) C-D11-2 §11.4: autoLoopConfig localStorage persist.
+      //   partialize로 autoLoopConfig만 직렬화 — 메시지/conversations/turnMode 등은 휘발 보존.
+      //   SSR: zustand persist는 storage 미존재 시 메모리 fallback (콘솔 경고 1회).
+      name: "robusta:auto-loop-config",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ autoLoopConfig: state.autoLoopConfig }),
+    },
+  ),
+);
 
 // D-D11-1 C-D11-1: AutoLoop 한 턴 — 새 placeholder + streamMessage SSE 소비.
 //   conversation-view.runAiTurn과 비슷하지만 토스트는 store가 onError로 처리하므로 생략.

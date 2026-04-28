@@ -107,6 +107,14 @@ export const MESSAGES = {
     "autoLoop.skipped": "{count}건 스킵됨 (탭 비활성). ▶ 재개.",
     "autoLoop.byokMissing": "BYOK 키 없음. AI-Auto 중지됨.",
     "autoLoop.noSpeaker": "AI 2명 이상 필요. AI-Auto 중지됨.",
+    // D-D11-2 (Day 11, 2026-04-29, B19) C-D11-2: AutoLoopHeader 컨트롤 카피 6종.
+    //   region/start/pause/interval/maxTurns/progress — 헤더 ▶/⏸/카운터/셀렉트 라벨 + a11y.
+    "autoLoop.header.region": "AI-Auto 컨트롤",
+    "autoLoop.header.start": "AI-Auto 시작",
+    "autoLoop.header.pause": "AI-Auto 일시정지",
+    "autoLoop.header.interval": "간격",
+    "autoLoop.header.maxTurns": "최대 턴",
+    "autoLoop.header.progress": "턴",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -188,6 +196,13 @@ export const MESSAGES = {
     "autoLoop.skipped": "{count} ticks skipped. ▶ Resume.",
     "autoLoop.byokMissing": "BYOK key missing. AI-Auto stopped.",
     "autoLoop.noSpeaker": "Need 2+ AIs. AI-Auto stopped.",
+    // D-D11-2 (Day 11, 2026-04-29) C-D11-2: AutoLoopHeader controls — KO mirror.
+    "autoLoop.header.region": "AI-Auto controls",
+    "autoLoop.header.start": "Start AI-Auto",
+    "autoLoop.header.pause": "Pause AI-Auto",
+    "autoLoop.header.interval": "Interval",
+    "autoLoop.header.maxTurns": "Max turns",
+    "autoLoop.header.progress": "turns",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

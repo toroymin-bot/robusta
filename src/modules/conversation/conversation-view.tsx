@@ -423,12 +423,23 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     //   ~~"AI-Auto 모드는 골격만 박혀 있습니다 — 자율 발화 트리거는 곧 제공됩니다."~~ (D-D10-5 안내 제거)
     //   AI < 2명 가드: pickNextSpeakerAutoAi가 null 반환 → 시작 직후 noSpeaker 토스트로 폴백되지만,
     //   사용자 혼란 방지 위해 진입 시점에서 한 번 차단.
+    // D-D11-2b (Day 11, 2026-04-29, B19) C-D11-2b: BYOK 사전 체크 추가.
+    //   기존엔 키 없이도 모드 전환 → startAutoLoop이 즉시 byokMissing 토스트로 멈춤(혼란).
+    //   본 가드: 모드 전환 자체를 차단 + autoLoop.byokMissing i18n 토스트 1회.
     if (mode === "ai-auto") {
+      if (!apiKey) {
+        pushToast({
+          tone: "warning",
+          message: t("autoLoop.byokMissing"),
+        });
+        onRequestApiKeyModal();
+        return;
+      }
       const aiCount = participants.filter((p) => p.kind === "ai").length;
       if (aiCount < 2) {
         pushToast({
           tone: "warning",
-          message: "AI-Auto는 AI 2명 이상에서 동작합니다.",
+          message: t("autoLoop.noSpeaker"),
         });
         return;
       }
