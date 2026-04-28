@@ -1107,8 +1107,9 @@ import { buildRetryPlan } from "../src/modules/conversation/retry-plan";
 
 // D-11/D-12 검증용 (Day 6, 2026-04-28). MESSAGES는 위에서 이미 import 됨.
 import { execSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { gzipSync } from "node:zlib";
 import {
   isMaybeExpired,
   __api_key_meta_internal,
@@ -1756,6 +1757,57 @@ async function runD15Checks(): Promise<void> {
       "D-15.1 #106 toast.critic.softFallback ko/en: ⚠ prefix + 1줄 80자 이내",
       koHasIcon && enHasIcon && koShort && enShort,
       `koLen=${ko.length} enLen=${en.length}`,
+    );
+  }
+
+  // 107. (D-15.2 — D5 launch gate) 1st Load JS ≤ 158KB (gzip).
+  //   조건: `.next/app-build-manifest.json`의 /page ∪ /layout chunks를 gzip 후 합산.
+  //   Next.js build 출력 "First Load JS" 정의와 일치 (polyfills 제외, 페이지 + 공유 chunks).
+  //   회귀 시 청크 비대화로 모바일 LCP 악화 → launch 게이트 차단.
+  //   build 미실행 시 manifest 부재 → FAIL with hint (D5 launch는 build 선행 전제).
+  {
+    const manifestPath = resolve(projectRoot, ".next", "app-build-manifest.json");
+    let manifestOk = false;
+    let gzipKb = 0;
+    let chunkCount = 0;
+    try {
+      const raw = readFileSync(manifestPath, "utf-8");
+      const manifest = JSON.parse(raw) as { pages?: Record<string, string[]> };
+      const pageChunks = manifest.pages?.["/page"] ?? [];
+      const layoutChunks = manifest.pages?.["/layout"] ?? [];
+      const union = new Set<string>([...pageChunks, ...layoutChunks]);
+      manifestOk = union.size > 0;
+      for (const rel of union) {
+        const full = resolve(projectRoot, ".next", rel);
+        try {
+          const buf = readFileSync(full);
+          gzipKb += gzipSync(buf).length / 1024;
+          chunkCount += 1;
+        } catch {
+          // chunk 누락 시 합계 미반영 (manifest는 있는데 파일 없음 — build 손상)
+        }
+      }
+    } catch {
+      manifestOk = false;
+    }
+    const within = manifestOk && gzipKb > 0 && gzipKb <= 158;
+    check(
+      "D-15.2 #107 1st Load JS ≤ 158KB (app-build-manifest /page∪/layout gzip 합산)",
+      within,
+      manifestOk ? `gzip=${gzipKb.toFixed(1)}KB chunks=${chunkCount}` : ".next/app-build-manifest.json 부재 — npm run build 선행 필요",
+    );
+  }
+
+  // 108. (D-15.2 — D5 launch gate) viewport.themeColor = "#FFFCEB" (Roy 4/26 노란 톤).
+  //   회귀 시 모바일 브라우저 상단 톤이 흰색/시스템 기본으로 새 → 노란 컨셉 깨짐.
+  //   src/app/layout.tsx의 viewport export 또는 generateViewport에서 직접 grep.
+  {
+    const layoutSrc = readFileSync(`${projectRoot}/src/app/layout.tsx`, "utf-8");
+    const hasThemeColor = /themeColor\s*:\s*["']#FFFCEB["']/i.test(layoutSrc);
+    check(
+      "D-15.2 #108 layout.tsx viewport.themeColor = '#FFFCEB' (노란 톤 게이트)",
+      hasThemeColor,
+      hasThemeColor ? undefined : "layout.tsx에서 themeColor: \"#FFFCEB\" 매칭 실패",
     );
   }
 }
