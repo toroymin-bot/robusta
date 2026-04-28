@@ -97,6 +97,8 @@ export const MESSAGES = {
     "header.mode.manual": "Manual",
     "header.mode.roundRobin": "Round-robin",
     "header.mode.trigger": "Scheduled",
+    // D-D10-5 (Day 9, 2026-04-28, B12 채택분) C-D10-5: 4번째 모드 'AI-Auto' — AI-AI 자율 발언.
+    "header.mode.aiAuto": "AI-Auto",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -169,6 +171,8 @@ export const MESSAGES = {
     "header.mode.manual": "Manual",
     "header.mode.roundRobin": "Round-robin",
     "header.mode.trigger": "Scheduled",
+    // D-D10-5 (Day 9, 2026-04-28) C-D10-5: 4th mode AI-Auto — AI-AI autonomous speech.
+    "header.mode.aiAuto": "AI-Auto",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

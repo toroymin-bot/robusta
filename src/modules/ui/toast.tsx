@@ -107,10 +107,14 @@ export const useToastStore = create<ToastStore>((set, get) => ({
  *   - D-9.7 (Day 4) v1: info=blue / warning=amber / error=red.
  *   - D-14.5 (Day 8) v2 (똘이 디자인 인수): info를 노란색 밴드 yellow-500(#F5C518)로 박음.
  *     Robusta 노란 톤 일관성. warning/error는 amber-500/red-500 색조 유지.
+ *   - D-D9-1 (Day 9, 2026-04-28) C-D10-1: warning을 amber(#E8A03A) → Robusta 노란 톤 yellow(#FFD60A)로 일관.
+ *     info(#F5C518)와는 hue 차이(yellow-500 vs amber-yellow-400)로 구분 유지.
+ *     다크 모드 미지원 단계 — 도입 시 별도 토큰 검토 (future-proof 메모).
  */
 const BORDER_COLOR: Record<ToastTone, string> = {
   info: "#F5C518",     // D-14.5: was #4D89FF — 노란색 밴드 yellow-500로 통일
-  warning: "#E8A03A",  // amber-500 톤 유지
+  // D-D9-1 C-D10-1: ~~"#E8A03A"~~ amber → "#FFD60A" Robusta 노란 톤 일관 (OCP 취소선 보존).
+  warning: "#FFD60A",
   error: "#D6443A",    // red-500 톤 유지
 };
 

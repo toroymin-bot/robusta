@@ -408,6 +408,23 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       });
       return;
     }
+    // D-D10-5 (Day 9, 2026-04-28) C-D10-5: ai-auto 골격 — enum/순수 함수만 박음, 트리거 로직은 C-D11-1.
+    //   AI 0명 가드: 단독 인간 대화는 ai-auto 무의미 → 안내 토스트로 사용자 혼란 방지.
+    if (mode === "ai-auto") {
+      const aiCount = participants.filter((p) => p.kind === "ai").length;
+      if (aiCount === 0) {
+        pushToast({
+          tone: "warning",
+          message: "AI 참여자가 필요합니다.",
+        });
+        return;
+      }
+      pushToast({
+        tone: "info",
+        message: "AI-Auto 모드는 골격만 박혀 있습니다 — 자율 발화 트리거는 곧 제공됩니다.",
+      });
+      // 모드는 set 박아 헤더 라벨 갱신은 진행 (시각 반영).
+    }
     setTurnMode(mode);
     // 모드 전환 시 lock 초기화 (manual에서는 lock 무관)
     if (mode === "manual") {
@@ -489,6 +506,9 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
               >
                 <option value="manual">수동</option>
                 <option value="round-robin">순환 (round-robin)</option>
+                {/* D-D10-5 (Day 9, 2026-04-28, B12) C-D10-5: AI-Auto 골격 노출(4번째 옵션).
+                    실제 setInterval 트리거는 C-D11-1로 분리 — 본 슬롯은 enum/순수 함수만. */}
+                <option value="ai-auto">AI-Auto (자율)</option>
               </select>
             </label>
             {showNextTurnButton && (

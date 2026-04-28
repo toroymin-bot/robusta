@@ -18,11 +18,26 @@ import type { TurnMode } from "@/modules/conversation/turn-controller";
 
 // D-15.2 (Day 9) turnMode → i18n 키 매핑. enum 3종 1:1.
 //   manual → "Manual" / round-robin → "Round-robin" / trigger → "Scheduled"
+// D-D10-5 (Day 9, 2026-04-28, B12 채택분) C-D10-5: ai-auto 추가 — 4번째 모드 라벨.
 const TURN_MODE_LABEL_KEY = {
   manual: "header.mode.manual",
   "round-robin": "header.mode.roundRobin",
   trigger: "header.mode.trigger",
+  "ai-auto": "header.mode.aiAuto",
 } as const satisfies Record<TurnMode, string>;
+
+/**
+ * D-D9-2 (Day 9, 2026-04-28) C-D10-2: 활성 모드 라벨 색 코딩 헬퍼.
+ *   active=true → yellow-500(#F5C518) 좌측 보더 2px + font-semibold + 본문 ink.
+ *   active=false → ink-dim, hover ink (시각 위계).
+ *   Tailwind에 yellow-500 토큰 매핑 미박힘 — 호출자가 인라인 style.borderLeftColor=#F5C518 fallback 박을 것.
+ *   현재 헤더는 단일 라벨이지만 추후 4-segment 토글(C-D11-1) 도입 시 활성/비활성 비교에 그대로 재사용.
+ */
+export function getModeClassName(active: boolean): string {
+  return active
+    ? "border-l-2 pl-2 font-semibold text-robusta-ink"
+    : "text-robusta-inkDim hover:text-robusta-ink";
+}
 
 export function ConversationWorkspace() {
   const participantsHydrated = useParticipantStore((s) => s.hydrated);
@@ -87,8 +102,11 @@ export function ConversationWorkspace() {
           <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
           <div className="flex items-center gap-3">
             {/* D-15.2 (Day 9, 2026-04-28) C-D9-2: 발언 모드는 동적 (turnMode subscribe). Day 라벨은 정적(빌드 시점). */}
+            {/* D-D9-2 (Day 9, 2026-04-28) C-D10-2: 활성 모드 시각 강조 — yellow-500 좌측 보더 + font-semibold.
+                헤더 라벨 단일이라 active=true 고정. 4-segment 토글 도입 시 active 비교로 분기. */}
             <span
-              className="text-xs uppercase tracking-widest text-robusta-inkDim"
+              className={`text-xs uppercase tracking-widest ${getModeClassName(true)}`}
+              style={{ borderLeftColor: "#F5C518" }}
               data-test="header-mode-label"
             >
               Day 3 · {t(TURN_MODE_LABEL_KEY[turnMode])}

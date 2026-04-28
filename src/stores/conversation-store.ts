@@ -408,6 +408,18 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   //   호출자: online-listener (window 'online' → 토스트 action).
   //   abortController 진행 중이면 skipped만 누적, 새 retry는 시작하지 않음.
   //   maxCount/intervalMs 미지정 시 권장값 사용 (5건 / 200ms — 명세 §9 자율 영역).
+  /**
+   * D-D9-4 (Day 9, 2026-04-28) C-D10-4: retryAll JSDoc 보강 (코드 변경 X — 시그니처 안내만).
+   *   재시도 — since 시각 이후 reasons 분류 메시지를 maxCount건까지 intervalMs 간격으로 재호출.
+   *   AbortError는 즉시 abort yield(재시도 X). 4xx invalid_request_error + /model/i는 폴백 1회.
+   *   진행 중 abortController 살아있으면 즉시 skipped 카운트만 증가.
+   *
+   *   @param filter.since        재시도 후보 시각 (ms epoch).
+   *   @param filter.reasons      재시도할 실패 사유 화이트리스트 (substring 매치).
+   *   @param filter.maxCount     최대 재시도 건수 (기본 5).
+   *   @param filter.intervalMs   재시도 간격 ms (기본 200).
+   *   @returns                   { retried: 실제 재시도된 건수, skipped: 건너뛴 건수 }.
+   */
   async retryAll(filter) {
     const maxCount = filter.maxCount ?? 5;
     const intervalMs = filter.intervalMs ?? 200;

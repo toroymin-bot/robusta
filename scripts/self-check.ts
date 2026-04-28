@@ -696,10 +696,11 @@ check(
 
 // D-9.7 #6.5 — variant별 hue 보더 색 정합성
 //   D-14.5 (Day 8) info를 노란색 밴드 yellow-500(#F5C518)로 박음 — 똘이 디자인 인수.
+//   D-D9-1 (Day 9, 2026-04-28) C-D10-1: warning을 amber(#E8A03A) → Robusta 노란 톤(#FFD60A) 일관.
 check(
-  "D-9.7 #6.5 toast: BORDER_COLOR.info=#F5C518 / warning=#E8A03A / error=#D6443A (D-14.5 갱신)",
+  "D-9.7 #6.5 toast: BORDER_COLOR.info=#F5C518 / warning=#FFD60A / error=#D6443A (D-D9-1 갱신)",
   __toast_internal.BORDER_COLOR.info === "#F5C518" &&
-    __toast_internal.BORDER_COLOR.warning === "#E8A03A" &&
+    __toast_internal.BORDER_COLOR.warning === "#FFD60A" &&
     __toast_internal.BORDER_COLOR.error === "#D6443A",
 );
 
@@ -1808,6 +1809,73 @@ async function runD15Checks(): Promise<void> {
       "D-15.2 #108 layout.tsx viewport.themeColor = '#FFFCEB' (노란 톤 게이트)",
       hasThemeColor,
       hasThemeColor ? undefined : "layout.tsx에서 themeColor: \"#FFFCEB\" 매칭 실패",
+    );
+  }
+
+  // 109. (D-D9-1, Day 9, 2026-04-28) C-D10-1: 토스트 warning 보더 색이 amber → Robusta 노란 톤(#FFD60A) 일관.
+  //   회귀 시 amber(#E8A03A) 잔존 → info(#F5C518)와 톤 충돌 + Robusta 컨셉 깨짐.
+  {
+    const toastSrc = readFileSync(
+      `${projectRoot}/src/modules/ui/toast.tsx`,
+      "utf-8",
+    );
+    const hasNewWarning = /warning\s*:\s*["']#FFD60A["']/i.test(toastSrc);
+    const noOldAmber = !/warning\s*:\s*["']#E8A03A["']/i.test(toastSrc);
+    check(
+      "D-D9-1 #109 toast.tsx BORDER_COLOR.warning = '#FFD60A' (Robusta 노란 톤)",
+      hasNewWarning && noOldAmber,
+      `new=${hasNewWarning} oldRemoved=${noOldAmber}`,
+    );
+  }
+
+  // 110. (D-D9-3, Day 9, 2026-04-28) C-D10-3: db migration v6+ 자동 가드.
+  //   #103은 v6에 고정 — v7+ 도입 시 회귀. #110은 v6 이상 매칭(미래 호환).
+  //   매칭 1: this.version(6|7|8|9).stores 또는 매칭 2: preset:critic systemPromptKo 본문.
+  {
+    const dbSrc = readFileSync(
+      `${projectRoot}/src/modules/storage/db.ts`,
+      "utf-8",
+    );
+    const hasV6Plus = /this\.version\(\s*[6-9]\s*\)\s*\.stores\(/.test(dbSrc);
+    const hasPresetCriticUpdate = /preset:critic/.test(dbSrc) && /\.upgrade\(/.test(dbSrc);
+    check(
+      "D-D9-3 #110 db.ts v6+ 마이그레이션 가드 (preset:critic upgrade 박힘)",
+      hasV6Plus && hasPresetCriticUpdate,
+      `v6+=${hasV6Plus} criticUpgrade=${hasPresetCriticUpdate}`,
+    );
+  }
+
+  // 111. (D-D10-5, Day 9, 2026-04-28, B12 채택분) C-D10-5: AI-Auto 4번째 모드 골격 박힘.
+  //   가드 (1) turn-controller에 'ai-auto' 문자열 + pickNextSpeakerAutoAi 함수 export.
+  //   가드 (2) messages.ts에 header.mode.aiAuto 키 ko/en 양쪽 박힘.
+  //   가드 (3) conversation-workspace.tsx의 TURN_MODE_LABEL_KEY에 ai-auto 매핑 박힘.
+  //   회귀 시 4번째 모드 미노출 → B12 차별화 핵심 게이트 통과 X.
+  {
+    const turnSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/turn-controller.ts`,
+      "utf-8",
+    );
+    const hasEnum = /["']ai-auto["']/.test(turnSrc);
+    const hasPickFn = /export\s+function\s+pickNextSpeakerAutoAi\b/.test(turnSrc);
+
+    const koAutoLabel = MESSAGES.ko["header.mode.aiAuto"];
+    const enAutoLabel = MESSAGES.en["header.mode.aiAuto"];
+    const i18nOk =
+      typeof koAutoLabel === "string" &&
+      koAutoLabel.length > 0 &&
+      typeof enAutoLabel === "string" &&
+      enAutoLabel.length > 0;
+
+    const wsSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const hasLabelMap = /["']ai-auto["']\s*:\s*["']header\.mode\.aiAuto["']/.test(wsSrc);
+
+    check(
+      "D-D10-5 #111 AI-Auto 모드 골격: enum + pickNextSpeakerAutoAi + i18n + label map",
+      hasEnum && hasPickFn && i18nOk && hasLabelMap,
+      `enum=${hasEnum} fn=${hasPickFn} i18n=${i18nOk} labelMap=${hasLabelMap}`,
     );
   }
 }
