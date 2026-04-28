@@ -1652,12 +1652,121 @@ async function runD14Checks(): Promise<void> {
   }
 }
 
+// === D-15 (Day 9, 2026-04-28) Critic 인사 처리 + 헤더 동적 라벨 + 비판자 폴백 카피 ===
+
+async function runD15Checks(): Promise<void> {
+  const projectRoot = resolve(__dirname, "..");
+
+  // 102. (D-15.1) Critic systemPrompt 인사 처리 라인 박힘 (i18n + preset-catalog 1:1 동기화).
+  //     라이브 회귀(B-1) fix — Critic이 "안녕" 인사에 ⚠ 에러로 종료되던 문제. 인사·스몰토크 예외 박음.
+  {
+    const ko = MESSAGES.ko["persona.preset.critic"];
+    const en = MESSAGES.en["persona.preset.critic"];
+    // 키워드 가드: KO "인사·스몰토크", EN "Greetings"
+    const koHasGreeting = /인사·스몰토크/.test(ko) || /인사/.test(ko);
+    const enHasGreeting = /Greeting/i.test(en);
+    // 본문 ≤200자 가드 유지 (#95 검증과 동일)
+    const koUnder200 = ko.length > 0 && ko.length <= 200;
+    const enUnder200 = en.length > 0 && en.length <= 200;
+
+    const presetSrc = readFileSync(
+      `${projectRoot}/src/modules/personas/preset-catalog.ts`,
+      "utf-8",
+    );
+    // preset-catalog.ts와 messages.ts의 critic 본문이 동일 핵심 키워드 박음 (i18n 키 lookup이 아닌 직접 박음 — D-13.1 디자인).
+    const presetKoMatches = presetSrc.includes(ko);
+    const presetEnMatches = presetSrc.includes(en);
+    check(
+      "D-15.1 #102 Critic 본문에 인사 처리 박힘 + i18n/preset-catalog 동기화 + 200자 한도",
+      koHasGreeting && enHasGreeting && koUnder200 && enUnder200 && presetKoMatches && presetEnMatches,
+      `koGreet=${koHasGreeting} enGreet=${enHasGreeting} koLen=${ko.length} enLen=${en.length} presetKo=${presetKoMatches} presetEn=${presetEnMatches}`,
+    );
+  }
+
+  // 103. (D-15.1) db.ts v6 마이그레이션 박힘 — 기존 critic preset row 강제 갱신.
+  //     ensurePresetSeed 멱등 시드는 이미 박힌 row를 건너뛰므로, 기존 사용자 DB의 critic 본문을 fix하려면 마이그레이션 필요.
+  {
+    const dbSrc = readFileSync(`${projectRoot}/src/modules/storage/db.ts`, "utf-8");
+    const hasV6 = /this\.version\(6\)\s*\.stores\(/.test(dbSrc);
+    const hasUpgrade = /\.upgrade\(/.test(dbSrc) && /preset:critic/.test(dbSrc);
+    const hasUpdate = /personas\.update\(\s*["']preset:critic["']/.test(dbSrc);
+    check(
+      "D-15.1 #103 db v6 마이그레이션: critic preset systemPrompt 강제 갱신",
+      hasV6 && hasUpgrade && hasUpdate,
+      `v6=${hasV6} upgrade=${hasUpgrade} update=${hasUpdate}`,
+    );
+  }
+
+  // 104. (D-15.2) 헤더 발언 모드 라벨 동적 — turnMode subscribe + TURN_MODE_LABEL_KEY 매핑 박힘.
+  //     B-2 라이브 회귀(헤더 'ROUND-ROBIN' 정적) fix.
+  {
+    const wsSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const hasSubscribe = /useConversationStore\(\(s\)\s*=>\s*s\.turnMode\)/.test(wsSrc);
+    const hasLabelMap = /TURN_MODE_LABEL_KEY/.test(wsSrc);
+    const hasManualKey = /["']header\.mode\.manual["']/.test(wsSrc);
+    const hasRrKey = /["']header\.mode\.roundRobin["']/.test(wsSrc);
+    const hasTriggerKey = /["']header\.mode\.trigger["']/.test(wsSrc);
+    // 헤더 정적 텍스트 'Round-robin' 제거됐는지 (정적 백업 박힌 채면 회귀 가능성)
+    const noStaticRoundRobin = !/Day\s*3\s*·\s*Round-robin/i.test(wsSrc);
+    // data-test 가드 (라이브 검증용 셀렉터)
+    const hasDataTest = /data-test=["']header-mode-label["']/.test(wsSrc);
+    check(
+      "D-15.2 #104 헤더 라벨 동적: turnMode subscribe + TURN_MODE_LABEL_KEY 매핑 + 정적 텍스트 제거",
+      hasSubscribe && hasLabelMap && hasManualKey && hasRrKey && hasTriggerKey && noStaticRoundRobin && hasDataTest,
+      `sub=${hasSubscribe} map=${hasLabelMap} m=${hasManualKey} rr=${hasRrKey} tr=${hasTriggerKey} noStatic=${noStaticRoundRobin} dt=${hasDataTest}`,
+    );
+  }
+
+  // 105. (D-15.2) i18n header.mode.{manual,roundRobin,trigger} ko/en 박힘.
+  {
+    const koHas =
+      typeof MESSAGES.ko["header.mode.manual"] === "string" &&
+      typeof MESSAGES.ko["header.mode.roundRobin"] === "string" &&
+      typeof MESSAGES.ko["header.mode.trigger"] === "string";
+    const enHas =
+      typeof MESSAGES.en["header.mode.manual"] === "string" &&
+      typeof MESSAGES.en["header.mode.roundRobin"] === "string" &&
+      typeof MESSAGES.en["header.mode.trigger"] === "string";
+    // turnMode 3종 enum과 1:1 매핑 — 본문 비어있지 않아야 함 (헤더에 빈 라벨 박히면 사용자 혼란).
+    const allFilled =
+      MESSAGES.ko["header.mode.manual"].length > 0 &&
+      MESSAGES.ko["header.mode.roundRobin"].length > 0 &&
+      MESSAGES.ko["header.mode.trigger"].length > 0 &&
+      MESSAGES.en["header.mode.manual"].length > 0 &&
+      MESSAGES.en["header.mode.roundRobin"].length > 0 &&
+      MESSAGES.en["header.mode.trigger"].length > 0;
+    check(
+      "D-15.2 #105 i18n header.mode.* 3종 ko/en 박힘 + 본문 비어있지 않음",
+      koHas && enHas && allFilled,
+    );
+  }
+
+  // 106. (D-15.1) F-D9-1 toast.critic.softFallback i18n ko/en 박힘 — D-D9-1 노란 액센트 카피.
+  {
+    const ko = MESSAGES.ko["toast.critic.softFallback"];
+    const en = MESSAGES.en["toast.critic.softFallback"];
+    const koHasIcon = ko.startsWith("⚠");
+    const enHasIcon = en.startsWith("⚠");
+    const koShort = ko.length > 0 && ko.length <= 80;
+    const enShort = en.length > 0 && en.length <= 80;
+    check(
+      "D-15.1 #106 toast.critic.softFallback ko/en: ⚠ prefix + 1줄 80자 이내",
+      koHasIcon && enHasIcon && koShort && enShort,
+      `koLen=${ko.length} enLen=${en.length}`,
+    );
+  }
+}
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
   .then(() => runD10AsyncChecks())
   .then(() => runD11D12Checks())
   .then(() => runD13Checks())
   .then(() => runD14Checks())
+  .then(() => runD15Checks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);

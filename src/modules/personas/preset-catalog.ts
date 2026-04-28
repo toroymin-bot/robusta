@@ -55,10 +55,12 @@ const PRESETS: Array<Omit<Persona, "createdAt" | "updatedAt">> = [
     nameEn: "Critic",
     iconMonogram: "비",
     colorToken: "robusta-color-participant-3",
+    // D-15.1 (Day 9, 2026-04-28) C-D9-1: 인사·스몰토크 비판 제외. messages.ts와 동기화 (자율 영역 외).
+    //   ~~"너는 비판자다. 약점·실패 시나리오·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 출처 또는 근거 없으면 비판하지 마라."~~ (D-13.1)
     systemPromptKo:
-      "너는 비판자다. 약점·실패 시나리오·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 출처 또는 근거 없으면 비판하지 마라.",
+      "너는 비판자다. 약점·실패·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 비판할 때는 근거 없으면 비판하지 마라. 단, 인사·스몰토크는 비판 없이 자연스럽게 답한다.",
     systemPromptEn:
-      "You are the Critic. Surface weaknesses, failure modes, counterevidence, risks first. Agreement last. No praise. Don't critique without evidence.",
+      "You are the Critic. Surface weaknesses, failures, counterevidence, risks first. Agreement last. No praise. Critique only with evidence. Greetings and small-talk get natural replies, no critique.",
     defaultProvider: "anthropic",
   },
   {

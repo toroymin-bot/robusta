@@ -154,6 +154,35 @@ export class RobustaDB extends Dexie {
       apiKeyMeta: "pk, provider, lastUnauthorizedAt",
       personas: "&id, kind, isPreset, createdAt, [kind+isPreset]", // 신규 테이블
     });
+    // v6 — D-15.1 (Day 9, 2026-04-28) C-D9-1: 기존 critic preset row 강제 갱신.
+    //   ensurePresetSeed는 멱등 시드(이미 박힌 항목 skip)라 D-13.1 본문이 그대로 남아 라이브 회귀(B-1) fix 미반영.
+    //   v6 upgrade로 id='preset:critic'이고 isPreset=true인 row만 systemPromptKo/En을 D-15.1 본문으로 덮어쓴다.
+    //   사용자 정의 critic(id != 'preset:critic')은 영향 없음. updatedAt도 갱신.
+    //   본 마이그레이션은 1회성 — v6 박힌 후 재실행되지 않음.
+    this.version(6)
+      .stores({
+        participants: "id, kind, name",
+        conversations: "id, updatedAt",
+        messages:
+          "id, conversationId, createdAt, status, streamingStartedAt",
+        apiKeys: "provider",
+        settings: "key",
+        apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+        personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
+      })
+      .upgrade(async (tx) => {
+        const personas = tx.table<Persona, string>("personas");
+        const existing = await personas.get("preset:critic");
+        if (!existing || existing.isPreset !== true) return;
+        // D-15.1 (Day 9) 새 본문 — preset-catalog.ts / messages.ts와 1:1 동기화.
+        await personas.update("preset:critic", {
+          systemPromptKo:
+            "너는 비판자다. 약점·실패·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 비판할 때는 근거 없으면 비판하지 마라. 단, 인사·스몰토크는 비판 없이 자연스럽게 답한다.",
+          systemPromptEn:
+            "You are the Critic. Surface weaknesses, failures, counterevidence, risks first. Agreement last. No praise. Critique only with evidence. Greetings and small-talk get natural replies, no critique.",
+          updatedAt: Date.now(),
+        });
+      });
   }
 }
 
