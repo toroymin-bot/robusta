@@ -1878,6 +1878,73 @@ async function runD15Checks(): Promise<void> {
       `enum=${hasEnum} fn=${hasPickFn} i18n=${i18nOk} labelMap=${hasLabelMap}`,
     );
   }
+
+  // 112. (D-D11-1, Day 10, 2026-04-29, B14 채택분) C-D11-1: AI-Auto 트리거 풀 본체.
+  //   가드 (1) startAutoLoop export — turn-controller에 setInterval 라이프사이클 함수.
+  //   가드 (2) AutoLoopHandle interface export — store/view가 핸들 추적.
+  //   회귀 시 ai-auto 전환해도 자동 발화 X — B14 차별화 게이트 통과 X.
+  {
+    const turnSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/turn-controller.ts`,
+      "utf-8",
+    );
+    const hasStartFn = /export\s+function\s+startAutoLoop\s*\(/.test(turnSrc);
+    const hasHandleType = /export\s+interface\s+AutoLoopHandle\b/.test(turnSrc);
+    check(
+      "D-D11-1 #112 turn-controller에 startAutoLoop + AutoLoopHandle export",
+      hasStartFn && hasHandleType,
+      `start=${hasStartFn} handle=${hasHandleType}`,
+    );
+  }
+
+  // 113. (D-D11-1) C-D11-1 §4.5 E4: visibilitychange 핸들러 + stop("hidden").
+  //   탭 비활성 시 setInterval 정지 + 진행 중 stream abort. 백그라운드 토큰 폭주 방지 핵심.
+  //   회귀 시 Firefox/Safari에서 탭 백그라운드 동안 무제한 발화.
+  {
+    const turnSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/turn-controller.ts`,
+      "utf-8",
+    );
+    const hasVisChange = /addEventListener\(\s*["']visibilitychange["']/.test(turnSrc);
+    const hasHiddenStop = /stop\(\s*["']hidden["']\s*\)/.test(turnSrc);
+    check(
+      "D-D11-1 #113 visibilitychange 핸들러 + stop('hidden') 박힘",
+      hasVisChange && hasHiddenStop,
+      `vis=${hasVisChange} hiddenStop=${hasHiddenStop}`,
+    );
+  }
+
+  // 114. (D-D11-1) C-D11-1 §4.5 E5: maxAutoTurns 가드 + autoLoop.* i18n 6키.
+  //   maxAutoTurns 도달 시 stop("completed"). 토큰 폭주 1차 가드.
+  //   i18n 6키는 토스트 안내(인간/탭이탈/완료/스킵/BYOK/AI<2명) — 누락 시 키 문자열 노출.
+  {
+    const turnSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/turn-controller.ts`,
+      "utf-8",
+    );
+    const hasMaxGuard = /turnsCompleted\s*>=\s*config\.maxAutoTurns/.test(turnSrc);
+    const koKeys: ReadonlyArray<keyof (typeof MESSAGES)["ko"]> = [
+      "autoLoop.paused.human",
+      "autoLoop.paused.hidden",
+      "autoLoop.completed",
+      "autoLoop.skipped",
+      "autoLoop.byokMissing",
+      "autoLoop.noSpeaker",
+    ];
+    const i18nOk = koKeys.every((k) => {
+      const koVal = MESSAGES.ko[k];
+      const enVal = MESSAGES.en[k];
+      return (
+        typeof koVal === "string" && koVal.length > 0 &&
+        typeof enVal === "string" && enVal.length > 0
+      );
+    });
+    check(
+      "D-D11-1 #114 maxAutoTurns 가드 + autoLoop.* i18n 6키 (ko/en)",
+      hasMaxGuard && i18nOk,
+      `maxGuard=${hasMaxGuard} i18n=${i18nOk}`,
+    );
+  }
 }
 
 runAsyncChecks()

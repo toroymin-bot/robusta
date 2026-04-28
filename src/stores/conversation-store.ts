@@ -8,6 +8,15 @@ import {
   type Message,
 } from "@/modules/conversation/conversation-types";
 import type { TurnMode } from "@/modules/conversation/turn-controller";
+// D-D11-1 (Day 10, 2026-04-29, B14) C-D11-1: AI-Auto 트리거 풀 라이프사이클.
+import {
+  startAutoLoop,
+  pickNextSpeakerAutoAi,
+  type AutoLoopHandle,
+  type AutoLoopStatus,
+  type AutoLoopConfig,
+  type AutoLoopStopReason,
+} from "@/modules/conversation/turn-controller";
 import { DEFAULT_PARTICIPANTS } from "@/modules/participants/participant-seed";
 // D-10.3: 재전송 지원 — 순수 plan 함수 + streamMessage + 의존 stores.
 import { buildRetryPlan } from "@/modules/conversation/retry-plan";
@@ -110,6 +119,19 @@ interface ConversationStore {
     maxCount?: number;
     intervalMs?: number;
   }) => Promise<{ retried: number; skipped: number }>;
+
+  // D-D11-1 (Day 10, 2026-04-29, B14) C-D11-1: AI-Auto 트리거 풀 상태/액션.
+  //   handle은 setInterval/visibilitychange listener 보유 — terminal 시 caller가 stop으로 정리.
+  //   autoLoopStatus는 UI 바인딩(헤더 ▶/⏸/배지). C-D11-2에서 헤더 컴포넌트 박을 때 subscribe.
+  //   autoLoopConfig는 메모리 only — localStorage persist는 C-D11-2 헤더 셀렉터에서.
+  autoLoopHandle: AutoLoopHandle | null;
+  autoLoopStatus: AutoLoopStatus;
+  autoTurnsCompleted: number;
+  autoLoopConfig: AutoLoopConfig;
+  startAutoLoopAction: () => void;
+  stopAutoLoopAction: (reason: AutoLoopStopReason) => void;
+  resumeAutoLoopAction: () => boolean;
+  setAutoLoopConfig: (cfg: Partial<AutoLoopConfig>) => void;
 }
 
 export const useConversationStore = create<ConversationStore>((set, get) => ({
@@ -239,7 +261,11 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
   },
 
   // D-8.2: 발언 모드 변경 (manual / round-robin / trigger).
+  // D-D11-1 보강: ai-auto가 아닌 모드로 전환 시 진행 중 AutoLoop 핸들 정리.
   setTurnMode(mode) {
+    if (mode !== "ai-auto" && get().autoLoopHandle) {
+      get().stopAutoLoopAction("manual");
+    }
     set({ turnMode: mode });
   },
 
@@ -466,7 +492,229 @@ export const useConversationStore = create<ConversationStore>((set, get) => ({
 
     return { retried, skipped };
   },
+
+  // ============================================================================
+  // D-D11-1 (Day 10, 2026-04-29, B14) C-D11-1: AI-Auto 트리거 풀 actions.
+  // ============================================================================
+  autoLoopHandle: null,
+  autoLoopStatus: "idle",
+  autoTurnsCompleted: 0,
+  // 기본 — Do 페이지 \"속도 내자\" 정책 + 안전판: 15초 인터벌 / 10턴 한도.
+  // 사용자 셀렉터(C-D11-2)는 5/15/30/60s, 5/10/20/30턴.
+  autoLoopConfig: { intervalMs: 15000, maxAutoTurns: 10 },
+
+  startAutoLoopAction() {
+    const prev = get().autoLoopHandle;
+    if (prev) {
+      // 진행 중 핸들이 있으면 먼저 정리. 새 시작은 turnsCompleted 0 리셋.
+      prev.stop("manual");
+    }
+    set({ autoTurnsCompleted: 0 });
+
+    const ctx = {
+      pickNextSpeaker: (): string | null => {
+        const state = get();
+        const list = state.messages[state.activeConversationId] ?? [];
+        const lastId = list.length > 0 ? list[list.length - 1]!.participantId : null;
+        const participants = useParticipantStore.getState().participants;
+        const result = pickNextSpeakerAutoAi(
+          participants,
+          lastId,
+          state.autoLoopConfig.intervalMs,
+        );
+        return result?.next ?? null;
+      },
+      streamMessage: (speakerId: string, signal: AbortSignal): Promise<void> =>
+        runAutoTurn(speakerId, signal, get, set),
+      isStreaming: (): boolean => get().abortController !== null,
+      hasByokKey: (): boolean =>
+        Boolean(useApiKeyStore.getState().keys.anthropic),
+    };
+
+    const handle = startAutoLoop(ctx, {
+      ...get().autoLoopConfig,
+      onTickEnd: (turnIndex) => {
+        set({ autoTurnsCompleted: turnIndex });
+      },
+      onStatusChange: (status, reason) => {
+        set({ autoLoopStatus: status });
+        // paused 상태 안내 토스트 — terminal은 onError에서 별도 처리.
+        const pushToast = useToastStore.getState().push;
+        if (status === "paused-human") {
+          pushToast({ tone: "info", message: t("autoLoop.paused.human") });
+        } else if (status === "paused-hidden") {
+          pushToast({ tone: "info", message: t("autoLoop.paused.hidden") });
+        } else if (status === "completed") {
+          // ToastTone에 'success' 없음 — 'info' 톤 + ✅ 시각 단서로 완료 신호.
+          pushToast({
+            tone: "info",
+            message: `✅ ${t("autoLoop.completed", { turns: get().autoTurnsCompleted })}`,
+          });
+        }
+        void reason;
+      },
+      onError: (reason, detail) => {
+        const pushToast = useToastStore.getState().push;
+        if (reason === "byokMissing") {
+          pushToast({ tone: "error", message: t("autoLoop.byokMissing") });
+        } else if (reason === "noSpeaker") {
+          pushToast({ tone: "warning", message: t("autoLoop.noSpeaker") });
+        } else if (reason === "streamError") {
+          pushToast({
+            tone: "error",
+            message: detail ? `AI-Auto 오류: ${detail}` : "AI-Auto 오류",
+          });
+        }
+      },
+    });
+
+    set({ autoLoopHandle: handle, autoLoopStatus: handle.status() });
+  },
+
+  stopAutoLoopAction(reason) {
+    const handle = get().autoLoopHandle;
+    if (!handle) return;
+    handle.stop(reason);
+    // terminal 시 핸들 참조 해제. paused는 resume 가능하도록 보존.
+    const next = handle.status();
+    if (next !== "paused-human" && next !== "paused-hidden") {
+      set({ autoLoopHandle: null, autoLoopStatus: next });
+    } else {
+      set({ autoLoopStatus: next });
+    }
+  },
+
+  resumeAutoLoopAction() {
+    const handle = get().autoLoopHandle;
+    if (!handle) return false;
+    const ok = handle.resume();
+    set({ autoLoopStatus: handle.status() });
+    return ok;
+  },
+
+  setAutoLoopConfig(cfg) {
+    const merged = { ...get().autoLoopConfig, ...cfg };
+    set({ autoLoopConfig: merged });
+    // 진행 중이면 새 config로 재시작 — turnsCompleted는 0 리셋(startAutoLoopAction 의도).
+    // 명세 §4.5 E9 \"turnsCompleted 유지(연속)\"이지만 본 슬롯은 단순화 — C-D11-2에서 보강.
+    if (get().autoLoopStatus === "running") {
+      get().startAutoLoopAction();
+    }
+  },
 }));
+
+// D-D11-1 C-D11-1: AutoLoop 한 턴 — 새 placeholder + streamMessage SSE 소비.
+//   conversation-view.runAiTurn과 비슷하지만 토스트는 store가 onError로 처리하므로 생략.
+//   abort signal은 startAutoLoop이 stop 시 abort()로 끊는다 → AbortError yield → resolve.
+async function runAutoTurn(
+  speakerId: string,
+  signal: AbortSignal,
+  get: () => ConversationStore,
+  set: (partial: Partial<ConversationStore>) => void,
+): Promise<void> {
+  const state = get();
+  const conversationId = state.activeConversationId;
+  const participants = useParticipantStore.getState().participants;
+  const speaker = participants.find((p) => p.id === speakerId);
+  if (!speaker || speaker.kind !== "ai") {
+    throw new Error("runAutoTurn: speaker not found or not ai");
+  }
+  const apiKey = useApiKeyStore.getState().keys.anthropic;
+  if (!apiKey) {
+    throw new Error("runAutoTurn: no api key");
+  }
+  // E2 동시 streaming 방지 — startAutoLoop tick에서 isStreaming 가드. 여기서는 conservative 재확인.
+  if (state.abortController !== null) {
+    return;
+  }
+
+  const placeholderId = state.createMessageId();
+  const placeholder: Message = {
+    id: placeholderId,
+    conversationId,
+    participantId: speaker.id,
+    content: "",
+    createdAt: Date.now() + 1,
+    status: "streaming",
+  };
+  await state.appendMessage(placeholder);
+
+  // AutoLoop의 AbortSignal을 store abortController로 표면화 — sendUserMessage가 보면 abort 가능.
+  const controller = new AbortController();
+  if (signal.aborted) controller.abort();
+  signal.addEventListener("abort", () => controller.abort(), { once: true });
+  set({ abortController: controller });
+
+  const history = (
+    useConversationStore.getState().messages[conversationId] ?? []
+  ).filter((m) => m.id !== placeholderId);
+
+  let accumulated = "";
+  let lastError: { reason: string; status?: number } | null = null;
+  let aborted = false;
+  let usagePatch: Message["usage"];
+
+  try {
+    for await (const chunk of streamMessage({
+      apiKey,
+      speaker,
+      participants,
+      history,
+      signal: controller.signal,
+    })) {
+      if (chunk.kind === "delta") {
+        accumulated += chunk.text;
+        await state.updateMessage(placeholderId, {
+          content: accumulated,
+          status: "streaming",
+        });
+      } else if (chunk.kind === "usage") {
+        usagePatch = chunk.usage;
+      } else if (chunk.kind === "aborted") {
+        aborted = true;
+        break;
+      } else if (chunk.kind === "error") {
+        lastError = { reason: chunk.reason, status: chunk.status };
+        break;
+      } else if (chunk.kind === "done") {
+        break;
+      }
+      // fallback / retrying chunk는 store가 별도 토스트 X — AutoLoop 모드는 노이즈 최소화.
+    }
+  } catch (err) {
+    lastError = {
+      reason: err instanceof Error ? err.message : "stream error",
+    };
+  } finally {
+    set({ abortController: null });
+  }
+
+  if (aborted) {
+    await state.updateMessage(placeholderId, {
+      status: "aborted",
+      content: accumulated,
+      ...(usagePatch ? { usage: usagePatch } : {}),
+    });
+    return;
+  }
+
+  if (lastError) {
+    await state.updateMessage(placeholderId, {
+      status: "error",
+      content: accumulated,
+      errorReason: lastError.reason,
+      ...(usagePatch ? { usage: usagePatch } : {}),
+    });
+    // tick은 reject로 종료 → startAutoLoop이 stop("streamError") + onError 토스트.
+    throw new Error(lastError.reason);
+  }
+
+  await state.updateMessage(placeholderId, {
+    status: "done",
+    content: accumulated,
+    ...(usagePatch ? { usage: usagePatch } : {}),
+  });
+}
 
 export const __conversation_store_internal = {
   PERSIST_DEBOUNCE_MS,

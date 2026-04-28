@@ -99,6 +99,14 @@ export const MESSAGES = {
     "header.mode.trigger": "Scheduled",
     // D-D10-5 (Day 9, 2026-04-28, B12 채택분) C-D10-5: 4번째 모드 'AI-Auto' — AI-AI 자율 발언.
     "header.mode.aiAuto": "AI-Auto",
+    // D-D11-1 (Day 10, 2026-04-29, B14) C-D11-1: AI-Auto 트리거 풀 토스트 6종.
+    //   인간/탭이탈/완료/스킵/BYOK부재/AI<2명 상태 전이를 사용자에게 1회 안내.
+    "autoLoop.paused.human": "AI-Auto 일시정지됨. ▶ 클릭으로 재개.",
+    "autoLoop.paused.hidden": "탭 비활성으로 AI-Auto 일시정지.",
+    "autoLoop.completed": "{turns}턴 완료. ▶ 다시 시작.",
+    "autoLoop.skipped": "{count}건 스킵됨 (탭 비활성). ▶ 재개.",
+    "autoLoop.byokMissing": "BYOK 키 없음. AI-Auto 중지됨.",
+    "autoLoop.noSpeaker": "AI 2명 이상 필요. AI-Auto 중지됨.",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -173,6 +181,13 @@ export const MESSAGES = {
     "header.mode.trigger": "Scheduled",
     // D-D10-5 (Day 9, 2026-04-28) C-D10-5: 4th mode AI-Auto — AI-AI autonomous speech.
     "header.mode.aiAuto": "AI-Auto",
+    // D-D11-1 (Day 10, 2026-04-29) C-D11-1: AI-Auto trigger pool toasts (6 keys).
+    "autoLoop.paused.human": "AI-Auto paused. Click ▶ to resume.",
+    "autoLoop.paused.hidden": "AI-Auto paused while tab inactive.",
+    "autoLoop.completed": "{turns} turns done. ▶ Restart.",
+    "autoLoop.skipped": "{count} ticks skipped. ▶ Resume.",
+    "autoLoop.byokMissing": "BYOK key missing. AI-Auto stopped.",
+    "autoLoop.noSpeaker": "Need 2+ AIs. AI-Auto stopped.",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

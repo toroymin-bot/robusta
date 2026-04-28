@@ -42,6 +42,10 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
   const lockedAfterHuman = useConversationStore((s) => s.lockedAfterHuman);
   const setTurnMode = useConversationStore((s) => s.setTurnMode);
   const setLockedAfterHuman = useConversationStore((s) => s.setLockedAfterHuman);
+  // D-D11-1 (Day 10, 2026-04-29) C-D11-1: AI-Auto 트리거 풀 액션 — 인간 가로채기 + 모드 전환.
+  const startAutoLoopAction = useConversationStore((s) => s.startAutoLoopAction);
+  const stopAutoLoopAction = useConversationStore((s) => s.stopAutoLoopAction);
+  const autoLoopHandle = useConversationStore((s) => s.autoLoopHandle);
 
   const participants = useParticipantStore((s) => s.participants);
   const participantsHydrated = useParticipantStore((s) => s.hydrated);
@@ -303,6 +307,10 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       if (speaker.kind !== "ai") {
         // D-8.2: 인간 발언 → round-robin 자동 진행 차단 (사용자 [▶ 다음 발언] 클릭 필요)
         setLockedAfterHuman(true);
+        // D-D11-1 §4.5 E1: AI-Auto 진행 중이면 인간 가로채기 → paused-human + info 토스트.
+        if (autoLoopHandle) {
+          stopAutoLoopAction("human");
+        }
         return;
       }
 
@@ -318,6 +326,8 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       createMessageId,
       runAiTurn,
       setLockedAfterHuman,
+      autoLoopHandle,
+      stopAutoLoopAction,
     ],
   );
 
@@ -408,22 +418,25 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       });
       return;
     }
-    // D-D10-5 (Day 9, 2026-04-28) C-D10-5: ai-auto 골격 — enum/순수 함수만 박음, 트리거 로직은 C-D11-1.
-    //   AI 0명 가드: 단독 인간 대화는 ai-auto 무의미 → 안내 토스트로 사용자 혼란 방지.
+    // D-D10-5 (Day 9, 2026-04-28) C-D10-5: ai-auto 골격 — enum/순수 함수.
+    // D-D11-1 (Day 10, 2026-04-29) C-D11-1: 트리거 풀 본체 박음 → ai-auto 전환 시 자동 시작.
+    //   ~~"AI-Auto 모드는 골격만 박혀 있습니다 — 자율 발화 트리거는 곧 제공됩니다."~~ (D-D10-5 안내 제거)
+    //   AI < 2명 가드: pickNextSpeakerAutoAi가 null 반환 → 시작 직후 noSpeaker 토스트로 폴백되지만,
+    //   사용자 혼란 방지 위해 진입 시점에서 한 번 차단.
     if (mode === "ai-auto") {
       const aiCount = participants.filter((p) => p.kind === "ai").length;
-      if (aiCount === 0) {
+      if (aiCount < 2) {
         pushToast({
           tone: "warning",
-          message: "AI 참여자가 필요합니다.",
+          message: "AI-Auto는 AI 2명 이상에서 동작합니다.",
         });
         return;
       }
-      pushToast({
-        tone: "info",
-        message: "AI-Auto 모드는 골격만 박혀 있습니다 — 자율 발화 트리거는 곧 제공됩니다.",
-      });
-      // 모드는 set 박아 헤더 라벨 갱신은 진행 (시각 반영).
+      setTurnMode(mode);
+      // turnMode 갱신 후 자동 시작. setTurnMode 안의 stopAutoLoopAction("manual")은
+      // mode !== ai-auto 분기에서만 동작하므로 이중 호출 X.
+      startAutoLoopAction();
+      return;
     }
     setTurnMode(mode);
     // 모드 전환 시 lock 초기화 (manual에서는 lock 무관)
