@@ -46,3 +46,25 @@ export function getRoadmapDay(now: Date = new Date()): RoadmapDayInfo {
 export function formatRoadmapLabel(info: RoadmapDayInfo): string {
   return `Day ${info.day} · ${info.mode}`;
 }
+
+/**
+ * D-D17-4 (Day 5 03시 슬롯, 2026-04-30) C-D17-4: 헤더 모드 라벨 색상 티어.
+ *   똘이 v1 §5 D-2 채택 — Day 1~3 노랑(kickoff), Day 4 오렌지(mid), Day 5+ 녹색(launch).
+ *   첫 방문자가 즉시 "라이브 단계" 시각 인지 (Roy id-15 직관성 정합).
+ *   기존 단일 #F5C518 박음을 보존하지 않고 티어 기반으로 정정 — kickoff 색상은 동일 유지하므로 D1~3 회귀 0.
+ */
+export type RoadmapColorTier = "kickoff" | "mid" | "launch";
+
+/** D-Day 정수 → 색상 티어. clamp는 호출자(getRoadmapDay)가 1..MAX_DAY 보장. */
+export function getRoadmapColorTier(day: number): RoadmapColorTier {
+  if (day >= 5) return "launch";
+  if (day >= 4) return "mid";
+  return "kickoff";
+}
+
+/** 티어 → hex 색상 (헤더 borderLeftColor 인라인 style). */
+export const ROADMAP_COLOR_HEX: Record<RoadmapColorTier, string> = {
+  kickoff: "#F5C518", // Roy Do v24 id-6 노랑 (Day 1~3)
+  mid: "#F59E0B", // 진행감 오렌지 (Day 4)
+  launch: "#10B981", // 라이브 녹색 (Day 5+)
+};

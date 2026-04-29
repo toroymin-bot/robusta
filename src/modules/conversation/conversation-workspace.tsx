@@ -21,7 +21,13 @@ import { t } from "@/modules/i18n/messages";
 import type { TurnMode } from "@/modules/conversation/turn-controller";
 // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: 헤더 모드 라벨 동적 회전 (F-D16-1).
 //   v12 §24.3 web_fetch 검증으로 "Day 3" 정적 결함 박힘 → Roadmap 자동 계산.
-import { getRoadmapDay, formatRoadmapLabel } from "./roadmap-day";
+// D-D17-4 (Day 5 03시 슬롯, 2026-04-30) C-D17-4: 색상 티어 import 추가 — Day별 헤더 라벨 색상 분기.
+import {
+  getRoadmapDay,
+  formatRoadmapLabel,
+  getRoadmapColorTier,
+  ROADMAP_COLOR_HEX,
+} from "./roadmap-day";
 
 // D-15.2 (Day 9) turnMode → i18n 키 매핑. enum 3종 1:1.
 //   manual → "Manual" / round-robin → "Round-robin" / trigger → "Scheduled"
@@ -64,12 +70,17 @@ export function ConversationWorkspace() {
 
   const [keysOpen, setKeysOpen] = useState(false);
   // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: D-Day 라벨 클라 시점 계산.
-  //   SSR/CSR hydration mismatch 회피를 위해 SSR 폴백 = "Day 5 · Live" (D5 라이브 시점 정합).
+  //   SSR/CSR hydration mismatch 회피를 위해 SSR 폴백 = Day 5 (라이브 시점 정합).
   //   useEffect로 클라 시점 1회 set → 렌더 직후 실제 D-Day로 회전.
-  const [roadmapLabel, setRoadmapLabel] = useState<string>("Day 5 · Live");
+  // D-D17-4 (Day 5 03시 슬롯, 2026-04-30) C-D17-4: 라벨/색상 모두 day 기반 도출하도록 day state로 통합.
+  //   ~~roadmapLabel: string state~~ → roadmapDay: number state. 라벨은 매 렌더 도출.
+  const [roadmapDay, setRoadmapDay] = useState<number>(5);
   useEffect(() => {
-    setRoadmapLabel(formatRoadmapLabel(getRoadmapDay()));
+    setRoadmapDay(getRoadmapDay().day);
   }, []);
+  const roadmapInfo = { day: roadmapDay, mode: roadmapDay >= 5 ? "Live" : "Manual" } as const;
+  const roadmapLabel = formatRoadmapLabel(roadmapInfo);
+  const roadmapColor = ROADMAP_COLOR_HEX[getRoadmapColorTier(roadmapDay)];
 
   useEffect(() => {
     if (!participantsHydrated) {
@@ -118,15 +129,18 @@ export function ConversationWorkspace() {
             {/* D-D16-1 (Day 4 23시, 2026-04-29) C-D16-1: D-Day 라벨 동적 회전.
                 기존 정적 라벨(D-Day 3) 제거 → 동적 `Day {N} · Manual|Live` (Roadmap 기준 D5 라이브 시점 자동 회전).
                 turnMode 시각 피드백은 별도 라벨로 분리 (data-test=header-turn-mode-label). */}
+            {/* D-D17-4 (Day 5 03시) C-D17-4: borderLeftColor를 day 기반 티어로 분기.
+                ~~인라인 #F5C518 단일~~ → ROADMAP_COLOR_HEX[티어] 도출 (Day 1~3 노랑 / Day 4 오렌지 / Day 5+ 녹색).
+                D-D17-5 (Day 5 03시) C-D17-5 가드: 모바일 375px에서 라벨 줄바꿈 방지 — whitespace-nowrap 박음. */}
             <span
-              className={`text-xs uppercase tracking-widest ${getModeClassName(true)}`}
-              style={{ borderLeftColor: "#F5C518" }}
+              className={`whitespace-nowrap text-xs uppercase tracking-widest ${getModeClassName(true)}`}
+              style={{ borderLeftColor: roadmapColor }}
               data-test="header-mode-label"
             >
               {roadmapLabel}
             </span>
             <span
-              className="text-xs uppercase tracking-widest text-robusta-inkDim"
+              className="whitespace-nowrap text-xs uppercase tracking-widest text-robusta-inkDim"
               data-test="header-turn-mode-label"
             >
               {t(TURN_MODE_LABEL_KEY[turnMode])}

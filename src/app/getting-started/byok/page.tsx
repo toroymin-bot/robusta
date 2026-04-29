@@ -10,6 +10,9 @@
  */
 import type { Metadata } from "next";
 
+// D-D17-3 (Day 5 03시 슬롯, 2026-04-30) C-D17-3: og:image / twitter 메타 누락 정정.
+//   똘이 v1 §1.3 V-3 부수 검증 — /getting-started/byok는 og:image 자체 누락 + twitter:image도 없음.
+//   홈 / 와 동일한 og.png 1200×630 박음 (소셜 카드 일관성).
 export const metadata: Metadata = {
   title: "BYOK 시작 — Robusta",
   description:
@@ -18,6 +21,20 @@ export const metadata: Metadata = {
     title: "BYOK 시작 — Robusta",
     description: "Anthropic API 키 1분 발급 가이드.",
     url: "https://robusta.ai4min.com/getting-started/byok",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Robusta — Roy + Tori + Komi",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BYOK 시작 — Robusta",
+    description: "Anthropic API 키 1분 발급 가이드.",
+    images: ["/og.png"],
   },
 };
 

@@ -2238,6 +2238,185 @@ async function runD16Checks(): Promise<void> {
   }
 }
 
+// === D-D17 (Day 5 03시 슬롯, 2026-04-30) — 똘이 v1 §6 P0 4건 (C-D17-2/3/4/5) + #129~#139 ===
+async function runD17Checks(): Promise<void> {
+  const { resolve } = await import("node:path");
+  const projectRoot = resolve(__dirname, "..");
+
+  // 129. (C-D17-2) EmptyStateCta 모듈 박힘 + variant prop + data-test 양 박힘.
+  {
+    const file = `${projectRoot}/src/modules/onboarding/empty-state-cta.tsx`;
+    const exists = existsSync(file);
+    let testIds = false;
+    let variantProp = false;
+    let copySample = false;
+    let copyByok = false;
+    if (exists) {
+      const src = readFileSync(file, "utf-8");
+      testIds =
+        /data-test=["']empty-state-cta["']/.test(src) &&
+        /data-test=["']empty-state-cta-link["']/.test(src);
+      variantProp = /variant\?\s*:\s*["']sample["']\s*\|\s*["']byok["']/.test(src);
+      copySample = /\/sample/.test(src);
+      copyByok = /\/getting-started\/byok/.test(src);
+    }
+    check(
+      "C-D17-2 #129 EmptyStateCta 모듈 + variant prop + data-test 박힘",
+      exists && testIds && variantProp && copySample && copyByok,
+      `exists=${exists} testIds=${testIds} variant=${variantProp} sample=${copySample} byok=${copyByok}`,
+    );
+  }
+
+  // 130. (C-D17-2) conversation-view에 EmptyStateCta 분기 박힘 — 참여자 0 + grouped 0 가드.
+  {
+    const file = `${projectRoot}/src/modules/conversation/conversation-view.tsx`;
+    const src = readFileSync(file, "utf-8");
+    const importOk = /from ["']@\/modules\/onboarding\/empty-state-cta["']/.test(src);
+    const ctaTagOk = /<EmptyStateCta\s+variant=["']sample["']/.test(src);
+    const branchOk =
+      /participants\.length\s*===\s*0\s*&&\s*grouped\.length\s*===\s*0/.test(src);
+    check(
+      "C-D17-2 #130 conversation-view 분기 (참여자 0 + 메시지 0) → CTA",
+      importOk && ctaTagOk && branchOk,
+      `import=${importOk} tag=${ctaTagOk} branch=${branchOk}`,
+    );
+  }
+
+  // 131. (C-D17-3) /sample 메타에 og:image width/height + twitter 박힘.
+  {
+    const file = `${projectRoot}/src/app/sample/page.tsx`;
+    const src = readFileSync(file, "utf-8");
+    const widthOk = /width:\s*1200/.test(src);
+    const heightOk = /height:\s*630/.test(src);
+    const altOk = /alt:\s*["']Robusta — Roy \+ Tori \+ Komi["']/.test(src);
+    const twitterOk = /twitter:\s*\{[\s\S]*?summary_large_image/.test(src);
+    check(
+      "C-D17-3 #131 /sample og:image width/height/alt + twitter 박힘",
+      widthOk && heightOk && altOk && twitterOk,
+      `w=${widthOk} h=${heightOk} alt=${altOk} tw=${twitterOk}`,
+    );
+  }
+
+  // 132. (C-D17-3) /getting-started/byok 메타에 og:image + twitter 박힘 (이전 누락 정정).
+  {
+    const file = `${projectRoot}/src/app/getting-started/byok/page.tsx`;
+    const src = readFileSync(file, "utf-8");
+    const ogImagesOk = /openGraph:[\s\S]*?images:\s*\[/.test(src);
+    const widthOk = /width:\s*1200/.test(src);
+    const heightOk = /height:\s*630/.test(src);
+    const twitterOk = /twitter:\s*\{[\s\S]*?summary_large_image/.test(src);
+    check(
+      "C-D17-3 #132 /byok og:image + width/height + twitter 박힘",
+      ogImagesOk && widthOk && heightOk && twitterOk,
+      `og=${ogImagesOk} w=${widthOk} h=${heightOk} tw=${twitterOk}`,
+    );
+  }
+
+  // 133. (C-D17-3) layout.tsx 홈 og:image width/height 회귀 가드 — 기존 박혀 있어야 함.
+  {
+    const file = `${projectRoot}/src/app/layout.tsx`;
+    const src = readFileSync(file, "utf-8");
+    const widthOk = /width:\s*1200/.test(src);
+    const heightOk = /height:\s*630/.test(src);
+    check(
+      "C-D17-3 #133 layout.tsx (홈) og:image width/height 회귀 0",
+      widthOk && heightOk,
+      `w=${widthOk} h=${heightOk}`,
+    );
+  }
+
+  // 134. (C-D17-4) getRoadmapColorTier — Day 1/3/4/5/6 분기 정합.
+  {
+    const { getRoadmapColorTier } = await import(
+      "../src/modules/conversation/roadmap-day"
+    );
+    const ok =
+      getRoadmapColorTier(1) === "kickoff" &&
+      getRoadmapColorTier(3) === "kickoff" &&
+      getRoadmapColorTier(4) === "mid" &&
+      getRoadmapColorTier(5) === "launch" &&
+      getRoadmapColorTier(6) === "launch";
+    check(
+      "C-D17-4 #134 getRoadmapColorTier(1/3/4/5/6) = kickoff/kickoff/mid/launch/launch",
+      ok,
+      `1=${getRoadmapColorTier(1)} 3=${getRoadmapColorTier(3)} 4=${getRoadmapColorTier(4)} 5=${getRoadmapColorTier(5)} 6=${getRoadmapColorTier(6)}`,
+    );
+  }
+
+  // 135. (C-D17-4) ROADMAP_COLOR_HEX 3종 hex 박힘.
+  {
+    const { ROADMAP_COLOR_HEX } = await import(
+      "../src/modules/conversation/roadmap-day"
+    );
+    const ok =
+      ROADMAP_COLOR_HEX.kickoff === "#F5C518" &&
+      ROADMAP_COLOR_HEX.mid === "#F59E0B" &&
+      ROADMAP_COLOR_HEX.launch === "#10B981";
+    check(
+      "C-D17-4 #135 ROADMAP_COLOR_HEX kickoff/mid/launch hex 정합",
+      ok,
+      JSON.stringify(ROADMAP_COLOR_HEX),
+    );
+  }
+
+  // 136. (C-D17-4) conversation-workspace에 색상 티어 import + roadmapColor 박힘.
+  {
+    const file = `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`;
+    const src = readFileSync(file, "utf-8");
+    const importOk =
+      /getRoadmapColorTier/.test(src) && /ROADMAP_COLOR_HEX/.test(src);
+    const styleOk = /borderLeftColor:\s*roadmapColor/.test(src);
+    check(
+      "C-D17-4 #136 conversation-workspace 색상 티어 적용 (borderLeftColor: roadmapColor)",
+      importOk && styleOk,
+      `import=${importOk} style=${styleOk}`,
+    );
+  }
+
+  // 137. (C-D17-4) 헤더에 #F5C518 인라인 단일 색 박힘 X (티어 분기로 대체 확인).
+  {
+    const file = `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`;
+    const src = readFileSync(file, "utf-8");
+    const noLegacyHardcode = !/borderLeftColor:\s*["']#F5C518["']/.test(src);
+    check(
+      "C-D17-4 #137 헤더 인라인 #F5C518 단일 색 박힘 0 (티어 분기로 정정)",
+      noLegacyHardcode,
+      `noLegacyHardcode=${noLegacyHardcode}`,
+    );
+  }
+
+  // 138. (C-D17-5) Playwright spec에 모바일 viewport 시나리오 D, E 박힘.
+  {
+    const file = `${projectRoot}/tests/verify-live.spec.ts`;
+    const src = readFileSync(file, "utf-8");
+    const viewportOk = /viewport:\s*\{\s*width:\s*375\s*,\s*height:\s*667/.test(src);
+    const scenarioD = /D:\s*헤더 모드 라벨 nowrap/.test(src);
+    const scenarioE = /E:\s*참여자 추가 버튼 nowrap/.test(src);
+    const addPart = /add-participant/.test(src);
+    check(
+      "C-D17-5 #138 모바일 375x667 + 시나리오 D, E 박힘",
+      viewportOk && scenarioD && scenarioE && addPart,
+      `vp=${viewportOk} D=${scenarioD} E=${scenarioE} addPart=${addPart}`,
+    );
+  }
+
+  // 139. (게이트) /sample, /getting-started/byok, /, og.png 회귀 0 — Next.js app-router 산출 HTML 존재.
+  //   build-manifest.json은 pages-router 전용. app router는 .next/server/app/ 디렉토리에 HTML을 생성.
+  {
+    const homeHtml = existsSync(`${projectRoot}/.next/server/app/index.html`);
+    const sampleHtml = existsSync(`${projectRoot}/.next/server/app/sample.html`);
+    const byokHtml = existsSync(
+      `${projectRoot}/.next/server/app/getting-started/byok.html`,
+    );
+    const ogPng = existsSync(`${projectRoot}/public/og.png`);
+    check(
+      "D-D17 #139 빌드 산출 회귀 0 (홈/샘플/BYOK HTML + og.png 모두 박힘)",
+      homeHtml && sampleHtml && byokHtml && ogPng,
+      `home=${homeHtml} sample=${sampleHtml} byok=${byokHtml} og=${ogPng}`,
+    );
+  }
+}
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
   .then(() => runD10AsyncChecks())
@@ -2246,6 +2425,7 @@ runAsyncChecks()
   .then(() => runD14Checks())
   .then(() => runD15Checks())
   .then(() => runD16Checks())
+  .then(() => runD17Checks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);

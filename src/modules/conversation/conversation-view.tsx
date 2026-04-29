@@ -19,6 +19,8 @@ import type { Message } from "./conversation-types";
 import type { Participant } from "@/modules/participants/participant-types";
 // D-10.3 (Day 5, 2026-04-28): 토스트 액션 라벨용 i18n.
 import { t } from "@/modules/i18n/messages";
+// D-D17-2 (Day 5 03시 슬롯, 2026-04-30) C-D17-2: 첫 방문 onboarding CTA — 참여자 0명 + 메시지 0개 빈 화면 대체.
+import { EmptyStateCta } from "@/modules/onboarding/empty-state-cta";
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -481,8 +483,13 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto py-4"
       >
-        {!conversationsHydrated ? (
+        {!conversationsHydrated || !participantsHydrated ? (
           <div className="px-6 text-sm text-robusta-inkDim">대화를 불러오는 중…</div>
+        ) : participants.length === 0 && grouped.length === 0 ? (
+          // D-D17-2 (Day 5 03시) C-D17-2: 첫 방문(참여자 0 + 메시지 0) — 노란 "샘플 보기" CTA로 대체.
+          //   기존 ~~"대화를 시작하세요…" 안내~~ 는 참여자가 1명 이상일 때만 노출 (아래 분기).
+          //   Roy Do v24 id-15 "초등학생 직관" 정합.
+          <EmptyStateCta variant="sample" />
         ) : grouped.length === 0 ? (
           <div className="mx-auto max-w-md px-6 py-12 text-center text-sm text-robusta-inkDim">
             대화를 시작하세요. 좌측에서 참여자를 확인하고, 하단에서 발언자를 골라

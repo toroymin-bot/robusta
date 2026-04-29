@@ -59,3 +59,38 @@ test.describe("verify-live (Robusta D5 사전 검증)", () => {
     expect(ogImage!.endsWith("/og.png")).toBe(true);
   });
 });
+
+/**
+ * D-D17-5 (Day 5 03시 슬롯, 2026-04-30) C-D17-5: 모바일 375x667 회귀 가드.
+ *   똘이 v1 §6.4 채택 — 헤더 도구 4개(모드/턴/다크/Keys)가 모바일 좁을 때 줄바꿈 없음을 가드.
+ *   추정 #90 측정 — 헤더 라벨 box.height ≤ 20px 이면 한 줄 nowrap.
+ *   data-test="add-participant"는 participants-panel 좌측 패널 — 모바일에서도 36px 이하 가드.
+ */
+test.describe("verify-live (모바일 375x667 회귀 가드)", () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test("D: 헤더 모드 라벨 nowrap (한 줄 유지)", async ({ page }) => {
+    await page.goto(`${BASE_URL}/`, {
+      waitUntil: "networkidle",
+      timeout: 30_000,
+    });
+    const label = page.locator('[data-test="header-mode-label"]');
+    await expect(label).toBeVisible();
+    const box = await label.boundingBox();
+    if (!box) throw new Error("header-mode-label not laid out");
+    // 한 줄 nowrap 가드 — text-xs(12px) * line-height(1.5≈18px) ± 여유 4px = 22px 이내.
+    expect(box.height, "label height ≤ 22px (single line)").toBeLessThanOrEqual(22);
+  });
+
+  test("E: 참여자 추가 버튼 nowrap (단일 줄, 36px 이내)", async ({ page }) => {
+    await page.goto(`${BASE_URL}/`, {
+      waitUntil: "networkidle",
+      timeout: 30_000,
+    });
+    const btn = page.locator('[data-test="add-participant"]');
+    await expect(btn).toBeVisible();
+    const box = await btn.boundingBox();
+    if (!box) throw new Error("add-participant not laid out");
+    expect(box.height, "add-participant height ≤ 36px (single line)").toBeLessThanOrEqual(36);
+  });
+});
