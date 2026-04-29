@@ -2028,6 +2028,75 @@ async function runD15Checks(): Promise<void> {
       `import=${importsPersist} key=${hasPersistKey}`,
     );
   }
+
+  // 119. (C-D15-1) layout.tsx에 OG metadata + og.png 박힘 (B32-A 명세 §21.4.1).
+  //   metadataBase + openGraph.images + twitter.card='summary_large_image' 동시 게이트.
+  //   회귀 시 URL 공유 미리보기 깨짐 (viral hook 손실).
+  {
+    const layoutSrc = readFileSync(
+      `${projectRoot}/src/app/layout.tsx`,
+      "utf-8",
+    );
+    const hasMetadataBase = /metadataBase:\s*new\s+URL\(["']https:\/\/robusta\.ai4min\.com["']\)/.test(
+      layoutSrc,
+    );
+    const hasOgImage = /url:\s*["']\/og\.png["']/.test(layoutSrc);
+    const hasTwitterCard = /card:\s*["']summary_large_image["']/.test(layoutSrc);
+    check(
+      "C-D15-1 #119 layout.tsx에 OG + Twitter Card 메타 박힘",
+      hasMetadataBase && hasOgImage && hasTwitterCard,
+      `metadataBase=${hasMetadataBase} ogImage=${hasOgImage} twitter=${hasTwitterCard}`,
+    );
+  }
+
+  // 120. (C-D15-1) public/og.png 파일 존재 + 사이즈 1200×630 (T-OG3 가드).
+  //   PNG 시그니처 + IHDR width/height 직접 파싱 — sharp/PIL 의존 없이.
+  {
+    const ogPath = `${projectRoot}/public/og.png`;
+    let exists = false;
+    let width = 0;
+    let height = 0;
+    try {
+      const buf = readFileSync(ogPath);
+      exists = true;
+      // PNG 시그니처 8바이트 + IHDR (length=4 + type=4 + width=4 + height=4)
+      if (
+        buf.length >= 24 &&
+        buf[0] === 0x89 &&
+        buf[1] === 0x50 &&
+        buf[2] === 0x4e &&
+        buf[3] === 0x47
+      ) {
+        width = buf.readUInt32BE(16);
+        height = buf.readUInt32BE(20);
+      }
+    } catch {
+      // 파일 없음
+    }
+    check(
+      "C-D15-1 #120 public/og.png 존재 + 1200×630 PNG",
+      exists && width === 1200 && height === 630,
+      `exists=${exists} ${width}×${height}`,
+    );
+  }
+
+  // 121. (C-D15-3) /getting-started/byok 페이지 박힘 + KQ7-2 정정 룰 가드.
+  //   "trial" 단어 0건 / "platform.claude.com" CTA / "2026-04-29 기준" 시점 박제.
+  {
+    const byokSrc = readFileSync(
+      `${projectRoot}/src/app/getting-started/byok/page.tsx`,
+      "utf-8",
+    );
+    const hasNoTrial = !/\btrial\b/i.test(byokSrc); // KQ7-2 정정: "trial" 단어 절대 사용 X
+    const hasPlatformCta = /platform\.claude\.com/.test(byokSrc);
+    const hasDateStamp = /2026-04-29\s*기준/.test(byokSrc);
+    const hasBYOKHeading = /BYOK/.test(byokSrc);
+    check(
+      "C-D15-3 #121 BYOK 페이지 박힘 + KQ7-2 정정 룰 (trial 단어 0건)",
+      hasNoTrial && hasPlatformCta && hasDateStamp && hasBYOKHeading,
+      `noTrial=${hasNoTrial} cta=${hasPlatformCta} date=${hasDateStamp} byok=${hasBYOKHeading}`,
+    );
+  }
 }
 
 runAsyncChecks()

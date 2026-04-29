@@ -1,9 +1,40 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+/**
+ * D-15.x (Day 4 19시 슬롯, 2026-04-29) C-D15-1: Open Graph + Twitter Card 메타 태그.
+ *   B32-A 명세 §21.4.1 채택 — 정적 OG 메타 + og.png 1장.
+ *   metadataBase 박아서 절대 URL 자동 생성. og.png는 public/og.png (1200×630, 노란 톤 #FFFCEB).
+ *   회귀 위험 0 — 빌드 artifact <head>에만 영향, 1st Load JS 변경 0.
+ *   추정 #88 — [locale] 라우트 미존재 (현재 단일 lang="ko") → ogLocale은 ko_KR 단정.
+ */
 export const metadata: Metadata = {
+  metadataBase: new URL("https://robusta.ai4min.com"),
   title: "Robusta",
   description: "Human + Web AI + Code AI — three-way collaboration",
+  openGraph: {
+    title: "Robusta — 인간 + AI 둘과 함께하는 협업",
+    description:
+      "BYOK + 인격/R&R + AI 자율 대화 스케줄. Blend의 80% 본질 + 차별화.",
+    url: "https://robusta.ai4min.com",
+    siteName: "Robusta",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Robusta — Roy + Tori + Komi",
+      },
+    ],
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Robusta — 인간 + AI 둘과 함께하는 협업",
+    description: "BYOK + 인격/R&R + AI 자율 대화 스케줄.",
+    images: ["/og.png"],
+  },
 };
 
 export const viewport: Viewport = {
