@@ -18,6 +18,8 @@ import {
 } from "../src/modules/conversation/conversation-api";
 import { pickNextSpeaker } from "../src/modules/conversation/turn-controller";
 import type { Message } from "../src/modules/conversation/conversation-types";
+// D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: roadmap-day 단위 검증 import.
+import { getRoadmapDay } from "../src/modules/conversation/roadmap-day";
 
 let failed = 0;
 let passed = 0;
@@ -1108,7 +1110,7 @@ import { buildRetryPlan } from "../src/modules/conversation/retry-plan";
 
 // D-11/D-12 검증용 (Day 6, 2026-04-28). MESSAGES는 위에서 이미 import 됨.
 import { execSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import {
@@ -2099,6 +2101,143 @@ async function runD15Checks(): Promise<void> {
   }
 }
 
+/**
+ * D-D16-1 (Day 4 23시 슬롯, 2026-04-29) — D16/D17 가드 7건 (#122~#128).
+ *   C-D16-1 (헤더 동적 회전) / C-D16-2 (/sample) / C-D16-3 (KQ8 + 추정 #84/#87) /
+ *   C-D16-4 (Playwright) / C-D17-1 (preflight-d5).
+ */
+async function runD16Checks(): Promise<void> {
+  const { resolve } = await import("node:path");
+  const projectRoot = resolve(__dirname, "..");
+
+  // 122. (C-D16-1) getRoadmapDay 단위 — 시작일 = Day 1.
+  {
+    const r = getRoadmapDay(new Date("2026-04-26T00:00:00+09:00"));
+    check(
+      "C-D16-1 #122 getRoadmapDay(시작일) = {day:1, mode:'Manual'}",
+      r.day === 1 && r.mode === "Manual",
+      `got day=${r.day} mode=${r.mode}`,
+    );
+  }
+
+  // 123. (C-D16-1) D5 시점 = Live.
+  {
+    const r = getRoadmapDay(new Date("2026-04-30T00:00:00+09:00"));
+    check(
+      "C-D16-1 #123 getRoadmapDay(D5) = {day:5, mode:'Live'}",
+      r.day === 5 && r.mode === "Live",
+      `got day=${r.day} mode=${r.mode}`,
+    );
+  }
+
+  // 124. (C-D16-1) 헤더에 동적 라벨 박힘 — Day 3 정적 박힘 X.
+  {
+    const wsSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const hasImport = /from ["']\.\/roadmap-day["']/.test(wsSrc);
+    const hasNoStaticDay3 = !/Day 3 ·/.test(wsSrc);
+    const hasRoadmapLabel = /roadmapLabel/.test(wsSrc);
+    check(
+      "C-D16-1 #124 헤더 라벨 동적 회전 (Day 3 정적 0)",
+      hasImport && hasNoStaticDay3 && hasRoadmapLabel,
+      `import=${hasImport} noDay3=${hasNoStaticDay3} dyn=${hasRoadmapLabel}`,
+    );
+  }
+
+  // 125. (C-D16-2) /sample 페이지 + JSON 박힘.
+  {
+    const samplePage = `${projectRoot}/src/app/sample/page.tsx`;
+    const sampleJson = `${projectRoot}/src/data/sample-conversation.json`;
+    const pageOk = existsSync(samplePage);
+    const jsonOk = existsSync(sampleJson);
+    let importOk = false;
+    let ctaOk = false;
+    if (pageOk) {
+      const src = readFileSync(samplePage, "utf-8");
+      importOk = /sample-conversation\.json/.test(src);
+      ctaOk = /sample-cta-byok/.test(src) && /\/getting-started\/byok/.test(src);
+    }
+    check(
+      "C-D16-2 #125 /sample 페이지 + JSON + BYOK CTA",
+      pageOk && jsonOk && importOk && ctaOk,
+      `page=${pageOk} json=${jsonOk} import=${importOk} cta=${ctaOk}`,
+    );
+  }
+
+  // 126. (C-D16-3) KQ8 클로즈 박제 — docs/KQ8-closed.md 존재 + "옵션 A" 본문.
+  {
+    const kq8 = `${projectRoot}/docs/KQ8-closed.md`;
+    const exists = existsSync(kq8);
+    let hasOptionA = false;
+    let hasZero = false;
+    if (exists) {
+      const src = readFileSync(kq8, "utf-8");
+      hasOptionA = /옵션 A/.test(src);
+      hasZero = /구현 0건|zero/.test(src);
+    }
+    check(
+      "C-D16-3 #126 KQ8 클로즈 박제 (옵션 A + zero)",
+      exists && hasOptionA && hasZero,
+      `exists=${exists} optA=${hasOptionA} zero=${hasZero}`,
+    );
+  }
+
+  // 127. (C-D16-4) tests/verify-live.spec.ts + playwright config + devDep.
+  {
+    const spec = `${projectRoot}/tests/verify-live.spec.ts`;
+    const cfg = `${projectRoot}/tests/playwright.config.ts`;
+    const pkgPath = `${projectRoot}/package.json`;
+    const specOk = existsSync(spec);
+    const cfgOk = existsSync(cfg);
+    let scenariosOk = false;
+    let devDepOk = false;
+    if (specOk) {
+      const src = readFileSync(spec, "utf-8");
+      // 시나리오 A/B/C 모두 박힘 (test 함수 3개 + 키워드)
+      const tests = src.match(/test\(/g);
+      scenariosOk =
+        (tests?.length ?? 0) >= 3 &&
+        /header-mode-label/.test(src) &&
+        /og:image/.test(src) &&
+        /BYOK/.test(src);
+    }
+    if (existsSync(pkgPath)) {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      devDepOk = !!pkg.devDependencies?.["@playwright/test"];
+    }
+    check(
+      "C-D16-4 #127 Playwright tests + config + devDep",
+      specOk && cfgOk && scenariosOk && devDepOk,
+      `spec=${specOk} cfg=${cfgOk} scen=${scenariosOk} dev=${devDepOk}`,
+    );
+  }
+
+  // 128. (C-D17-1) preflight-d5.ts 박힘 + 검증 10건 박힘 (label "1)" ~ "10)").
+  {
+    const preflight = `${projectRoot}/scripts/preflight-d5.ts`;
+    const exists = existsSync(preflight);
+    let allTen = false;
+    let scriptEntry = false;
+    if (exists) {
+      const src = readFileSync(preflight, "utf-8");
+      const labels = ["1)", "2)", "3)", "4)", "5)", "6)", "7)", "8)", "9)", "10)"];
+      allTen = labels.every((l) => src.includes(l));
+    }
+    const pkgPath = `${projectRoot}/package.json`;
+    if (existsSync(pkgPath)) {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      scriptEntry = !!pkg.scripts?.["preflight:d5"];
+    }
+    check(
+      "C-D17-1 #128 preflight-d5.ts + 10 검증 + npm script",
+      exists && allTen && scriptEntry,
+      `exists=${exists} ten=${allTen} script=${scriptEntry}`,
+    );
+  }
+}
+
 runAsyncChecks()
   .then(() => runD9AsyncChecks())
   .then(() => runD10AsyncChecks())
@@ -2106,6 +2245,7 @@ runAsyncChecks()
   .then(() => runD13Checks())
   .then(() => runD14Checks())
   .then(() => runD15Checks())
+  .then(() => runD16Checks())
   .then(() => {
     process.stdout.write(`\nPASSED ${passed} · FAILED ${failed}\n`);
     if (failed > 0) process.exit(1);

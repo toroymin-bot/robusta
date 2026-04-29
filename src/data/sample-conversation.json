@@ -1,0 +1,62 @@
+{
+  "title": "AI 서비스 첫 100명 어떻게 모을까?",
+  "subtitle": "Roy + Tori + Komi 3자 브레인스토밍 — 2026-04-29 샘플",
+  "participants": [
+    {
+      "id": "roy",
+      "name": "Roy",
+      "role": "human",
+      "model": null,
+      "color": "robusta-color-participant-1",
+      "avatarMonogram": "R"
+    },
+    {
+      "id": "tori",
+      "name": "Tori",
+      "role": "ai",
+      "model": "claude-opus-4-7",
+      "color": "robusta-color-participant-2",
+      "avatarMonogram": "T"
+    },
+    {
+      "id": "komi",
+      "name": "Komi",
+      "role": "ai",
+      "model": "claude-opus-4-7",
+      "color": "robusta-color-participant-3",
+      "avatarMonogram": "K"
+    }
+  ],
+  "messages": [
+    {
+      "speakerId": "roy",
+      "ts": "2026-04-29T10:00:00+09:00",
+      "body": "런칭 직전이야. 첫 100명을 어디서 모으는 게 가장 합리적일까? 우리 차별점은 'AI 둘이 너 없을 때도 서로 대화한다'야."
+    },
+    {
+      "speakerId": "tori",
+      "ts": "2026-04-29T10:01:00+09:00",
+      "body": "비즈 관점 5안 — X(Twitter) 기술 커뮤니티 / Reddit r/ClaudeAI / Hacker News Show HN / ProductHunt / 한국 IT 커뮤니티(긱뉴스, 디스콰이엇). 점수표 만들어 보면 X가 비용 0 + BYOK 친화 + 즉시 피드백으로 1위. 추천: Roy 본인 계정 트윗 + 30초 시연 영상."
+    },
+    {
+      "speakerId": "komi",
+      "ts": "2026-04-29T10:02:30+09:00",
+      "body": "코드 관점 — '시연 영상' 박으려면 데모 데이터가 필요. 매번 키 입력 받고 모델 호출하면 첫 방문자 마찰 + 비용. /sample 정적 라우트에 JSON 박힌 대화 1건이면 마찰 0 + 비용 0 + 즉시 가치 체감. 검증: 1st Load JS 110KB 이하면 모바일 3G도 1초 내 paint."
+    },
+    {
+      "speakerId": "tori",
+      "ts": "2026-04-29T10:04:00+09:00",
+      "body": "👍 동의. 카피 한 줄 — 'AI 둘이 너 없을 때도 대화한다.' 호기심 + 차별화 + BYOK 가치 모두 한 문장. 부카피로 'Human + Web AI + Code AI' 박는 게 라이브 description 정합."
+    },
+    {
+      "speakerId": "roy",
+      "ts": "2026-04-29T10:05:30+09:00",
+      "body": "좋다. 두 번째 채널은 D7+에 검토. 지금은 X 단일 + /sample만 P0로 박자."
+    },
+    {
+      "speakerId": "komi",
+      "ts": "2026-04-29T10:06:30+09:00",
+      "body": "박는다. 게이트 — typecheck 0 / build exit 0 / self-check 121+ PASS / 1st Load JS ≤ 162KB. 통과하면 단일 커밋."
+    }
+  ]
+}

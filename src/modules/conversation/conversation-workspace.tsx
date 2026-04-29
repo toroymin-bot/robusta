@@ -19,6 +19,9 @@ import { registerOnlineListener } from "@/modules/ui/online-listener";
 // D-15.2 (Day 9, 2026-04-28) C-D9-2: 헤더 발언 모드 라벨 i18n.
 import { t } from "@/modules/i18n/messages";
 import type { TurnMode } from "@/modules/conversation/turn-controller";
+// D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: 헤더 모드 라벨 동적 회전 (F-D16-1).
+//   v12 §24.3 web_fetch 검증으로 "Day 3" 정적 결함 박힘 → Roadmap 자동 계산.
+import { getRoadmapDay, formatRoadmapLabel } from "./roadmap-day";
 
 // D-15.2 (Day 9) turnMode → i18n 키 매핑. enum 3종 1:1.
 //   manual → "Manual" / round-robin → "Round-robin" / trigger → "Scheduled"
@@ -60,6 +63,13 @@ export function ConversationWorkspace() {
   const toggleTheme = useThemeStore((s) => s.toggle);
 
   const [keysOpen, setKeysOpen] = useState(false);
+  // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: D-Day 라벨 클라 시점 계산.
+  //   SSR/CSR hydration mismatch 회피를 위해 SSR 폴백 = "Day 5 · Live" (D5 라이브 시점 정합).
+  //   useEffect로 클라 시점 1회 set → 렌더 직후 실제 D-Day로 회전.
+  const [roadmapLabel, setRoadmapLabel] = useState<string>("Day 5 · Live");
+  useEffect(() => {
+    setRoadmapLabel(formatRoadmapLabel(getRoadmapDay()));
+  }, []);
 
   useEffect(() => {
     if (!participantsHydrated) {
@@ -105,15 +115,21 @@ export function ConversationWorkspace() {
         <header className="flex h-12 items-center justify-between border-b border-robusta-divider px-6 backdrop-blur">
           <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
           <div className="flex items-center gap-3">
-            {/* D-15.2 (Day 9, 2026-04-28) C-D9-2: 발언 모드는 동적 (turnMode subscribe). Day 라벨은 정적(빌드 시점). */}
-            {/* D-D9-2 (Day 9, 2026-04-28) C-D10-2: 활성 모드 시각 강조 — yellow-500 좌측 보더 + font-semibold.
-                헤더 라벨 단일이라 active=true 고정. 4-segment 토글 도입 시 active 비교로 분기. */}
+            {/* D-D16-1 (Day 4 23시, 2026-04-29) C-D16-1: D-Day 라벨 동적 회전.
+                기존 정적 라벨(D-Day 3) 제거 → 동적 `Day {N} · Manual|Live` (Roadmap 기준 D5 라이브 시점 자동 회전).
+                turnMode 시각 피드백은 별도 라벨로 분리 (data-test=header-turn-mode-label). */}
             <span
               className={`text-xs uppercase tracking-widest ${getModeClassName(true)}`}
               style={{ borderLeftColor: "#F5C518" }}
               data-test="header-mode-label"
             >
-              Day 3 · {t(TURN_MODE_LABEL_KEY[turnMode])}
+              {roadmapLabel}
+            </span>
+            <span
+              className="text-xs uppercase tracking-widest text-robusta-inkDim"
+              data-test="header-turn-mode-label"
+            >
+              {t(TURN_MODE_LABEL_KEY[turnMode])}
             </span>
             {/* D-8.6: 다크모드 토글 (☀ ⇄ 🌙) — hydration 전에는 비활성 */}
             <button

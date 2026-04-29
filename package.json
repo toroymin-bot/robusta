@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify-live": "playwright test --config=tests/playwright.config.ts",
+    "preflight:d5": "tsx scripts/preflight-d5.ts"
   },
   "dependencies": {
     "dexie": "^4.0.10",
@@ -17,6 +19,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
