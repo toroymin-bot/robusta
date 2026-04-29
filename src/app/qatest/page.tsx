@@ -55,6 +55,8 @@ export default function QaTestPage() {
     setPing({ kind: "running" });
     try {
       // 1-token ping — 비용 ≈ $0.000003.
+      // 2026-04-29: claude-3-5-haiku-latest는 deprecated (404 not_found_error).
+      // 4.5 haiku로 교체. ping 비용 ~$0.000003 동일.
       const res = await fetch(ANTHROPIC_URL, {
         method: "POST",
         headers: {
@@ -64,7 +66,7 @@ export default function QaTestPage() {
           "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify({
-          model: "claude-3-5-haiku-latest",
+          model: "claude-haiku-4-5",
           max_tokens: 1,
           messages: [{ role: "user", content: "ping" }],
         }),
