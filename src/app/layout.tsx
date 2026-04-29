@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 /**
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://robusta.ai4min.com"),
   title: "Robusta",
   description: "Human + Web AI + Code AI — three-way collaboration",
+  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 박음 — robots.ts/sitemap.ts와 묶음 SEO 시드.
+  //   metadataBase 기준 절대 URL 자동 합성 ("/" → "https://robusta.ai4min.com/").
+  alternates: { canonical: "/" },
   openGraph: {
     title: "Robusta — 인간 + AI 둘과 함께하는 협업",
     description:
@@ -93,7 +97,14 @@ export default function RootLayout({
         {/* 정적 텍스트, self-contained IIFE — XSS 안전 */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* C-D17-8 (Day 5 07시 슬롯, 2026-04-30) — 똘이 v1 §16.3 B-12 채택:
+            Vercel Web Analytics 페이지뷰만 (custom track() 호출 0 — BYOK 키·메시지 본문 누출 가드).
+            Hobby 무료, no cookie, 24h 폐기. ad-blocker 차단 시 silent fail.
+            정적 export(`output: "export"`) 모드에서도 클라 컴포넌트로 자동 hydrate. */}
+        <Analytics />
+      </body>
     </html>
   );
 }

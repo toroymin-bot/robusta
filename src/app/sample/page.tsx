@@ -18,6 +18,8 @@ import sample from "@/data/sample-conversation.json";
 export const metadata: Metadata = {
   title: "Robusta — 샘플 대화",
   description: "AI 둘과 함께한 브레인스토밍 1건 — Roy + Tori + Komi",
+  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 박음 — 라우트별 단일 정의 URL 가드.
+  alternates: { canonical: "/sample" },
   openGraph: {
     title: "Robusta — 샘플 대화",
     description: "AI 둘과 함께한 브레인스토밍 1건",

@@ -12,6 +12,7 @@
     "preflight:d5": "tsx scripts/preflight-d5.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "dexie": "^4.0.10",
     "next": "^15.5.15",
     "react": "19.0.0",

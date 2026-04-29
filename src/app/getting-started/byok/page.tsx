@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   title: "BYOK 시작 — Robusta",
   description:
     "Anthropic API 키 1분 발급 가이드. Robusta는 사용자 본인의 API 키로 동작합니다.",
+  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 박음 — 라우트별 단일 정의 URL 가드.
+  alternates: { canonical: "/getting-started/byok" },
   openGraph: {
     title: "BYOK 시작 — Robusta",
     description: "Anthropic API 키 1분 발급 가이드.",

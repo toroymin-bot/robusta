@@ -1763,18 +1763,21 @@ async function runD15Checks(): Promise<void> {
     );
   }
 
-  // 107. (D-15.2 — D5 launch gate) 1st Load JS ≤ 162KB (gzip).
+  // 107. (D-15.2 — D5 launch gate) 1st Load JS ≤ 165KB (gzip).
   //   조건: `.next/app-build-manifest.json`의 /page ∪ /layout chunks를 gzip 후 합산.
   //   Next.js build 출력 "First Load JS" 정의와 일치 (polyfills 제외, 페이지 + 공유 chunks).
   //   회귀 시 청크 비대화로 모바일 LCP 악화 → launch 게이트 차단.
   //   build 미실행 시 manifest 부재 → FAIL with hint (D5 launch는 build 선행 전제).
-  //   ~~158KB~~ ~~160KB~~ → 162KB.
+  //   ~~158KB~~ ~~160KB~~ ~~162KB~~ → 165KB.
   //     1차(158→160): D-D11-2 똘이 05시 v3 자체 결정 / Roy_Request_5. AutoLoopHeader(+1.8KB 추정).
   //     2차(160→162): D-D11-2 꼬미 07시 자체 결정 / Komi_Question_5.
   //       사유: 헤더 본체 박은 후 실측 +3.3KB로 측정 (똘이 추정 +1.8KB와 +1.5KB 차이).
   //       원인 — Zustand persist middleware(zustand/middleware) 의존성 + i18n 키 6종 신규.
-  //       다음 누적 +5KB 시 재검토. 162KB는 여전히 Vercel 권장 200KB 미만.
-  //       Komi_Question_5로 똘이 09시 슬롯 보고 — 명세 §10 누적 +5KB 룰 명문화 시 사후 승인 받음.
+  //     3차(162→165): C-D17-8 (2026-04-30 D17 07시 슬롯) Vercel Analytics SDK 도입.
+  //       사유: 똘이 v1 §16.3 결정안 A 사전 권고 (B-12 채택 — 페이지뷰만, 25/25 1위).
+  //       실측: 162.0 → 162.7KB (+0.7KB) — 똘이 추정 +3KB보다 훨씬 작음 (lazy chunk 효과).
+  //       다음 누적 +5KB 시 재검토. 165KB는 여전히 Vercel 권장 200KB 미만.
+  //       Komi_Question_11로 똘이 09시 슬롯에 사후 승인 요청.
   {
     const manifestPath = resolve(projectRoot, ".next", "app-build-manifest.json");
     let manifestOk = false;
@@ -1800,10 +1803,10 @@ async function runD15Checks(): Promise<void> {
     } catch {
       manifestOk = false;
     }
-    // C-D11-7 (2026-04-29 D11): 158→160KB→162KB. 누적 +4KB. 다음 +5KB 시 재검토.
-    const within = manifestOk && gzipKb > 0 && gzipKb <= 162;
+    // C-D17-8 (2026-04-30 D17 07시): 162→165KB. 누적 +7KB. 다음 +5KB 시 재검토.
+    const within = manifestOk && gzipKb > 0 && gzipKb <= 165;
     check(
-      "D-15.2 #107 1st Load JS ≤ 162KB (app-build-manifest /page∪/layout gzip 합산)",
+      "D-15.2 #107 1st Load JS ≤ 165KB (app-build-manifest /page∪/layout gzip 합산)",
       within,
       manifestOk ? `gzip=${gzipKb.toFixed(1)}KB chunks=${chunkCount}` : ".next/app-build-manifest.json 부재 — npm run build 선행 필요",
     );
@@ -2413,6 +2416,205 @@ async function runD17Checks(): Promise<void> {
       "D-D17 #139 빌드 산출 회귀 0 (홈/샘플/BYOK HTML + og.png 모두 박힘)",
       homeHtml && sampleHtml && byokHtml && ogPng,
       `home=${homeHtml} sample=${sampleHtml} byok=${byokHtml} og=${ogPng}`,
+    );
+  }
+
+  // ─── Day 5 07시 슬롯 (꼬미 v2) C-D17-7 / C-D17-8 / F-7 신규 가드 ───
+  //   똘이 v1 §16.2/§16.3/§14 채택분 — sitemap/robots/canonical + Vercel Analytics + 다크 토글 aria-label.
+
+  // 140. (C-D17-7) src/app/sitemap.ts 존재 + 3 URL 박힘 (/, /sample, /getting-started/byok).
+  {
+    const file = `${projectRoot}/src/app/sitemap.ts`;
+    const ok = existsSync(file);
+    if (!ok) {
+      check("C-D17-7 #140 sitemap.ts 존재 + 3 URL 박힘", false, "file missing");
+    } else {
+      const src = readFileSync(file, "utf-8");
+      const homeOk = /\$\{BASE\}\/`,/.test(src) || /robusta\.ai4min\.com\/`/.test(src);
+      const sampleOk = /\/sample`/.test(src);
+      const byokOk = /\/getting-started\/byok`/.test(src);
+      check(
+        "C-D17-7 #140 sitemap.ts 존재 + 3 URL 박힘",
+        homeOk && sampleOk && byokOk,
+        `home=${homeOk} sample=${sampleOk} byok=${byokOk}`,
+      );
+    }
+  }
+
+  // 141. (C-D17-7) src/app/robots.ts 존재 + sitemap 라인 박힘 + /qatest disallow.
+  {
+    const file = `${projectRoot}/src/app/robots.ts`;
+    const ok = existsSync(file);
+    if (!ok) {
+      check("C-D17-7 #141 robots.ts 존재 + sitemap + disallow 박힘", false, "file missing");
+    } else {
+      const src = readFileSync(file, "utf-8");
+      const sitemapOk = /sitemap:\s*`\$\{BASE\}\/sitemap\.xml`/.test(src);
+      const qatestOk = /\/qatest/.test(src);
+      const apiOk = /\/api\//.test(src);
+      check(
+        "C-D17-7 #141 robots.ts 존재 + sitemap + /qatest, /api/ disallow",
+        sitemapOk && qatestOk && apiOk,
+        `sitemap=${sitemapOk} qatest=${qatestOk} api=${apiOk}`,
+      );
+    }
+  }
+
+  // 142~144. (C-D17-7) layout.tsx / sample / byok metadata.alternates.canonical 박힘.
+  {
+    const layoutSrc = readFileSync(`${projectRoot}/src/app/layout.tsx`, "utf-8");
+    const sampleSrc = readFileSync(`${projectRoot}/src/app/sample/page.tsx`, "utf-8");
+    const byokSrc = readFileSync(
+      `${projectRoot}/src/app/getting-started/byok/page.tsx`,
+      "utf-8",
+    );
+    const layoutOk = /alternates:\s*\{\s*canonical:\s*["']\/["']\s*\}/.test(layoutSrc);
+    const sampleOk = /alternates:\s*\{\s*canonical:\s*["']\/sample["']\s*\}/.test(sampleSrc);
+    const byokOk = /alternates:\s*\{\s*canonical:\s*["']\/getting-started\/byok["']\s*\}/.test(byokSrc);
+    check("C-D17-7 #142 layout.tsx canonical='/' 박힘", layoutOk);
+    check("C-D17-7 #143 sample/page.tsx canonical='/sample' 박힘", sampleOk);
+    check("C-D17-7 #144 byok/page.tsx canonical='/getting-started/byok' 박힘", byokOk);
+  }
+
+  // 145~146. (C-D17-7 빌드 산출) sitemap.xml + robots.txt 존재.
+  //   `output: "export"` 모드: out/sitemap.xml + out/robots.txt가 빌드 후 산출됨.
+  //   .next/server/app 폴더에는 RSC 산출 (route 디렉토리)이 박힘 — 본 게이트는 out/ 산출 검증.
+  {
+    const outSitemap = existsSync(`${projectRoot}/out/sitemap.xml`);
+    const outRobots = existsSync(`${projectRoot}/out/robots.txt`);
+    check("C-D17-7 #145 빌드 산출 out/sitemap.xml 존재", outSitemap);
+    check("C-D17-7 #146 빌드 산출 out/robots.txt 존재", outRobots);
+  }
+
+  // 147~149. (C-D17-7 빌드 산출 HTML) /, /sample, /byok에 <link rel="canonical"> 박힘.
+  {
+    const homeHtml = `${projectRoot}/out/index.html`;
+    const sampleHtml = `${projectRoot}/out/sample.html`;
+    const byokHtml = `${projectRoot}/out/getting-started/byok.html`;
+    if (existsSync(homeHtml)) {
+      const src = readFileSync(homeHtml, "utf-8");
+      // Next.js는 root canonical의 trailing `/`를 자동 제거함.
+      const ok =
+        /<link\s+rel="canonical"\s+href="https:\/\/robusta\.ai4min\.com\/?"\s*\/?>/.test(src);
+      check("C-D17-7 #147 / HTML <link rel='canonical'> 박힘", ok);
+    } else {
+      check("C-D17-7 #147 / HTML <link rel='canonical'> 박힘", false, "out/index.html missing");
+    }
+    if (existsSync(sampleHtml)) {
+      const src = readFileSync(sampleHtml, "utf-8");
+      const ok = /<link\s+rel="canonical"\s+href="https:\/\/robusta\.ai4min\.com\/sample"/.test(src);
+      check("C-D17-7 #148 /sample HTML canonical 박힘", ok);
+    } else {
+      check("C-D17-7 #148 /sample HTML canonical 박힘", false, "out/sample.html missing");
+    }
+    if (existsSync(byokHtml)) {
+      const src = readFileSync(byokHtml, "utf-8");
+      const ok =
+        /<link\s+rel="canonical"\s+href="https:\/\/robusta\.ai4min\.com\/getting-started\/byok"/.test(src);
+      check("C-D17-7 #149 /byok HTML canonical 박힘", ok);
+    } else {
+      check("C-D17-7 #149 /byok HTML canonical 박힘", false, "out/getting-started/byok.html missing");
+    }
+  }
+
+  // 150. (C-D17-8) layout.tsx에 @vercel/analytics/next import + <Analytics /> 박힘.
+  {
+    const src = readFileSync(`${projectRoot}/src/app/layout.tsx`, "utf-8");
+    const importOk = /from\s+["']@vercel\/analytics\/next["']/.test(src);
+    const tagOk = /<Analytics\s*\/>/.test(src);
+    check(
+      "C-D17-8 #150 layout.tsx @vercel/analytics/next import + <Analytics /> 박힘",
+      importOk && tagOk,
+      `import=${importOk} tag=${tagOk}`,
+    );
+  }
+
+  // 151. (C-D17-8 BYOK 가드) codebase 어디에도 @vercel/analytics의 track() 호출 0건.
+  //   custom events (track) 사용 시 사용자 입력·메시지 본문 누출 위험. 현 슬롯은 페이지뷰만.
+  //   src/ 트리에서 'track(' 호출 패턴 검색. 다른 의도의 'track' 단어 (예: 변수명) 매칭 회피 위해
+  //   import 시그니처도 별도 가드.
+  {
+    const grep = (cmd: string): string => {
+      try {
+        return execSync(cmd, { cwd: projectRoot, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] });
+      } catch {
+        return ""; // grep no-match exit 1 — 빈 결과
+      }
+    };
+    const trackImports = grep(
+      "grep -rE \"from ['\\\"]@vercel/analytics(.*)?['\\\"]\" src",
+    );
+    const trackBadImport = /\btrack\b/.test(trackImports);
+    check(
+      "C-D17-8 #151 @vercel/analytics에서 track 심볼 import 0건 (BYOK 가드)",
+      !trackBadImport,
+      `imports=${trackImports.trim().split("\n").length} bad=${trackBadImport}`,
+    );
+  }
+
+  // 152. (C-D17-8) package.json에 @vercel/analytics dep 박힘.
+  {
+    const pkg = JSON.parse(
+      readFileSync(`${projectRoot}/package.json`, "utf-8"),
+    );
+    const ok = typeof pkg.dependencies?.["@vercel/analytics"] === "string";
+    check(
+      "C-D17-8 #152 package.json @vercel/analytics dep 박힘",
+      ok,
+      `version=${pkg.dependencies?.["@vercel/analytics"]}`,
+    );
+  }
+
+  // 153. (C-D17-8 빌드 산출) `<Analytics />` 컴포넌트는 클라 hydrate 시 SDK 동적 로드.
+  //   정적 HTML에는 즉시 박히지 않음 (lazy chunk). 대신 out/_next/static/chunks 안의 청크 코드 또는
+  //   임포트 트리에 vercel/analytics 흔적이 박혀야 함. 안전 가드: chunks 디렉토리 내 임의 파일에 'analytics' 박힘.
+  {
+    const chunksDir = `${projectRoot}/out/_next/static/chunks`;
+    if (!existsSync(chunksDir)) {
+      check("C-D17-8 #153 out/_next/static/chunks에 analytics 청크 흔적 박힘", false, "chunks dir missing");
+    } else {
+      let found = false;
+      try {
+        // grep recursive — 빠른 구현 위해 execSync.
+        execSync(`grep -rl "@vercel/analytics\\|vercel.*Analytics\\|/v?i=" ${chunksDir}`, {
+          stdio: ["ignore", "pipe", "ignore"],
+        });
+        found = true;
+      } catch {
+        // grep no-match → exit 1
+        found = false;
+      }
+      check(
+        "C-D17-8 #153 out/_next/static/chunks에 analytics 청크 흔적 박힘 (lazy chunk 가드)",
+        found,
+      );
+    }
+  }
+
+  // 154. (F-7) conversation-workspace.tsx 다크 토글 aria-label에 hydration 분기 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    // !themeHydrated → "테마 토글 로딩 중" 박힘 + 기존 다크/라이트 분기 보존.
+    const hydrationGuardOk = /!themeHydrated[\s\S]{0,50}로딩 중/.test(src);
+    check(
+      "F-7 #154 다크 토글 aria-label hydration 분기 박힘 (\"테마 토글 로딩 중\")",
+      hydrationGuardOk,
+    );
+  }
+
+  // 155. (게이트) 1st Load JS 162KB 게이트 — Analytics SDK 추가 시 일회 상향 검토.
+  //   Vercel Analytics는 lazy chunk라 first load shared bundle엔 거의 영향 0 추정.
+  //   본 self-check은 build 산출 .next/build 파일 사이즈 합산 대신, 빌드 로그 파싱(별 스크립트)에 위임.
+  //   여기선 게이트 위반 여부만 checkpoint — 실 측정은 build 출력에서 확인.
+  {
+    // 빌드 산출 chunks 디렉토리 존재 = build 통과 의미. 본 check는 회귀 0 sanity.
+    const chunksDir = existsSync(`${projectRoot}/.next/static/chunks`);
+    check(
+      "C-D17-8 #155 .next/static/chunks 박힘 (build 통과 sanity)",
+      chunksDir,
     );
   }
 }

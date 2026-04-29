@@ -146,13 +146,20 @@ export function ConversationWorkspace() {
               {t(TURN_MODE_LABEL_KEY[turnMode])}
             </span>
             {/* D-8.6: 다크모드 토글 (☀ ⇄ 🌙) — hydration 전에는 비활성 */}
+            {/* F-7 (Day 5 07시 슬롯, 2026-04-30) — 똘이 v1 §14 F-7 채택:
+                hydration 가드 동안 사용자가 "비활성 버튼"을 보고 의문 갖지 않도록
+                aria-label에 "(로딩 중)" 박음. 시각적 변화 0, 스크린리더 인지 비용만 0. */}
             <button
               type="button"
               onClick={toggleTheme}
               disabled={!themeHydrated}
               className="rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent disabled:opacity-50"
               aria-label={
-                themeMode === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"
+                !themeHydrated
+                  ? "테마 토글 로딩 중"
+                  : themeMode === "dark"
+                    ? "라이트 모드로 전환"
+                    : "다크 모드로 전환"
               }
               title={themeMode === "dark" ? "라이트 모드" : "다크 모드"}
             >
