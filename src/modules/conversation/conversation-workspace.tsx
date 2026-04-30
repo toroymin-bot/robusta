@@ -76,6 +76,9 @@ export function ConversationWorkspace() {
   const themeHydrated = useThemeStore((s) => s.hydrated);
   const hydrateTheme = useThemeStore((s) => s.hydrate);
   const toggleTheme = useThemeStore((s) => s.toggle);
+  // C-D17-15 (D6 03시) KQ_14: 3-state segment 활성. choice/setChoice 양쪽 prop 으로 HeaderCluster 에 전달.
+  const themeChoice = useThemeStore((s) => s.choice);
+  const setThemeChoice = useThemeStore((s) => s.setChoice);
 
   const [keysOpen, setKeysOpen] = useState(false);
   // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 스케줄 모달 open state.
@@ -147,6 +150,8 @@ export function ConversationWorkspace() {
             themeHydrated={themeHydrated}
             themeMode={themeMode}
             onToggleTheme={toggleTheme}
+            themeChoice={themeChoice}
+            onSetThemeChoice={setThemeChoice}
             onOpenApiKeyModal={() => setKeysOpen(true)}
             onOpenScheduleModal={() => setScheduleOpen(true)}
             anthropicKey={anthropicKey ?? ""}

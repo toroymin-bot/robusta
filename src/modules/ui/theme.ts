@@ -44,8 +44,16 @@ export const PARTICIPANT_HUE_SEEDS = [20, 200, 130, 280, 50, 320] as const;
 export type RobustaTheme = typeof robustaTokens;
 export type ThemeMode = "light" | "dark";
 
+// C-D18-2 (D6 03시 슬롯, 2026-05-01) — KQ_14 채택분.
+// 사용자 선택 3-state: 'system' (OS 자동) / 'light' / 'dark'.
+// 'resolved' 는 항상 light/dark — DOM/CSS는 resolved 만 본다.
+export type ThemeChoice = "system" | "light" | "dark";
+
 // D-9.1: settings 테이블의 키 이름.
 const SETTINGS_THEME_KEY = "theme";
+// C-D18-2: 사용자가 선택한 3-state 값 — 'theme' (resolved light/dark) 와 분리 저장.
+//   기존 'theme' 키와 충돌 없음 — 'theme' 은 D-9.1 부터 light/dark만 저장.
+const SETTINGS_CHOICE_KEY = "theme.choice";
 // D-9.1: 부트 깜빡임 방지 cookie 이름. 정적 export 호환 (서버 set-cookie 불필요).
 const BOOT_COOKIE = "robusta.theme.boot";
 // D-9.5: 사용자 명시 override 표식 — true 면 prefers-color-scheme listener 무시.
@@ -116,76 +124,126 @@ function applyThemeToDom(theme: ThemeMode): void {
 }
 
 interface ThemeStore {
-  /** 현재 적용된 테마 — 'light' | 'dark'. */
+  /** 현재 적용된 테마(resolved) — 'light' | 'dark'. CSS/DOM은 이 값을 본다. */
   theme: ThemeMode;
+  /**
+   * C-D18-2 (D6 03시 KQ_14): 사용자가 선택한 3-state — 'system' | 'light' | 'dark'.
+   * 'system' 일 때 prefers-color-scheme 을 그대로 따르고, light/dark 일 때 사용자 명시(override).
+   * 기존 호출자(theme: light/dark) 호환 유지 — choice 미사용 시 기존 behavior 동일.
+   */
+  choice: ThemeChoice;
   /** 클라이언트 hydration 완료 여부 (SSR 깜빡임 방지용). */
   hydrated: boolean;
   /** 첫 마운트 시 1회 호출 — IndexedDB 마이그레이션 + 읽기 + DOM 적용. */
   hydrate: () => Promise<void>;
-  /** 테마 직접 설정 (light/dark) — IndexedDB persist + cookie + DOM + userOverride 박음. */
+  /** 테마 직접 설정 (light/dark) — choice='light'|'dark'(override) 로 정렬됨. */
   setTheme: (theme: ThemeMode) => Promise<void>;
-  /** 토글 (light ↔ dark). */
+  /** C-D18-2: 3-state 선택 — 'system' 선택 시 userOverride 해제, prefers 동기화. */
+  setChoice: (choice: ThemeChoice) => Promise<void>;
+  /** 토글 (light ↔ dark) — choice도 동일하게 갱신. */
   toggle: () => Promise<void>;
 }
 
 export const useThemeStore = create<ThemeStore>((set, get) => ({
   theme: "light",
+  choice: "system",
   hydrated: false,
 
   async hydrate() {
     // 1) localStorage → IndexedDB 1회 이관 (D-9.1)
     await migrateThemeFromLocalStorage();
 
-    // 2) 읽기 우선순위: settings.theme → cookie → 시스템 prefers → 'light'
-    let resolved: ThemeMode = "light";
+    // 2) 읽기 우선순위:
+    //    a. settings.theme.choice (D6 신규) → 3-state 직접
+    //    b. settings.theme         (D-9.1)  → light/dark = override → choice 동일 매핑
+    //    c. cookie/prefers/'light'           → choice='system' 가정
+    let choice: ThemeChoice = "system";
+    let resolved: ThemeMode;
     try {
       const db = getDb();
-      const stored = await db.settings.get(SETTINGS_THEME_KEY);
-      if (stored?.value === "light" || stored?.value === "dark") {
-        resolved = stored.value;
+      const storedChoice = await db.settings.get(SETTINGS_CHOICE_KEY);
+      if (
+        storedChoice?.value === "system" ||
+        storedChoice?.value === "light" ||
+        storedChoice?.value === "dark"
+      ) {
+        choice = storedChoice.value;
       } else {
-        const cookieVal = readBootCookie();
-        resolved = cookieVal ?? (getSystemDark() ? "dark" : "light");
+        // legacy: settings.theme(light/dark) 가 박혀있으면 override 의미로 choice 매핑
+        const stored = await db.settings.get(SETTINGS_THEME_KEY);
+        if (stored?.value === "light" || stored?.value === "dark") {
+          choice = stored.value;
+        }
       }
     } catch {
-      // IndexedDB 차단 — cookie/시스템 prefers fallback
+      // IndexedDB 차단 — choice='system' 유지
+    }
+
+    if (choice === "light" || choice === "dark") {
+      resolved = choice;
+    } else {
+      // choice='system' — cookie 우선, 그다음 prefers, 그다음 'light'
       const cookieVal = readBootCookie();
       resolved = cookieVal ?? (getSystemDark() ? "dark" : "light");
     }
 
     applyThemeToDom(resolved);
-    set({ theme: resolved, hydrated: true });
+    set({ theme: resolved, choice, hydrated: true });
 
-    // 3) D-9.5 (P1): prefers-color-scheme listener — userOverride 박혀있지 않을 때만 따름.
-    //    이미 사용자 명시 setTheme 호출이 있었으면 IndexedDB의 theme.userOverride === 'true'.
+    // 3) D-9.5 (P1): prefers-color-scheme listener — choice='system' 일 때만 따름.
+    //    기존 SETTINGS_USER_OVERRIDE_KEY 는 choice 와 동등 (light/dark = override).
     setupPrefersColorSchemeListener();
   },
 
   async setTheme(theme) {
-    applyThemeToDom(theme);
-    writeBootCookie(theme); // 다음 부트 깜빡임 방지
-    set({ theme });
-    // IndexedDB persist + userOverride=true (이후 prefers-color-scheme listener 무시)
+    // 호환 경로 — choice 도 동일하게 light/dark 로 정렬 (override).
+    await get().setChoice(theme);
+  },
+
+  async setChoice(choice) {
+    // resolved 계산 — choice='system' 이면 prefers 따름.
+    const resolved: ThemeMode =
+      choice === "light" || choice === "dark"
+        ? choice
+        : getSystemDark()
+          ? "dark"
+          : "light";
+
+    applyThemeToDom(resolved);
+    writeBootCookie(resolved); // 다음 부트 깜빡임 방지 — 항상 resolved 등록
+    set({ theme: resolved, choice });
+
     try {
       const db = getDb();
       await db.settings.put({
-        key: SETTINGS_THEME_KEY,
-        value: theme,
+        key: SETTINGS_CHOICE_KEY,
+        value: choice,
         updatedAt: Date.now(),
       });
+      // 기존 'theme' 키 — light/dark 는 그대로 박고 'system' 일 때는 resolved 보존(레거시 호환).
+      await db.settings.put({
+        key: SETTINGS_THEME_KEY,
+        value: resolved,
+        updatedAt: Date.now(),
+      });
+      // userOverride: light/dark 면 true, system 이면 false (prefers listener 다시 활성).
       await db.settings.put({
         key: SETTINGS_USER_OVERRIDE_KEY,
-        value: "true",
+        value: choice === "system" ? "false" : "true",
         updatedAt: Date.now(),
       });
     } catch (err) {
-      // IndexedDB 차단 — 메모리 only (D3 패턴 계승). cookie는 박힘.
+      // IndexedDB 차단 — 메모리 only (D3 패턴 계승). cookie는 등록.
       console.warn("[robusta] theme persist failed", err);
     }
   },
 
   async toggle() {
-    await get().setTheme(get().theme === "light" ? "dark" : "light");
+    // light → dark → system → light 의 3-cycle 도 가능하지만, 기존 toggle 의미 보존 위해
+    // light ↔ dark 만 순환. system 에서 toggle 호출 시 현재 resolved 의 반대로.
+    const cur = get();
+    const next: ThemeMode = cur.theme === "light" ? "dark" : "light";
+    await get().setChoice(next);
   },
 }));
 
@@ -211,6 +269,7 @@ function setupPrefersColorSchemeListener(): void {
     const next: ThemeMode = ev.matches ? "dark" : "light";
     applyThemeToDom(next);
     writeBootCookie(next);
+    // C-D18-2: choice='system' 유지(선택은 system 그대로) + theme(resolved)만 갱신.
     useThemeStore.setState({ theme: next });
   };
   // Safari 14+ 표준 API. 이전 Safari fallback (addListener)은 이미 EOL 직전이라 생략.

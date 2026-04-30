@@ -33,8 +33,15 @@ interface HeaderClusterProps {
   themeHydrated: boolean;
   /** 현재 적용 테마 ("light"|"dark"). */
   themeMode: "light" | "dark";
-  /** 다크 토글 onClick. */
+  /** 다크 토글 onClick (legacy 2-state). C-D17-15 이후 themeChoice 가 있으면 3-segment 사용. */
   onToggleTheme: () => void;
+  /**
+   * C-D17-15 (D6 03시 슬롯, 2026-05-01) — KQ_14 채택분.
+   * 사용자 선택 3-state ("system"/"light"/"dark"). 미전달 시 legacy 2-state 토글 fallback.
+   */
+  themeChoice?: "system" | "light" | "dark";
+  /** C-D17-15: 3-segment 클릭 핸들러 (themeChoice 와 짝). */
+  onSetThemeChoice?: (choice: "system" | "light" | "dark") => void;
   /** ⚙ Keys 버튼 onClick. */
   onOpenApiKeyModal: () => void;
   /** Anthropic 키 (헤더 마스크 표시용). 빈 문자열이면 키 미등록. */
@@ -56,11 +63,15 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
     themeHydrated,
     themeMode,
     onToggleTheme,
+    themeChoice,
+    onSetThemeChoice,
     onOpenApiKeyModal,
     onOpenScheduleModal,
     anthropicKey,
     compact,
   } = props;
+  // C-D17-15 KQ_14: 3-state segment 모드 활성 — themeChoice/onSetThemeChoice 양쪽 모두 전달된 경우만.
+  const useSegment = themeChoice !== undefined && onSetThemeChoice !== undefined;
 
   // 모바일 오버레이에서는 세로 정렬 + 큰 tap target. 데스크탑은 가로 인라인.
   const containerClass = compact
@@ -85,25 +96,68 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
       >
         {turnModeLabel}
       </span>
-      <button
-        type="button"
-        onClick={onToggleTheme}
-        disabled={!themeHydrated}
-        // C-D17-22 (Day 5 19시) D-20: WCAG 2.4.7 Focus Visible — Tab 키보드 사용자 시각 피드백 박음.
-        //   기존 hover:border-robusta-accent만 박혀 있던 것에 focus ring 추가.
-        className={`rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent focus:outline-none focus:ring-2 focus:ring-robusta-accent focus:ring-offset-2 disabled:opacity-50 ${compact ? "min-h-[44px]" : ""}`}
-        data-test="theme-toggle-button"
-        aria-label={
-          !themeHydrated
-            ? "테마 토글 로딩 중"
-            : themeMode === "dark"
-              ? "라이트 모드로 전환"
-              : "다크 모드로 전환"
-        }
-        title={themeMode === "dark" ? "라이트 모드" : "다크 모드"}
-      >
-        {themeMode === "dark" ? "☀" : "🌙"}
-      </button>
+      {useSegment ? (
+        // C-D17-15 KQ_14: 3-segment 그룹 (☀ Light / ☾ Dark / ⌬ System).
+        // ARIA: role="group" + aria-label + 각 버튼 aria-pressed.
+        // 모바일 compact 모드에서도 nowrap + 44px 터치 타깃 보장.
+        <div
+          role="group"
+          aria-label="테마 선택"
+          className={`flex items-center rounded border border-robusta-divider ${compact ? "" : "h-7"}`}
+          data-test="theme-segment-group"
+        >
+          {(
+            [
+              { v: "light", label: "라이트 모드", icon: "☀" },
+              { v: "dark", label: "다크 모드", icon: "☾" },
+              { v: "system", label: "시스템 자동", icon: "⌬" },
+            ] as const
+          ).map((seg, idx) => {
+            const active = themeChoice === seg.v;
+            const radiusClass =
+              idx === 0
+                ? "rounded-l"
+                : idx === 2
+                  ? "rounded-r"
+                  : "border-l border-robusta-divider";
+            return (
+              <button
+                key={seg.v}
+                type="button"
+                onClick={() => onSetThemeChoice?.(seg.v)}
+                disabled={!themeHydrated}
+                aria-pressed={active}
+                aria-label={seg.label}
+                title={seg.label}
+                data-test={`theme-segment-${seg.v}`}
+                className={`whitespace-nowrap px-2 py-1 text-xs ${radiusClass} ${active ? "bg-robusta-accent text-robusta-ink" : "text-robusta-ink hover:bg-robusta-accentSoft"} focus:outline-none focus:ring-2 focus:ring-robusta-accent focus:ring-offset-2 disabled:opacity-50 ${compact ? "min-h-[44px] min-w-[44px]" : ""}`}
+              >
+                {seg.icon}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          disabled={!themeHydrated}
+          // C-D17-22 (Day 5 19시) D-20: WCAG 2.4.7 Focus Visible — Tab 키보드 사용자 시각 피드백 등록.
+          //   기존 hover:border-robusta-accent만 정의되어 있던 것에 focus ring 추가.
+          className={`rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent focus:outline-none focus:ring-2 focus:ring-robusta-accent focus:ring-offset-2 disabled:opacity-50 ${compact ? "min-h-[44px]" : ""}`}
+          data-test="theme-toggle-button"
+          aria-label={
+            !themeHydrated
+              ? "테마 토글 로딩 중"
+              : themeMode === "dark"
+                ? "라이트 모드로 전환"
+                : "다크 모드로 전환"
+          }
+          title={themeMode === "dark" ? "라이트 모드" : "다크 모드"}
+        >
+          {themeMode === "dark" ? "☀" : "🌙"}
+        </button>
+      )}
       {/* C-D17-16 (Day 5 23시) F-15: ⏰ 자동 발언 스케줄 진입 — 모달 열기. 트리거는 D11+에서 박힘. */}
       <button
         type="button"
