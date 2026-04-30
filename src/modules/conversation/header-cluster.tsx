@@ -39,6 +39,8 @@ interface HeaderClusterProps {
   onOpenApiKeyModal: () => void;
   /** Anthropic 키 (헤더 마스크 표시용). 빈 문자열이면 키 미등록. */
   anthropicKey: string;
+  /** C-D17-16 (Day 5 23시) F-15: ⏰ 스케줄 모달 열기 onClick. */
+  onOpenScheduleModal: () => void;
 }
 
 // C-D17-19 (Day 5 19시 슬롯, 2026-04-30) F-17: TokenCounterBadge placeholder 클릭 시 호출되는 핸들러를
@@ -55,6 +57,7 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
     themeMode,
     onToggleTheme,
     onOpenApiKeyModal,
+    onOpenScheduleModal,
     anthropicKey,
     compact,
   } = props;
@@ -100,6 +103,18 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
         title={themeMode === "dark" ? "라이트 모드" : "다크 모드"}
       >
         {themeMode === "dark" ? "☀" : "🌙"}
+      </button>
+      {/* C-D17-16 (Day 5 23시) F-15: ⏰ 자동 발언 스케줄 진입 — 모달 열기. 트리거는 D11+에서 박힘. */}
+      <button
+        type="button"
+        onClick={onOpenScheduleModal}
+        className={`flex items-center gap-1 rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent focus:outline-none focus:ring-2 focus:ring-robusta-accent focus:ring-offset-2 ${compact ? "min-h-[44px]" : ""}`}
+        data-test="schedule-button"
+        aria-label="자동 발언 스케줄 열기"
+        title="자동 발언 스케줄"
+      >
+        <span aria-hidden>⏰</span>
+        <span className="sr-only md:not-sr-only md:inline">스케줄</span>
       </button>
       <button
         type="button"

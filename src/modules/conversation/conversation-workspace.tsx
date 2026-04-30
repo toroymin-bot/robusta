@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
 // ~~maskApiKey~~ — C-D17-13 (Day 5 15시) HeaderCluster로 이관, 본 파일에서 직접 호출 X.
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
@@ -17,6 +17,12 @@ import { AutoLoopHeader } from "./auto-loop-header";
 // C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12: 모바일 햄버거 메뉴 분기.
 //   ~~기존 인라인 4도구 div~~ → HeaderCluster (데스크탑 인라인 + 모바일 풀스크린 오버레이).
 import { HeaderCluster } from "./header-cluster";
+// C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 자동 발언 스케줄 모달 — 트리거 X, UI 골격 + IndexedDB 영구화만.
+//   React.lazy + 조건 mount로 분리 — 모달 코드는 클릭 시점에만 fetch (/page∪/layout 게이트 영향 최소).
+//   ~~next/dynamic~~ 도입했다가 helper 오버헤드로 게이트 0.4KB 초과 → React.lazy로 교체.
+const ScheduleModal = lazy(() =>
+  import("@/modules/schedule/schedule-modal").then((m) => ({ default: m.ScheduleModal })),
+);
 // D-12.3 (Day 6): 부트 시 1회 등록. 이미 등록되어 있으면 noop.
 import { registerOnlineListener } from "@/modules/ui/online-listener";
 // D-15.2 (Day 9, 2026-04-28) C-D9-2: 헤더 발언 모드 라벨 i18n.
@@ -72,6 +78,8 @@ export function ConversationWorkspace() {
   const toggleTheme = useThemeStore((s) => s.toggle);
 
   const [keysOpen, setKeysOpen] = useState(false);
+  // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 스케줄 모달 open state.
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: D-Day 라벨 클라 시점 계산.
   //   SSR/CSR hydration mismatch 회피를 위해 SSR 폴백 = Day 5 (라이브 시점 정합).
   //   useEffect로 클라 시점 1회 set → 렌더 직후 실제 D-Day로 회전.
@@ -140,6 +148,7 @@ export function ConversationWorkspace() {
             themeMode={themeMode}
             onToggleTheme={toggleTheme}
             onOpenApiKeyModal={() => setKeysOpen(true)}
+            onOpenScheduleModal={() => setScheduleOpen(true)}
             anthropicKey={anthropicKey ?? ""}
           />
         </header>
@@ -151,6 +160,12 @@ export function ConversationWorkspace() {
       </main>
 
       {keysOpen && <ApiKeysView onClose={() => setKeysOpen(false)} />}
+      {/* C-D17-16 (Day 5 23시 슬롯) F-15: 스케줄 모달. open=true 시만 mount + lazy import → 초기 번들 영향 0. */}
+      {scheduleOpen && (
+        <Suspense fallback={null}>
+          <ScheduleModal onClose={() => setScheduleOpen(false)} />
+        </Suspense>
+      )}
       <ToastViewport />
     </div>
   );

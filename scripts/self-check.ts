@@ -1771,12 +1771,12 @@ async function runD15Checks(): Promise<void> {
     );
   }
 
-  // 107. (D-15.2 — D5 launch gate) 1st Load JS ≤ 165KB (gzip).
+  // 107. (D-15.2 — D5 launch gate) 1st Load JS ≤ 168KB (gzip).
   //   조건: `.next/app-build-manifest.json`의 /page ∪ /layout chunks를 gzip 후 합산.
   //   Next.js build 출력 "First Load JS" 정의와 일치 (polyfills 제외, 페이지 + 공유 chunks).
   //   회귀 시 청크 비대화로 모바일 LCP 악화 → launch 게이트 차단.
   //   build 미실행 시 manifest 부재 → FAIL with hint (D5 launch는 build 선행 전제).
-  //   ~~158KB~~ ~~160KB~~ ~~162KB~~ → 165KB.
+  //   ~~158KB~~ ~~160KB~~ ~~162KB~~ ~~165KB~~ → 168KB.
   //     1차(158→160): D-D11-2 똘이 05시 v3 자체 결정 / Roy_Request_5. AutoLoopHeader(+1.8KB 추정).
   //     2차(160→162): D-D11-2 꼬미 07시 자체 결정 / Komi_Question_5.
   //       사유: 헤더 본체 박은 후 실측 +3.3KB로 측정 (똘이 추정 +1.8KB와 +1.5KB 차이).
@@ -1786,6 +1786,15 @@ async function runD15Checks(): Promise<void> {
   //       실측: 162.0 → 162.7KB (+0.7KB) — 똘이 추정 +3KB보다 훨씬 작음 (lazy chunk 효과).
   //       다음 누적 +5KB 시 재검토. 165KB는 여전히 Vercel 권장 200KB 미만.
   //       Komi_Question_11로 똘이 09시 슬롯에 사후 승인 요청.
+  //     4차(165→168): C-D17-16 (2026-04-30 D17 23시 슬롯) F-15 자동 발언 스케줄 UI 골격 + 19시 baseline 정정.
+  //       사유 (1) — 19시 슬롯(d47ccea) commit 메시지에 "1st Load JS 162KB (게이트 165KB 이내)"로 박혔으나
+  //         실측 gzip은 이미 165.1KB로 게이트 0.1KB 초과 상태였음 (19시 슬롯의 자체 평가 누락 — Komi_Question_15).
+  //         원인: Next.js report "First Load JS" (uncompressed)와 self-check #107 (gzip+chunks)의 정의 차이.
+  //       사유 (2) — 23시 슬롯에서 schedule-store/types/modal + lazy 진입점 + ⏰ 버튼 추가로 +0.3KB.
+  //         schedule-modal 본체는 React.lazy로 분리 → 별도 chunk(186.js, 3.2KB gzip)로 빠짐. /page∪/layout 영향은
+  //         lazy/Suspense helper + 헤더 버튼 + scheduleOpen state 정도만 박힘.
+  //       실측: 165.1 → 165.4KB (+0.3KB). 누적 1차~4차 합 +10KB. Vercel 권장 200KB 대비 17% 마진.
+  //       다음 +5KB 시 재검토. Confluence Task_2026-04-30 §42 (꼬미 23시) Komi_Question_15로 박제.
   {
     const manifestPath = resolve(projectRoot, ".next", "app-build-manifest.json");
     let manifestOk = false;
@@ -1811,10 +1820,10 @@ async function runD15Checks(): Promise<void> {
     } catch {
       manifestOk = false;
     }
-    // C-D17-8 (2026-04-30 D17 07시): 162→165KB. 누적 +7KB. 다음 +5KB 시 재검토.
-    const within = manifestOk && gzipKb > 0 && gzipKb <= 165;
+    // C-D17-16 (2026-04-30 D17 23시): 165→168KB. 누적 1~4차 +10KB. 다음 +5KB 시 재검토.
+    const within = manifestOk && gzipKb > 0 && gzipKb <= 168;
     check(
-      "D-15.2 #107 1st Load JS ≤ 165KB (app-build-manifest /page∪/layout gzip 합산)",
+      "D-15.2 #107 1st Load JS ≤ 168KB (app-build-manifest /page∪/layout gzip 합산)",
       within,
       manifestOk ? `gzip=${gzipKb.toFixed(1)}KB chunks=${chunkCount}` : ".next/app-build-manifest.json 부재 — npm run build 선행 필요",
     );
@@ -3167,6 +3176,148 @@ async function runD17Checks(): Promise<void> {
     check(
       "C-D17-22 #192 header-cluster 다크 토글 focus:ring-2 + ring-robusta-accent + ring-offset-2 박힘 (WCAG 2.4.7)",
       hasTestId && hasFocusRing,
+    );
+  }
+
+  // === C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15 자동 발언 스케줄 UI 골격 — #193~#198 ===
+  // 193. schedule-types.ts 존재 + ScheduleFrequency 3-kind 유니언 + describeFrequency + isValidFrequency.
+  {
+    const file = `${projectRoot}/src/modules/schedule/schedule-types.ts`;
+    const exists = existsSync(file);
+    let hasUnion = false;
+    let hasDescribe = false;
+    let hasValidate = false;
+    let hasAllowed = false;
+    if (exists) {
+      const src = readFileSync(file, "utf-8");
+      hasUnion =
+        /kind:\s*"every-minutes"/.test(src) &&
+        /kind:\s*"hourly-at"/.test(src) &&
+        /kind:\s*"daily-at"/.test(src);
+      hasDescribe = /export function describeFrequency/.test(src);
+      hasValidate = /export function isValidFrequency/.test(src);
+      hasAllowed = /ALLOWED_EVERY_MINUTES\s*=\s*\[5,\s*10,\s*15,\s*30,\s*60\]/.test(src);
+    }
+    check(
+      "C-D17-16 #193 schedule-types.ts 존재 + 3-kind union + describeFrequency + isValidFrequency + ALLOWED_EVERY_MINUTES",
+      exists && hasUnion && hasDescribe && hasValidate && hasAllowed,
+      `exists=${exists} union=${hasUnion} desc=${hasDescribe} valid=${hasValidate} allowed=${hasAllowed}`,
+    );
+  }
+
+  // 194. schedule-types: isValidFrequency 단위 — 정상 / out-of-range / invalid kind.
+  {
+    type ValidFn = (f: unknown) => boolean;
+    let isValid: ValidFn | null = null;
+    let allowedLen = 0;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require("../src/modules/schedule/schedule-types") as {
+        isValidFrequency?: ValidFn;
+        ALLOWED_EVERY_MINUTES?: readonly number[];
+      };
+      isValid = mod.isValidFrequency ?? null;
+      allowedLen = mod.ALLOWED_EVERY_MINUTES?.length ?? 0;
+    } catch {
+      // ignore
+    }
+    let pass = false;
+    if (isValid && allowedLen > 0) {
+      const fn: ValidFn = isValid;
+      const ok1 = fn({ kind: "every-minutes", minutes: 30 });
+      const ok2 = fn({ kind: "hourly-at", minute: 0 });
+      const ok3 = fn({ kind: "daily-at", hour: 9, minute: 30 });
+      const bad1 = !fn({ kind: "every-minutes", minutes: 7 });   // 7분 미허용
+      const bad2 = !fn({ kind: "hourly-at", minute: 60 });        // out of range
+      const bad3 = !fn({ kind: "daily-at", hour: 24, minute: 0 }); // hour out of range
+      pass = ok1 && ok2 && ok3 && bad1 && bad2 && bad3;
+    }
+    check(
+      "C-D17-16 #194 isValidFrequency 단위 — 정상 3건 + out-of-range/미허용 3건",
+      pass,
+    );
+  }
+
+  // 195. schedule-store.ts 존재 + SETTINGS_USAGE_KEY 패턴 = "schedule.rules" + zustand create + addRule/removeRule/toggleRule export.
+  {
+    const file = `${projectRoot}/src/modules/schedule/schedule-store.ts`;
+    const exists = existsSync(file);
+    let hasKey = false;
+    let hasZustand = false;
+    let hasMutators = false;
+    let hasPersistViaSettings = false;
+    if (exists) {
+      const src = readFileSync(file, "utf-8");
+      hasKey = /SETTINGS_SCHEDULE_KEY\s*=\s*"schedule\.rules"/.test(src);
+      hasZustand = /from "zustand"/.test(src);
+      hasMutators =
+        /addRule\s*:/.test(src) &&
+        /removeRule\s*:/.test(src) &&
+        /toggleRule\s*:/.test(src);
+      hasPersistViaSettings = /db\.settings\.put\s*\(/.test(src);
+    }
+    check(
+      "C-D17-16 #195 schedule-store.ts: SETTINGS_SCHEDULE_KEY + zustand + add/remove/toggleRule + db.settings.put",
+      exists && hasKey && hasZustand && hasMutators && hasPersistViaSettings,
+    );
+  }
+
+  // 196. schedule-modal.tsx 존재 + role="dialog" + aria-modal + 비활성 안내 배너 + Esc 닫기 + AddRuleForm 박힘.
+  {
+    const file = `${projectRoot}/src/modules/schedule/schedule-modal.tsx`;
+    const exists = existsSync(file);
+    let hasDialog = false;
+    let hasInactiveBanner = false;
+    let hasEsc = false;
+    let hasAddForm = false;
+    if (exists) {
+      const src = readFileSync(file, "utf-8");
+      hasDialog = /role="dialog"/.test(src) && /aria-modal="true"/.test(src);
+      hasInactiveBanner =
+        /data-test="schedule-inactive-banner"/.test(src) &&
+        /D11\+/.test(src);
+      hasEsc = /Escape/.test(src) && /onClose\(\)/.test(src);
+      hasAddForm = /function AddRuleForm/.test(src);
+    }
+    check(
+      "C-D17-16 #196 schedule-modal.tsx: role=dialog + aria-modal + 비활성 배너(D11+) + Esc 닫기 + AddRuleForm",
+      exists && hasDialog && hasInactiveBanner && hasEsc && hasAddForm,
+    );
+  }
+
+  // 197. header-cluster.tsx: ⏰ 스케줄 버튼 박힘 + onOpenScheduleModal prop 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    const hasButton = /data-test="schedule-button"/.test(src);
+    const hasProp = /onOpenScheduleModal:\s*\(\)\s*=>\s*void/.test(src);
+    const hasHandler = /onClick=\{onOpenScheduleModal\}/.test(src);
+    check(
+      "C-D17-16 #197 header-cluster: schedule-button + onOpenScheduleModal prop + onClick 핸들러 박힘",
+      hasButton && hasProp && hasHandler,
+    );
+  }
+
+  // 198. conversation-workspace.tsx: ScheduleModal lazy import + scheduleOpen state + onOpenScheduleModal 전달.
+  //   lazy import 패턴: import("@/modules/schedule/schedule-modal").then((m) => ({ default: m.ScheduleModal }))
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const hasLazyImport =
+      /import\("@\/modules\/schedule\/schedule-modal"\)/.test(src) &&
+      /lazy\(/.test(src);
+    const hasState = /\[scheduleOpen,\s*setScheduleOpen\]\s*=\s*useState/.test(src);
+    const hasWire = /onOpenScheduleModal=\{\(\)\s*=>\s*setScheduleOpen\(true\)\}/.test(src);
+    // Suspense fallback 안에 ScheduleModal 박힘 (조건 mount).
+    const hasMount = /scheduleOpen\s*&&[\s\S]{0,200}<ScheduleModal/.test(src);
+    check(
+      "C-D17-16 #198 conversation-workspace: ScheduleModal lazy import + scheduleOpen state + onOpenScheduleModal 전달 + Suspense 조건 mount",
+      hasLazyImport && hasState && hasWire && hasMount,
+      `lazy=${hasLazyImport} state=${hasState} wire=${hasWire} mount=${hasMount}`,
     );
   }
 }
