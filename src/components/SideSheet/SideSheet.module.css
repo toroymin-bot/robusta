@@ -1,0 +1,72 @@
+/*
+ * SideSheet.module.css
+ *   - C-D19-1 (D6 07시 슬롯, 2026-05-01) — D-26 채택분.
+ *   - 슬라이드 인 애니메이션 + backdrop 정의.
+ *   - prefers-reduced-motion: reduce → transition 제거 (접근성).
+ */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none; /* 자식의 pointer-events 가 우선 — backdrop/panel 만 활성화. */
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  /* 페이드 인 — 짧고 부드럽게. */
+  animation: side-sheet-fade-in 180ms ease-out;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--robusta-canvas, #FFFCEB);
+  color: var(--robusta-ink, #15140E);
+  border-color: var(--robusta-divider, #EAE3C7);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+  outline: none;
+  overflow-y: auto;
+  /* 슬라이드 — transform 만 사용 (paint-only, GPU 가속). */
+  transition: transform 220ms ease-out;
+  will-change: transform;
+}
+
+.panel.left {
+  left: 0;
+  transform: translateX(-100%);
+  border-right: 1px solid var(--robusta-divider, #EAE3C7);
+}
+
+.panel.right {
+  right: 0;
+  transform: translateX(100%);
+  border-left: 1px solid var(--robusta-divider, #EAE3C7);
+}
+
+.panel.open {
+  transform: translateX(0);
+}
+
+@keyframes side-sheet-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 접근성: 사용자가 모션 감소를 원하면 transition/animation 제거. */
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .panel.left,
+  .panel.right,
+  .panel.open {
+    transition: none;
+  }
+  .backdrop {
+    animation: none;
+  }
+}

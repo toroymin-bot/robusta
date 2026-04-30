@@ -12,7 +12,7 @@ import { useConversationStore } from "@/stores/conversation-store";
 import { ConversationView } from "./conversation-view";
 // D-D11-2 (Day 11, 2026-04-29, B19) C-D11-2: AutoLoopHeader — ai-auto 모드 시 헤더 영역 mount.
 //   ~~next/dynamic ssr:false 분리 시도~~ — manifest /page∪/layout gzip 합산은 같은 chunks=8로
-//     0.2KB만 절약(효과 미미). 정적 import로 복원하고 게이트 +2KB 상향(C-D11-7b)으로 박음.
+//     0.2KB만 절약(효과 미미). 정적 import로 복원하고 게이트 +2KB 상향(C-D11-7b)으로 적용.
 import { AutoLoopHeader } from "./auto-loop-header";
 // C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12: 모바일 햄버거 메뉴 분기.
 //   ~~기존 인라인 4도구 div~~ → HeaderCluster (데스크탑 인라인 + 모바일 풀스크린 오버레이).
@@ -29,7 +29,7 @@ import { registerOnlineListener } from "@/modules/ui/online-listener";
 import { t } from "@/modules/i18n/messages";
 import type { TurnMode } from "@/modules/conversation/turn-controller";
 // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: 헤더 모드 라벨 동적 회전 (F-D16-1).
-//   v12 §24.3 web_fetch 검증으로 "Day 3" 정적 결함 박힘 → Roadmap 자동 계산.
+//   v12 §24.3 web_fetch 검증으로 "Day 3" 정적 결함 발견 → Roadmap 자동 계산.
 // D-D17-4 (Day 5 03시 슬롯, 2026-04-30) C-D17-4: 색상 티어 import 추가 — Day별 헤더 라벨 색상 분기.
 import {
   getRoadmapDay,
@@ -52,7 +52,7 @@ const TURN_MODE_LABEL_KEY = {
  * D-D9-2 (Day 9, 2026-04-28) C-D10-2: 활성 모드 라벨 색 코딩 헬퍼.
  *   active=true → yellow-500(#F5C518) 좌측 보더 2px + font-semibold + 본문 ink.
  *   active=false → ink-dim, hover ink (시각 위계).
- *   Tailwind에 yellow-500 토큰 매핑 미박힘 — 호출자가 인라인 style.borderLeftColor=#F5C518 fallback 박을 것.
+ *   Tailwind에 yellow-500 토큰 매핑 미정의 — 호출자가 인라인 style.borderLeftColor=#F5C518 fallback 적용할 것.
  *   현재 헤더는 단일 라벨이지만 추후 4-segment 토글(C-D11-1) 도입 시 활성/비활성 비교에 그대로 재사용.
  */
 export function getModeClassName(active: boolean): string {
@@ -142,7 +142,7 @@ export function ConversationWorkspace() {
           {/* C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12 / Roy id-19 직접 대응:
               ~~기존 인라인 4도구 div (mode-label, turn-mode-label, theme-toggle, ⚙ Keys)~~
               → HeaderCluster: 데스크탑 ≥ md 인라인 동일 / 모바일 < md 햄버거 + 풀스크린 오버레이.
-              data-test 셀렉터(header-mode-label, header-turn-mode-label)는 HeaderCluster 내부에 그대로 박힘 → 회귀 0. */}
+              data-test 셀렉터(header-mode-label, header-turn-mode-label)는 HeaderCluster 내부에 그대로 정의됨 → 회귀 0. */}
           <HeaderCluster
             roadmapLabel={roadmapLabel}
             roadmapColor={roadmapColor}

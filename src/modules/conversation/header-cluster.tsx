@@ -2,16 +2,16 @@
  * header-cluster.tsx
  *   - C-D17-13 (Day 5 15시 슬롯, 2026-04-30) — F-12 + D-12.
  *     · 데스크탑 ≥ 768px (Tailwind md:): 헤더 4도구 인라인 (mode 라벨, turn-mode 라벨, 다크 토글, ⚙ Keys).
- *     · 모바일 < 768px: 햄버거 버튼만 노출 → 클릭 시 풀스크린 오버레이 안에 4도구 모두 박음.
+ *     · 모바일 < 768px: 햄버거 버튼만 노출 → 클릭 시 풀스크린 오버레이 안에 4도구 모두 등록.
  *   - 접근성: role="dialog" + aria-modal="true" + aria-expanded + aria-controls + Esc 닫기 + backdrop 클릭 닫기.
  *   - body scroll lock: 오버레이 오픈 시 document.body.style.overflow="hidden", 닫힘 시 복구.
  *   - 데스크탑 회전(viewport ≥ 768px) 시 자동 닫기 — matchMedia listener.
- *   - iOS Safari 100vh ≠ 실 viewport 회피: min-h-[100svh] 박음.
+ *   - iOS Safari 100vh ≠ 실 viewport 회피: min-h-[100svh] 적용.
  *   - OCP: 기존 헤더의 4도구 마크업/className은 그대로 유지(데스크탑 슬롯 + 모바일 슬롯 양쪽에 동일 레이아웃).
  *
  * Roy id-19 (Do v30 2026-04-30) 직접 대응:
  *   "모바일에서 메뉴버튼을 클릭하면 메인 화면을 가리는 현상등을 없애기"
- *   → 풀스크린 오버레이는 메인 화면 위에 박히지만 body scroll lock + Esc/backdrop 닫기 + 명확한 X 버튼으로
+ *   → 풀스크린 오버레이는 메인 화면 위에 표시되지만 body scroll lock + Esc/backdrop 닫기 + 명확한 X 버튼으로
  *      사용자가 언제든 즉시 닫을 수 있어 가림이 마찰이 되지 X.
  */
 
@@ -19,7 +19,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { maskApiKey } from "@/modules/api-keys/api-key-mask";
-// C-D17-17 (Day 5 15시) F-16 토큰 카운터 뱃지 — 헤더에 박힘. 누적 0건이면 자체적으로 마운트 X.
+// C-D17-17 (Day 5 15시) F-16 토큰 카운터 뱃지 — 헤더에 등록. 누적 0건이면 자체적으로 마운트 X.
 import { TokenCounterBadge } from "./token-counter-badge";
 
 interface HeaderClusterProps {
@@ -51,7 +51,7 @@ interface HeaderClusterProps {
 }
 
 // C-D17-19 (Day 5 19시 슬롯, 2026-04-30) F-17: TokenCounterBadge placeholder 클릭 시 호출되는 핸들러를
-//   ⚙ Keys 모달 open과 동일하게 박음. onOpenApiKeyModal을 그대로 token badge에 전달.
+//   ⚙ Keys 모달 open과 동일하게 정의. onOpenApiKeyModal을 그대로 token badge에 전달.
 
 /** 데스크탑/모바일 양쪽에서 재사용되는 4도구 그룹.
  *  flexbox 컨테이너 + gap만 명시해 슬롯별로 다른 정렬을 허용. */
@@ -81,7 +81,7 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
   return (
     <div className={containerClass}>
       {/* C-D17-17 (Day 5 15시) F-16: 토큰/비용 누적 뱃지.
-          C-D17-19 (Day 5 19시) F-17: 누적 0건 시 placeholder 박음 — 클릭 시 ⚙ Keys 모달 open. */}
+          C-D17-19 (Day 5 19시) F-17: 누적 0건 시 placeholder 등록 — 클릭 시 ⚙ Keys 모달 open. */}
       <TokenCounterBadge onRequestApiKeyModal={onOpenApiKeyModal} />
       <span
         className="whitespace-nowrap border-l-2 pl-2 text-xs font-semibold uppercase tracking-widest text-robusta-ink"
@@ -158,7 +158,7 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
           {themeMode === "dark" ? "☀" : "🌙"}
         </button>
       )}
-      {/* C-D17-16 (Day 5 23시) F-15: ⏰ 자동 발언 스케줄 진입 — 모달 열기. 트리거는 D11+에서 박힘. */}
+      {/* C-D17-16 (Day 5 23시) F-15: ⏰ 자동 발언 스케줄 진입 — 모달 열기. 트리거는 D11+에서 정의. */}
       <button
         type="button"
         onClick={onOpenScheduleModal}
@@ -280,7 +280,7 @@ export function HeaderCluster(props: HeaderClusterProps) {
           data-test="mobile-menu-overlay"
           className="fixed inset-0 z-50 flex min-h-[100svh] flex-col bg-robusta-canvas md:hidden"
         >
-          {/* backdrop 클릭 영역은 컨테이너 자체. 내부 콘텐츠 클릭은 stopPropagation 박지 않고
+          {/* backdrop 클릭 영역은 컨테이너 자체. 내부 콘텐츠 클릭은 stopPropagation 호출하지 않고
               상단 X 버튼으로 명시적 닫기 유도 (외부 클릭 = 컨테이너 빈 하단 영역 클릭 시 닫힘). */}
           <div className="flex items-center justify-between border-b border-robusta-divider px-4 py-3">
             <span className="text-sm font-semibold text-robusta-ink">메뉴</span>
@@ -306,7 +306,7 @@ export function HeaderCluster(props: HeaderClusterProps) {
               </svg>
             </button>
           </div>
-          {/* HeaderTools를 compact=true 모드로 박음 — 세로 정렬 + 44px 최소 tap target. */}
+          {/* HeaderTools를 compact=true 모드로 적용 — 세로 정렬 + 44px 최소 tap target. */}
           <HeaderTools {...props} compact />
           {/* 하단 빈 영역 클릭 시 닫기 (backdrop 패턴) — 키보드 사용자는 Esc/X 사용. */}
           <button

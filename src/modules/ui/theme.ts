@@ -77,7 +77,7 @@ function getSystemDark(): boolean {
  *   우선순위 — cookie > prefers-color-scheme > 'light'.
  *   id-22 정합 — 사용자 명시(cookie) 우선, 시스템 자동(prefers) 보조.
  *   matchMedia 미지원 (구형 브라우저) → 'light' fallback.
- *   layout.tsx boot script와 동일한 로직을 TS 측에 박음 — 단위 검증 가능 (#181~#183).
+ *   layout.tsx boot script와 동일한 로직을 TS 측에 정의 — 단위 검증 가능 (#181~#183).
  */
 export function getInitialTheme(): ThemeMode {
   const cookie = readBootCookie();
@@ -169,7 +169,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
       ) {
         choice = storedChoice.value;
       } else {
-        // legacy: settings.theme(light/dark) 가 박혀있으면 override 의미로 choice 매핑
+        // legacy: settings.theme(light/dark) 가 정의되어 있으면 override 의미로 choice 매핑
         const stored = await db.settings.get(SETTINGS_THEME_KEY);
         if (stored?.value === "light" || stored?.value === "dark") {
           choice = stored.value;
@@ -220,7 +220,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
         value: choice,
         updatedAt: Date.now(),
       });
-      // 기존 'theme' 키 — light/dark 는 그대로 박고 'system' 일 때는 resolved 보존(레거시 호환).
+      // 기존 'theme' 키 — light/dark 는 그대로 적용하고 'system' 일 때는 resolved 보존(레거시 호환).
       await db.settings.put({
         key: SETTINGS_THEME_KEY,
         value: resolved,

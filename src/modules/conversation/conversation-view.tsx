@@ -23,8 +23,11 @@ import type { Participant } from "@/modules/participants/participant-types";
 import { t } from "@/modules/i18n/messages";
 // D-D17-2 (Day 5 03시 슬롯, 2026-04-30) C-D17-2: 첫 방문 onboarding CTA — 참여자 0명 + 메시지 0개 빈 화면 대체.
 import { EmptyStateCta } from "@/modules/onboarding/empty-state-cta";
-// C-D17-18 (Day 5 19시 슬롯, 2026-04-30) F-21: 참여자 ≥ 1 + 메시지 0건 시 환영 카드 박음 (dismiss 가능).
+// C-D17-18 (Day 5 19시 슬롯, 2026-04-30) F-21: 참여자 ≥ 1 + 메시지 0건 시 환영 카드 표시 (dismiss 가능).
 import { WelcomeCard } from "./welcome-card";
+// C-D19-2 (D6 07시 슬롯, 2026-05-01) F-28: 빈 상태 자동 분기 (zeroParticipants/onlyHuman/zeroMessages).
+import { useConversationEmptyState } from "@/views/conversation/useConversationEmptyState";
+import type { EmptyCtaIntent } from "@/modules/onboarding/empty-state-registry";
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -470,6 +473,43 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     }
   }
 
+  // C-D19-2 (D6 07시) F-28: 빈 상태 자동 분기 — variant 결정.
+  //   loaded=false 단계에서는 'none' 반환되어 깜빡임 방지.
+  const emptyState = useConversationEmptyState({
+    participants,
+    messages,
+    loaded: conversationsHydrated && participantsHydrated,
+  });
+
+  // C-D19-2: registry variant CTA 클릭 시 의도(addParticipant/addAI/focusInput) 매핑.
+  //   SideSheet(C-D19-1) 통합 전까지는 토스트로 안내. 다음 슬롯에서 진화.
+  const handleEmptyIntent = useCallback(
+    (intent: EmptyCtaIntent) => {
+      if (intent === "focusInput") {
+        pushToast({
+          tone: "info",
+          message: "하단 입력창에 메시지를 입력하세요.",
+        });
+        return;
+      }
+      if (intent === "addParticipant") {
+        pushToast({
+          tone: "info",
+          message: "좌측 패널에서 참여자를 추가하세요.",
+        });
+        return;
+      }
+      if (intent === "addAI") {
+        pushToast({
+          tone: "info",
+          message: "좌측 패널에서 AI 참여자를 추가하세요.",
+        });
+        return;
+      }
+    },
+    [pushToast],
+  );
+
   // group consecutive messages by participant for "isFirstInGroup"
   const grouped = useMemo(() => {
     const result: { msg: Message; isFirstInGroup: boolean }[] = [];
@@ -497,11 +537,17 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       >
         {!conversationsHydrated || !participantsHydrated ? (
           <div className="px-6 text-sm text-robusta-inkDim">대화를 불러오는 중…</div>
-        ) : participants.length === 0 && grouped.length === 0 ? (
-          // D-D17-2 (Day 5 03시) C-D17-2: 첫 방문(참여자 0 + 메시지 0) — 노란 "샘플 보기" CTA로 대체.
-          //   기존 ~~"대화를 시작하세요…" 안내~~ 는 참여자가 1명 이상일 때만 노출 (아래 분기).
-          //   Roy Do v24 id-15 "초등학생 직관" 정합.
-          <EmptyStateCta variant="sample" />
+        ) : emptyState.kind === "show" ? (
+          // C-D19-2 (D6 07시) F-28: 빈 상태 자동 분기 — registry variant 사용.
+          //   ~~기존 D-D17-2 분기 (participants.length===0 && grouped.length===0 → variant="sample")~~ OCP 보존:
+          //   sample/byok variant 는 외부 라우트 anchor 형태 — 신규 인-패널 onboarding 으로 마이그레이션.
+          //   handleEmptyIntent 콜백으로 [참여자 추가]/[AI 추가]/[입력 포커스] 의도를 위임.
+          //   Roy Do v24 id-15 "초등학생 직관" 정합 — 카피 1줄·CTA 1개·일러스트 0개.
+          <EmptyStateCta
+            variant={emptyState.variant}
+            locale="ko"
+            onIntent={handleEmptyIntent}
+          />
         ) : grouped.length === 0 ? (
           // D-D17-stop-gap (Day 5 12:30 KST 슬롯 외): 메인 → 다른 라우트 진입점 0건 발견.
           //   Roy 라이브 검증 [...querySelectorAll('a')].length=0. 트윗 효과 80% = 첫 화면 임팩트.

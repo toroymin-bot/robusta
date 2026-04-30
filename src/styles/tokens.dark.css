@@ -1,0 +1,76 @@
+/*
+ * tokens.dark.css
+ *   - C-D19-4 (D6 07시 슬롯, 2026-05-01) — D-30 채택분 (다크 모드 노란 톤 토큰).
+ *
+ * 정책 (똘이 §6 C-D19-4):
+ *   - 따뜻한 다크 (canvas #1A1612 / accent #FCE7B0) — Blend 의 차가운 다크와 차별.
+ *   - 모든 텍스트/배경 페어 WCAG AA(4.5:1) 이상 — 자동 contrast 검증으로 회귀 가드.
+ *   - 기존 --robusta-* 토큰과 공존 (D-28 D-29 D-26 위 D-30 별도 추상화 레이어).
+ *
+ * 사용:
+ *   - globals.css 에서 @import 한다 (라이트 토큰 다음 등록 → 다크 매핑은 [data-theme="dark"] 한정).
+ */
+
+[data-theme="dark"] {
+  /* canvas / surface — 따뜻한 짙은 갈색 계열. */
+  --bg-canvas: #1A1612;
+  --bg-surface: #2A2218;
+  --bg-elevated: #3A2F22;
+
+  /* text — 노란 톤(따뜻한 흰색). */
+  --text-primary: #FCE7B0;
+  --text-secondary: #C9B68A;
+  --text-muted: #8A7A5A;
+
+  /* border. */
+  --border-subtle: #3A2F22;
+  --border-strong: #5A4A32;
+
+  /* accent (CTA). */
+  --accent-primary: #FCE7B0;
+  --accent-primary-fg: #1F2937;
+
+  /* status. */
+  --status-success: #7BC97B;
+  --status-error: #E5736C;
+  --status-warning: #F2C46C;
+
+  /* empty state (D-28 토큰화 연동). */
+  --empty-bg: #2A2218;
+  --empty-text: #FCE7B0;
+  --empty-cta-bg: #FCE7B0;
+  --empty-cta-fg: #1F2937;
+}
+
+/* 라이트 모드 토큰 — 다크와 같은 추상화 레이어로 정의 (대칭). */
+:root {
+  --bg-canvas: #FFFCEB;
+  --bg-surface: #FFF7CC;
+  --bg-elevated: #FFFFFF;
+
+  --text-primary: #15140E;
+  --text-secondary: #5C5849;
+  --text-muted: #8A8473;
+
+  --border-subtle: #EAE3C7;
+  --border-strong: #C9A227;
+
+  --accent-primary: #C9A227;
+  --accent-primary-fg: #15140E;
+
+  --status-success: #16a34a;
+  --status-error: #dc2626;
+  --status-warning: #d97706;
+
+  --empty-bg: #FFFCEB;
+  --empty-text: #15140E;
+  --empty-cta-bg: #C9A227;
+  --empty-cta-fg: #15140E;
+}
+
+/* 라이트 ↔ 다크 전환 시 부드러운 색상 트랜지션 — 200ms (D-30 디자인 의도). */
+html {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
