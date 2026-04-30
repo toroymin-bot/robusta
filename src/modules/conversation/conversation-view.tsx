@@ -23,6 +23,8 @@ import type { Participant } from "@/modules/participants/participant-types";
 import { t } from "@/modules/i18n/messages";
 // D-D17-2 (Day 5 03시 슬롯, 2026-04-30) C-D17-2: 첫 방문 onboarding CTA — 참여자 0명 + 메시지 0개 빈 화면 대체.
 import { EmptyStateCta } from "@/modules/onboarding/empty-state-cta";
+// C-D17-18 (Day 5 19시 슬롯, 2026-04-30) F-21: 참여자 ≥ 1 + 메시지 0건 시 환영 카드 박음 (dismiss 가능).
+import { WelcomeCard } from "./welcome-card";
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -506,6 +508,9 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
           //   Tori_Note_3 (Confluence 21102621) 13시 슬롯에서 풀 랜딩 명세 박힐 때까지의 임시 다리.
           //   기존 안내 텍스트 + EmptyStateCta sample + (apiKey 없을 시) byok 카드 추가.
           <div className="mx-auto flex max-w-md flex-col gap-6 px-6 py-12 text-center text-sm text-robusta-inkDim">
+            {/* C-D17-18 (Day 5 19시 슬롯, 2026-04-30) F-21: 참여자 ≥ 1명 + 메시지 0건 시 환영 카드 박음.
+                dismissed=true 시 자체 null 반환. EmptyStateCta는 그대로 유지(변환 X). */}
+            <WelcomeCard />
             <p>
               대화를 시작하세요. 좌측에서 참여자를 확인하고, 하단에서 발언자를 골라
               메시지를 보내세요.

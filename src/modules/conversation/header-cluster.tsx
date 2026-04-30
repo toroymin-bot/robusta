@@ -41,6 +41,9 @@ interface HeaderClusterProps {
   anthropicKey: string;
 }
 
+// C-D17-19 (Day 5 19시 슬롯, 2026-04-30) F-17: TokenCounterBadge placeholder 클릭 시 호출되는 핸들러를
+//   ⚙ Keys 모달 open과 동일하게 박음. onOpenApiKeyModal을 그대로 token badge에 전달.
+
 /** 데스크탑/모바일 양쪽에서 재사용되는 4도구 그룹.
  *  flexbox 컨테이너 + gap만 명시해 슬롯별로 다른 정렬을 허용. */
 function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
@@ -63,8 +66,9 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
 
   return (
     <div className={containerClass}>
-      {/* C-D17-17 (Day 5 15시) F-16: 토큰/비용 누적 뱃지 — 누적 0건이면 컴포넌트 자체가 null 반환. */}
-      <TokenCounterBadge />
+      {/* C-D17-17 (Day 5 15시) F-16: 토큰/비용 누적 뱃지.
+          C-D17-19 (Day 5 19시) F-17: 누적 0건 시 placeholder 박음 — 클릭 시 ⚙ Keys 모달 open. */}
+      <TokenCounterBadge onRequestApiKeyModal={onOpenApiKeyModal} />
       <span
         className="whitespace-nowrap border-l-2 pl-2 text-xs font-semibold uppercase tracking-widest text-robusta-ink"
         style={{ borderLeftColor: roadmapColor }}
@@ -82,7 +86,10 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
         type="button"
         onClick={onToggleTheme}
         disabled={!themeHydrated}
-        className={`rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent disabled:opacity-50 ${compact ? "min-h-[44px]" : ""}`}
+        // C-D17-22 (Day 5 19시) D-20: WCAG 2.4.7 Focus Visible — Tab 키보드 사용자 시각 피드백 박음.
+        //   기존 hover:border-robusta-accent만 박혀 있던 것에 focus ring 추가.
+        className={`rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent focus:outline-none focus:ring-2 focus:ring-robusta-accent focus:ring-offset-2 disabled:opacity-50 ${compact ? "min-h-[44px]" : ""}`}
+        data-test="theme-toggle-button"
         aria-label={
           !themeHydrated
             ? "테마 토글 로딩 중"

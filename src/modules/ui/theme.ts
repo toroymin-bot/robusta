@@ -64,6 +64,20 @@ function getSystemDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+/**
+ * C-D17-20 (Day 5 19시 슬롯, 2026-04-30) — F-19: 초기 테마 결정 헬퍼.
+ *   우선순위 — cookie > prefers-color-scheme > 'light'.
+ *   id-22 정합 — 사용자 명시(cookie) 우선, 시스템 자동(prefers) 보조.
+ *   matchMedia 미지원 (구형 브라우저) → 'light' fallback.
+ *   layout.tsx boot script와 동일한 로직을 TS 측에 박음 — 단위 검증 가능 (#181~#183).
+ */
+export function getInitialTheme(): ThemeMode {
+  const cookie = readBootCookie();
+  if (cookie === "light" || cookie === "dark") return cookie;
+  if (getSystemDark()) return "dark";
+  return "light";
+}
+
 /** cookie 읽기 (boot inline script와 동기화 위해 동기 함수). */
 function readBootCookie(): ThemeMode | null {
   if (typeof document === "undefined") return null;
@@ -214,4 +228,6 @@ export const __theme_internal = {
   writeBootCookie,
   applyThemeToDom,
   getSystemDark,
+  // C-D17-20 (Day 5 19시) F-19: 단위 테스트용 export.
+  getInitialTheme,
 };

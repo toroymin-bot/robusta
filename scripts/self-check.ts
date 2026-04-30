@@ -2926,6 +2926,8 @@ async function runD17Checks(): Promise<void> {
   }
 
   // 172. (C-D17-17) HeaderCluster에 TokenCounterBadge 박힘 (데스크탑 + 모바일 양쪽 동일 슬롯).
+  //   C-D17-19 (Day 5 19시) prop 추가 — `<TokenCounterBadge onRequestApiKeyModal={...} />` 형태로 변경.
+  //   기존 `<TokenCounterBadge\s*\/>` 정규식은 깨지므로 props 허용 패턴으로 정정.
   {
     const src = readFileSync(
       `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
@@ -2933,9 +2935,9 @@ async function runD17Checks(): Promise<void> {
     );
     const ok =
       /from "\.\/token-counter-badge"/.test(src) &&
-      /<TokenCounterBadge\s*\/>/.test(src);
+      /<TokenCounterBadge[\s\S]*?\/>/.test(src);
     check(
-      "C-D17-17 #172 HeaderCluster에 TokenCounterBadge 박힘",
+      "C-D17-17 #172 HeaderCluster에 TokenCounterBadge 박힘 (props 허용)",
       ok,
     );
   }
@@ -2974,6 +2976,197 @@ async function runD17Checks(): Promise<void> {
       "C-D17-17 #174 usage-store.computeCost: unknown model → cost=0 (silent 폴백)",
       cost === 0,
       `cost=${cost}`,
+    );
+  }
+
+  // === Day 5 19시 슬롯 (꼬미 v1) — C-D17-18/19/20/22 신규 가드 #175~#183 + #191~#192 ===
+  //   F-20 (usage byDate)는 21시 슬롯으로 이월 → #189/#190 본 슬롯 박지 않음.
+
+  // 175. (C-D17-18 F-21) welcome-card.tsx 존재 + WelcomeCard export + props onStart 옵셔널.
+  {
+    const path = `${projectRoot}/src/modules/conversation/welcome-card.tsx`;
+    const exists = existsSync(path);
+    let ok = false;
+    if (exists) {
+      const src = readFileSync(path, "utf-8");
+      ok =
+        /export function WelcomeCard\(/.test(src) &&
+        /onStart\?:\s*\(\)\s*=>\s*void/.test(src) &&
+        src.includes('data-test="welcome-card"') &&
+        src.includes('aria-labelledby="welcome-title"');
+    }
+    check(
+      "C-D17-18 #175 welcome-card.tsx 존재 + WelcomeCard 컴포넌트 + props onStart 옵셔널 + a11y 박힘",
+      exists && ok,
+    );
+  }
+
+  // 176. (C-D17-18) conversation-view.tsx에 WelcomeCard import + 분기에 박힘 (참여자 ≥ 1 + 메시지 0건).
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-view.tsx`,
+      "utf-8",
+    );
+    const hasImport = /from "\.\/welcome-card"/.test(src);
+    const hasMount = /<WelcomeCard\s*\/>/.test(src);
+    check(
+      "C-D17-18 #176 conversation-view.tsx WelcomeCard import + 빈상태 분기 mount 박힘",
+      hasImport && hasMount,
+    );
+  }
+
+  // 177. (C-D17-18) WelcomeCard dismiss 시 settings.put("welcome.dismissed") 호출 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/welcome-card.tsx`,
+      "utf-8",
+    );
+    const hasKey = /welcome\.dismissed/.test(src);
+    const hasPut = /db\.settings\.put\(/.test(src);
+    const hasDismissBtn =
+      src.includes('data-test="welcome-card-dismiss"') &&
+      src.includes('aria-label="환영 카드 닫기"');
+    check(
+      "C-D17-18 #177 WelcomeCard dismiss → settings.put(welcome.dismissed) + dismiss 버튼 박힘",
+      hasKey && hasPut && hasDismissBtn,
+    );
+  }
+
+  // 178. (C-D17-19 F-17) TokenCounterBadge: total <= 0 시 placeholder 박힘 + onRequestApiKeyModal prop.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/token-counter-badge.tsx`,
+      "utf-8",
+    );
+    const hasProp = /onRequestApiKeyModal\?:\s*\(\)\s*=>\s*void/.test(src);
+    const hasPlaceholderTest = src.includes(
+      'data-test="token-counter-badge-placeholder"',
+    );
+    const hasPlaceholderText = /키 등록 시 누적 표시/.test(src);
+    const hasZeroBranch =
+      /if\s*\(\s*total\s*<=\s*0\s*\)/.test(src) &&
+      /return\s*\(\s*<button/.test(src);
+    check(
+      "C-D17-19 #178 token-counter-badge: 0건 시 placeholder + onRequestApiKeyModal prop + data-test",
+      hasProp && hasPlaceholderTest && hasPlaceholderText && hasZeroBranch,
+    );
+  }
+
+  // 179. (C-D17-19) HeaderCluster가 TokenCounterBadge에 onRequestApiKeyModal prop 전달.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    const hasProp =
+      /<TokenCounterBadge\s+onRequestApiKeyModal=\{onOpenApiKeyModal\}\s*\/>/.test(
+        src,
+      );
+    check(
+      "C-D17-19 #179 HeaderCluster → TokenCounterBadge onRequestApiKeyModal=onOpenApiKeyModal 전달",
+      hasProp,
+    );
+  }
+
+  // 180. (C-D17-19 D-17) TokenCounterBadge: useThemeStore import + 다크/라이트 색상 분기 클래스 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/token-counter-badge.tsx`,
+      "utf-8",
+    );
+    const hasThemeImport = /from "@\/modules\/ui\/theme"/.test(src);
+    const hasIsDark = /isDark/.test(src);
+    const hasAccentClasses =
+      /bg-robusta-accent\/15/.test(src) && /bg-robusta-accent\/25/.test(src);
+    check(
+      "C-D17-19 #180 token-counter-badge: theme import + isDark 분기 + bg-robusta-accent/15·/25 박힘",
+      hasThemeImport && hasIsDark && hasAccentClasses,
+    );
+  }
+
+  // 181. (C-D17-20 F-19) theme.ts getInitialTheme — cookie 'dark' 우선 (cookie > prefers > 'light').
+  //   readBootCookie를 sync로 stub할 수 없으므로 getInitialTheme의 export 존재만 확인 + 단위 검증은
+  //   다음 두 케이스(cookie/시스템) 시뮬레이션으로 박음.
+  {
+    let result: string | null = null;
+    let exposed = false;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require("../src/modules/ui/theme");
+      exposed =
+        typeof mod.getInitialTheme === "function" &&
+        typeof mod.__theme_internal?.getInitialTheme === "function";
+      // 서버(node) 환경: window/document undefined → readBootCookie/getSystemDark 모두 false 반환 → 'light'.
+      result = mod.getInitialTheme();
+    } catch (err) {
+      result = null;
+    }
+    check(
+      "C-D17-20 #181 theme.ts getInitialTheme export + 서버 환경(쿠키/matchMedia 미지원) → 'light' 폴백",
+      exposed && result === "light",
+      `exposed=${exposed}, result=${result}`,
+    );
+  }
+
+  // 182. (C-D17-20) layout.tsx boot script: cookie 우선 분기 + theme==null 처리 + matchMedia('(prefers-color-scheme: dark)').
+  {
+    const src = readFileSync(`${projectRoot}/src/app/layout.tsx`, "utf-8");
+    const hasNullInit = /var theme = null;/.test(src);
+    const hasCookieMatch = /robusta\.theme\.boot/.test(src);
+    const hasPrefersFallback =
+      /theme === null/.test(src) &&
+      /matchMedia\("\(prefers-color-scheme: dark\)"\)/.test(src);
+    const hasLightFallback = /catch \(e\)[\s\S]{0,200}data-theme[\s\S]{0,40}light/.test(src);
+    check(
+      "C-D17-20 #182 layout.tsx boot script: cookie > prefers > 'light' 우선순위 + 예외 fallback 박힘",
+      hasNullInit && hasCookieMatch && hasPrefersFallback && hasLightFallback,
+    );
+  }
+
+  // 183. (C-D17-20) theme.ts: getInitialTheme 호출 우선순위 — readBootCookie → getSystemDark → 'light'.
+  //   소스 정적 검사로 우선순위 박힘 확인 (단위 시뮬은 #181에서 폴백 케이스만).
+  {
+    const src = readFileSync(`${projectRoot}/src/modules/ui/theme.ts`, "utf-8");
+    const hasFn = /export function getInitialTheme\(\):\s*ThemeMode/.test(src);
+    const orderOk =
+      /const cookie = readBootCookie\(\);[\s\S]{0,200}if \(getSystemDark\(\)\) return "dark";[\s\S]{0,40}return "light";/.test(
+        src,
+      );
+    check(
+      "C-D17-20 #183 theme.ts getInitialTheme 우선순위: cookie → prefers → 'light'",
+      hasFn && orderOk,
+    );
+  }
+
+  // 191. (C-D17-22 D-19) token-counter-badge.tsx에 tabular-nums 클래스 박힘 (placeholder + 채워진 뱃지 양쪽).
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/token-counter-badge.tsx`,
+      "utf-8",
+    );
+    const matches = src.match(/tabular-nums/g) ?? [];
+    check(
+      "C-D17-22 #191 token-counter-badge tabular-nums 클래스 박힘 (≥2회 — placeholder + 누적 뱃지)",
+      matches.length >= 2,
+      `count=${matches.length}`,
+    );
+  }
+
+  // 192. (C-D17-22 D-20) header-cluster.tsx 다크 토글 버튼에 focus:ring-2 + ring-robusta-accent + ring-offset-2 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    // 다크 토글 버튼 부근의 className 검사 — data-test="theme-toggle-button" 위치.
+    const hasTestId = /data-test="theme-toggle-button"/.test(src);
+    const hasFocusRing =
+      /focus:ring-2/.test(src) &&
+      /focus:ring-robusta-accent/.test(src) &&
+      /focus:ring-offset-2/.test(src);
+    check(
+      "C-D17-22 #192 header-cluster 다크 토글 focus:ring-2 + ring-robusta-accent + ring-offset-2 박힘 (WCAG 2.4.7)",
+      hasTestId && hasFocusRing,
     );
   }
 }

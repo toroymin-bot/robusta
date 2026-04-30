@@ -55,13 +55,20 @@ export const viewport: Viewport = {
  *   - 부트 hint: cookie 'robusta.theme.boot' 동기 read → <html data-theme> 즉시 적용.
  *   - 처음 방문자(쿠키 없음)는 시스템 prefers-color-scheme 폴백.
  *
+ * C-D17-20 (Day 5 19시 슬롯, 2026-04-30) F-19 강화:
+ *   - 우선순위 명시 — cookie > prefers-color-scheme > 'light'.
+ *   - id-22 정합 — 사용자 명시(cookie) > 시스템 자동(prefers).
+ *   - 기존 분기 로직 (`theme === "light" && cookies.length === 0 || ...`) 가독성 약함 → cookieFound 플래그로 정정.
+ *   - matchMedia 미지원 (구형) → 'light' fallback.
+ *   - theme.ts의 getInitialTheme()와 1:1 동일 로직 — 단위 검증은 TS 측에서 (#181~#183).
+ *
  * 보안: 정적 텍스트 IIFE, 외부 입력 X → XSS 위험 없음.
  *   try/catch로 cookie 차단 환경(예: 일부 모바일 incognito)에서도 안전.
  */
 const themeBootScript = `
 (function() {
   try {
-    var theme = "light";
+    var theme = null;
     var cookies = document.cookie ? document.cookie.split(";") : [];
     for (var i = 0; i < cookies.length; i++) {
       var pair = cookies[i].split("=");
@@ -72,10 +79,12 @@ const themeBootScript = `
         break;
       }
     }
-    if (theme === "light" && cookies.length === 0 || (theme === "light" && !document.cookie.match(/robusta\\.theme\\.boot=/))) {
-      // cookie 미존재 → 시스템 prefers 폴백
+    if (theme === null) {
+      // cookie 미박힘 → prefers-color-scheme 폴백 (matchMedia 미지원이면 'light').
       if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
         theme = "dark";
+      } else {
+        theme = "light";
       }
     }
     document.documentElement.setAttribute("data-theme", theme);
