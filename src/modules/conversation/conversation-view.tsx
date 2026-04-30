@@ -501,21 +501,31 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
           //   Roy Do v24 id-15 "초등학생 직관" 정합.
           <EmptyStateCta variant="sample" />
         ) : grouped.length === 0 ? (
-          <div className="mx-auto max-w-md px-6 py-12 text-center text-sm text-robusta-inkDim">
-            대화를 시작하세요. 좌측에서 참여자를 확인하고, 하단에서 발언자를 골라
-            메시지를 보내세요.
+          // D-D17-stop-gap (Day 5 12:30 KST 슬롯 외): 메인 → 다른 라우트 진입점 0건 발견.
+          //   Roy 라이브 검증 [...querySelectorAll('a')].length=0. 트윗 효과 80% = 첫 화면 임팩트.
+          //   Tori_Note_3 (Confluence 21102621) 13시 슬롯에서 풀 랜딩 명세 박힐 때까지의 임시 다리.
+          //   기존 안내 텍스트 + EmptyStateCta sample + (apiKey 없을 시) byok 카드 추가.
+          <div className="mx-auto flex max-w-md flex-col gap-6 px-6 py-12 text-center text-sm text-robusta-inkDim">
+            <p>
+              대화를 시작하세요. 좌측에서 참여자를 확인하고, 하단에서 발언자를 골라
+              메시지를 보내세요.
+            </p>
+            <EmptyStateCta variant="sample" />
             {!apiKey && (
-              <span className="mt-2 block text-xs">
-                AI 발언을 보내려면 먼저{" "}
-                <button
-                  type="button"
-                  className="underline"
-                  onClick={onRequestApiKeyModal}
-                >
-                  Anthropic 키
-                </button>
-                를 등록하세요.
-              </span>
+              <>
+                <EmptyStateCta variant="byok" />
+                <span className="text-xs">
+                  키를 이미 갖고 있으면{" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={onRequestApiKeyModal}
+                  >
+                    여기서 등록
+                  </button>
+                  하세요.
+                </span>
+              </>
             )}
           </div>
         ) : (
