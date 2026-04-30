@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "verify-live": "playwright test --config=tests/playwright.config.ts",
-    "preflight:d5": "tsx scripts/preflight-d5.ts"
+    "preflight:d5": "tsx scripts/preflight-d5.ts",
+    "measure:contrast": "node scripts/measure-contrast.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

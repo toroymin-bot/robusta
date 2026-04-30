@@ -2617,6 +2617,96 @@ async function runD17Checks(): Promise<void> {
       chunksDir,
     );
   }
+
+  // 156. (C-D17-11 D-9) streaming-caret.tsx 색상 정정 — text-robusta-accent → text-robusta-ink-dim.
+  //   사유: 라이트 모드 accent on canvas 콘트라스트 2.35 (AA large 3.0 미달) → ink-dim 6.91 (AA normal pass).
+  //   OCP 주석에는 ~~text-robusta-accent~~ 취소선 표기가 박혀있으므로 className 속성 안에서만 검증.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/streaming-caret.tsx`,
+      "utf-8",
+    );
+    const classNameMatch = src.match(/className=["']([^"']+)["']/);
+    const className = classNameMatch ? classNameMatch[1] : "";
+    const ok =
+      className.includes("text-robusta-ink-dim") &&
+      !className.includes("text-robusta-accent");
+    check(
+      "C-D17-11 #156 streaming-caret className 색상 정정 (text-robusta-ink-dim, accent 미박힘)",
+      ok,
+    );
+  }
+
+  // 157. (C-D17-11) scripts/measure-contrast.mjs 존재 + 헤더 박힘.
+  {
+    const path = `${projectRoot}/scripts/measure-contrast.mjs`;
+    const exists = existsSync(path);
+    let hasHeader = false;
+    if (exists) {
+      const src = readFileSync(path, "utf-8");
+      hasHeader =
+        src.includes("D-D17") &&
+        src.includes("measure-contrast") &&
+        src.includes("WCAG");
+    }
+    check(
+      "C-D17-11 #157 scripts/measure-contrast.mjs 존재 + 헤더 박힘",
+      exists && hasHeader,
+    );
+  }
+
+  // 158. (C-D17-11) package.json scripts에 measure:contrast 박힘.
+  {
+    const pkg = JSON.parse(
+      readFileSync(`${projectRoot}/package.json`, "utf-8"),
+    );
+    const ok =
+      typeof pkg.scripts?.["measure:contrast"] === "string" &&
+      pkg.scripts["measure:contrast"].includes("measure-contrast.mjs");
+    check(
+      "C-D17-11 #158 package.json scripts에 measure:contrast 박힘",
+      ok,
+    );
+  }
+
+  // 159. (C-D17-11) measure:contrast 실 실행 — 모든 필수 페어 AA PASS (exit 0).
+  //   optional 페어(divider, light accent)는 wave-off — 게이트 통과.
+  //   추정 #88 클로즈: 다크 배경 hex 실측 = #221C03 (yellow-100 다크).
+  {
+    let exitOk = false;
+    try {
+      execSync("node scripts/measure-contrast.mjs", {
+        cwd: projectRoot,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      exitOk = true;
+    } catch {
+      exitOk = false;
+    }
+    check(
+      "C-D17-11 #159 measure:contrast 실 실행 — 필수 페어 모두 AA PASS",
+      exitOk,
+    );
+  }
+
+  // 160. (C-D17-10 회귀 가드 — 가드 이미 박힘) input-bar.tsx에 BYOK 미등록 시 모달 트리거 박힘.
+  //   똘이 §16/§28 명세 의도(F-9 toast + 차단)는 현재 코드에 4중 박힘:
+  //   (1) input-bar.tsx submit 가드, (2) conversation-view.tsx runAiTurn 안전망,
+  //   (3) auto-loop-header.tsx ai-auto 진입 가드, (4) conversation-view.tsx 빈 대화 안내.
+  //   본 check는 (1)만 회귀 가드 — 가장 진입이 빠른 가드.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/input-bar.tsx`,
+      "utf-8",
+    );
+    const ok =
+      /currentSpeaker\.kind === "ai"[\s\S]{0,30}!hasApiKey/.test(src) &&
+      src.includes("onRequestApiKeyModal");
+    check(
+      "C-D17-10 #160 input-bar.tsx BYOK 미등록 시 모달 트리거 가드 박힘 (회귀 0)",
+      ok,
+    );
+  }
 }
 
 runAsyncChecks()
