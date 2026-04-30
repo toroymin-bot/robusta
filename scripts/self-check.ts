@@ -1703,9 +1703,15 @@ async function runD15Checks(): Promise<void> {
 
   // 104. (D-15.2) 헤더 발언 모드 라벨 동적 — turnMode subscribe + TURN_MODE_LABEL_KEY 매핑 박힘.
   //     B-2 라이브 회귀(헤더 'ROUND-ROBIN' 정적) fix.
+  //   C-D17-13 (Day 5 15시) 회귀 가드 갱신: data-test=header-mode-label은 HeaderCluster로 이관됨 →
+  //     conversation-workspace.tsx OR header-cluster.tsx 둘 중 한 위치에 박혀있으면 PASS.
   {
     const wsSrc = readFileSync(
       `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const hcSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
       "utf-8",
     );
     const hasSubscribe = /useConversationStore\(\(s\)\s*=>\s*s\.turnMode\)/.test(wsSrc);
@@ -1715,10 +1721,12 @@ async function runD15Checks(): Promise<void> {
     const hasTriggerKey = /["']header\.mode\.trigger["']/.test(wsSrc);
     // 헤더 정적 텍스트 'Round-robin' 제거됐는지 (정적 백업 박힌 채면 회귀 가능성)
     const noStaticRoundRobin = !/Day\s*3\s*·\s*Round-robin/i.test(wsSrc);
-    // data-test 가드 (라이브 검증용 셀렉터)
-    const hasDataTest = /data-test=["']header-mode-label["']/.test(wsSrc);
+    // data-test 가드 (라이브 검증용 셀렉터) — C-D17-13 이관으로 두 파일 OR.
+    const hasDataTest =
+      /data-test=["']header-mode-label["']/.test(wsSrc) ||
+      /data-test=["']header-mode-label["']/.test(hcSrc);
     check(
-      "D-15.2 #104 헤더 라벨 동적: turnMode subscribe + TURN_MODE_LABEL_KEY 매핑 + 정적 텍스트 제거",
+      "D-15.2 #104 헤더 라벨 동적: turnMode subscribe + TURN_MODE_LABEL_KEY 매핑 + 정적 텍스트 제거 (C-D17-13 OR header-cluster)",
       hasSubscribe && hasLabelMap && hasManualKey && hasRrKey && hasTriggerKey && noStaticRoundRobin && hasDataTest,
       `sub=${hasSubscribe} map=${hasLabelMap} m=${hasManualKey} rr=${hasRrKey} tr=${hasTriggerKey} noStatic=${noStaticRoundRobin} dt=${hasDataTest}`,
     );
@@ -2362,15 +2370,27 @@ async function runD17Checks(): Promise<void> {
     );
   }
 
-  // 136. (C-D17-4) conversation-workspace에 색상 티어 import + roadmapColor 박힘.
+  // 136. (C-D17-4) conversation-workspace 또는 HeaderCluster에 색상 티어 import + roadmapColor 박힘.
+  //   C-D17-13 (Day 5 15시) 회귀 가드 갱신: borderLeftColor 인라인 style은 HeaderCluster로 이관 →
+  //     workspace는 import + roadmapColor prop 전달, header-cluster는 borderLeftColor: roadmapColor 적용.
   {
-    const file = `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`;
-    const src = readFileSync(file, "utf-8");
+    const wsSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const hcSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
     const importOk =
-      /getRoadmapColorTier/.test(src) && /ROADMAP_COLOR_HEX/.test(src);
-    const styleOk = /borderLeftColor:\s*roadmapColor/.test(src);
+      /getRoadmapColorTier/.test(wsSrc) && /ROADMAP_COLOR_HEX/.test(wsSrc);
+    // borderLeftColor: roadmapColor 가 워크스페이스에 박혀있거나, HeaderCluster props로 roadmapColor 박혀있고 그 값이 borderLeftColor에 적용되거나.
+    const styleOk =
+      /borderLeftColor:\s*roadmapColor/.test(wsSrc) ||
+      (/roadmapColor=\{roadmapColor\}/.test(wsSrc) &&
+        /borderLeftColor:\s*roadmapColor/.test(hcSrc));
     check(
-      "C-D17-4 #136 conversation-workspace 색상 티어 적용 (borderLeftColor: roadmapColor)",
+      "C-D17-4 #136 색상 티어 적용 (borderLeftColor: roadmapColor — workspace OR header-cluster 이관)",
       importOk && styleOk,
       `import=${importOk} style=${styleOk}`,
     );
@@ -2591,16 +2611,24 @@ async function runD17Checks(): Promise<void> {
     }
   }
 
-  // 154. (F-7) conversation-workspace.tsx 다크 토글 aria-label에 hydration 분기 박힘.
+  // 154. (F-7) 다크 토글 aria-label에 hydration 분기 박힘.
+  //   C-D17-13 (Day 5 15시) 회귀 가드 갱신: 토글 자체는 HeaderCluster로 이관 →
+  //     workspace OR header-cluster 둘 중 하나에 박혀있으면 PASS.
   {
-    const src = readFileSync(
+    const wsSrc = readFileSync(
       `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
       "utf-8",
     );
+    const hcSrc = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
     // !themeHydrated → "테마 토글 로딩 중" 박힘 + 기존 다크/라이트 분기 보존.
-    const hydrationGuardOk = /!themeHydrated[\s\S]{0,50}로딩 중/.test(src);
+    const hydrationGuardOk =
+      /!themeHydrated[\s\S]{0,50}로딩 중/.test(wsSrc) ||
+      /!themeHydrated[\s\S]{0,50}로딩 중/.test(hcSrc);
     check(
-      "F-7 #154 다크 토글 aria-label hydration 분기 박힘 (\"테마 토글 로딩 중\")",
+      "F-7 #154 다크 토글 aria-label hydration 분기 박힘 (\"테마 토글 로딩 중\" — workspace OR header-cluster)",
       hydrationGuardOk,
     );
   }
@@ -2705,6 +2733,247 @@ async function runD17Checks(): Promise<void> {
     check(
       "C-D17-10 #160 input-bar.tsx BYOK 미등록 시 모달 트리거 가드 박힘 (회귀 0)",
       ok,
+    );
+  }
+
+  // 161. (C-D17-13 F-12+D-12 / Roy id-19) header-cluster.tsx 존재 + 햄버거 트리거 + 오버레이 a11y 박힘.
+  //   모바일 햄버거 메뉴 컴포넌트 — 데스크탑 ≥ md 인라인 + 모바일 < md 풀스크린 오버레이.
+  {
+    const path = `${projectRoot}/src/modules/conversation/header-cluster.tsx`;
+    const exists = existsSync(path);
+    let ok = false;
+    if (exists) {
+      const src = readFileSync(path, "utf-8");
+      ok =
+        src.includes('data-test="mobile-menu-trigger"') &&
+        src.includes('data-test="mobile-menu-overlay"') &&
+        src.includes('role="dialog"') &&
+        src.includes('aria-modal="true"');
+    }
+    check(
+      "C-D17-13 #161 header-cluster.tsx 존재 + mobile-menu-trigger/overlay + role=dialog + aria-modal 박힘",
+      exists && ok,
+    );
+  }
+
+  // 162. (C-D17-13) HeaderCluster Esc keydown 닫기 + body scroll lock 박힘.
+  //   Roy id-19 \"메뉴 클릭 시 메인 화면 가림 현상\" → body overflow:hidden + Esc 즉시 닫기로 회피.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    const hasEsc = src.includes('"Escape"') && /addEventListener\(["']keydown/.test(src);
+    const hasScrollLock = /document\.body\.style\.overflow\s*=\s*["']hidden["']/.test(src);
+    const hasMqlGuard = /matchMedia\(["']\(min-width:\s*768px\)["']\)/.test(src);
+    check(
+      "C-D17-13 #162 HeaderCluster Esc 닫기 + body scroll lock + 데스크탑 회전 자동 닫기 박힘",
+      hasEsc && hasScrollLock && hasMqlGuard,
+    );
+  }
+
+  // 163. (C-D17-13) conversation-workspace.tsx가 HeaderCluster import + 사용 + maskApiKey 직접 호출 0건.
+  //   기존 인라인 4도구 div는 제거되고 HeaderCluster 한 단일 진입점.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-workspace.tsx`,
+      "utf-8",
+    );
+    const importsCluster = src.includes('from "./header-cluster"') &&
+      src.includes("HeaderCluster");
+    // maskApiKey 직접 호출 X (HeaderCluster로 이관). import 라인은 주석 처리되어도 호출은 0건이어야 함.
+    const noDirectMask = !/[^/\s]\bmaskApiKey\(/.test(src);
+    check(
+      "C-D17-13 #163 conversation-workspace.tsx → HeaderCluster import + maskApiKey 직접 호출 0건",
+      importsCluster && noDirectMask,
+    );
+  }
+
+  // 164. (C-D17-13) HeaderCluster 모바일/데스크탑 분기 Tailwind breakpoint 박힘.
+  //   데스크탑 슬롯: hidden md:flex / 모바일 햄버거: flex md:hidden / 오버레이: md:hidden.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    const hasDesktopOnly = src.includes("hidden md:flex");
+    const hasMobileTrigger = /flex[^"]*md:hidden/.test(src);
+    check(
+      "C-D17-13 #164 HeaderCluster md: breakpoint 분기 (데스크탑 hidden md:flex / 모바일 md:hidden)",
+      hasDesktopOnly && hasMobileTrigger,
+    );
+  }
+
+  // 165. (C-D17-14 회귀 가드 — KQ_13 archive 권고: 빈 참여자 패널 onboarding은 이미 박힘)
+  //   participant-store.loadFromDb() 가 count=0 일 때 DEFAULT_PARTICIPANTS 자동 시드 박혀 있음 →
+  //   사용자 인터랙션 가능 시점에는 빈 참여자 상태 발생 X. 명세 C-D17-14 (EmptyParticipantsCta)는 archive 후보.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/stores/participant-store.ts`,
+      "utf-8",
+    );
+    const hasAutoSeed =
+      /count\s*===\s*0/.test(src) &&
+      /bulkPut\(DEFAULT_PARTICIPANTS\)/.test(src);
+    check(
+      "C-D17-14 #165 participant-store.loadFromDb 자동 시드 박힘 (회귀 0 — 빈 패널 시점 X)",
+      hasAutoSeed,
+    );
+  }
+
+  // 166. (C-D17-14 회귀) DEFAULT_PARTICIPANTS = 로이/똘이/꼬미 3명 박힘 (Do v30 id-13 정합).
+  {
+    const seedSrc = readFileSync(
+      `${projectRoot}/src/modules/participants/participant-seed.ts`,
+      "utf-8",
+    );
+    const ok =
+      /id:\s*["']roy["']/.test(seedSrc) &&
+      /id:\s*["']tori["']/.test(seedSrc) &&
+      /id:\s*["']komi["']/.test(seedSrc);
+    check(
+      "C-D17-14 #166 DEFAULT_PARTICIPANTS = 로이/똘이/꼬미 3명 박힘",
+      ok,
+    );
+  }
+
+  // 167. (C-D17-15 회귀 가드 — KQ_14 archive 권고: 다크 토글 활성화 + 쿠키 1년은 이미 박힘)
+  //   theme.ts writeBootCookie에 max-age=31536000 (1년) + setTheme이 applyThemeToDom + writeBootCookie + IndexedDB persist.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/ui/theme.ts`,
+      "utf-8",
+    );
+    const has1YearCookie = src.includes("max-age=31536000");
+    const setThemeFlow =
+      /async setTheme\(theme\)\s*\{[\s\S]{0,400}applyThemeToDom\(theme\)[\s\S]{0,200}writeBootCookie\(theme\)[\s\S]{0,400}settings\.put/.test(
+        src,
+      );
+    check(
+      "C-D17-15 #167 theme.ts max-age=31536000 (1년 쿠키) + setTheme = applyThemeToDom + writeBootCookie + persist 박힘 (회귀 0)",
+      has1YearCookie && setThemeFlow,
+    );
+  }
+
+  // 168. (C-D17-15 회귀) HeaderCluster의 다크 토글 disabled 분기 — themeHydrated=false면 disabled.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    const ok =
+      src.includes("disabled={!themeHydrated}") &&
+      src.includes("테마 토글 로딩 중");
+    check(
+      "C-D17-15 #168 HeaderCluster 다크 토글 hydration 분기 박힘 (disabled={!themeHydrated} + 로딩 라벨)",
+      ok,
+    );
+  }
+
+  // 169. (C-D17-17 F-16) usage-store.ts 존재 + PRICING + appendUsage + IndexedDB persist.
+  {
+    const path = `${projectRoot}/src/modules/usage/usage-store.ts`;
+    const exists = existsSync(path);
+    let ok = false;
+    if (exists) {
+      const src = readFileSync(path, "utf-8");
+      const hasPricing =
+        /claude-sonnet-4-6[\s\S]{0,80}input:\s*3[\s\S]{0,40}output:\s*15/.test(src) &&
+        /claude-haiku-4-5[\s\S]{0,80}input:\s*1[\s\S]{0,40}output:\s*5/.test(src) &&
+        /claude-opus-4-7[\s\S]{0,80}input:\s*5[\s\S]{0,40}output:\s*25/.test(src);
+      const hasAppend = /appendUsage:\s*\(entry/.test(src) || /async appendUsage\(entry\)/.test(src);
+      const hasPersist = /db\.settings\.put/.test(src);
+      ok = hasPricing && hasAppend && hasPersist;
+    }
+    check(
+      "C-D17-17 #169 usage-store.ts 존재 + PRICING(sonnet/haiku/opus) + appendUsage + settings.put",
+      exists && ok,
+    );
+  }
+
+  // 170. (C-D17-17) token-counter-badge.tsx 존재 + 누적 0건이면 null + data-test 박힘.
+  {
+    const path = `${projectRoot}/src/modules/conversation/token-counter-badge.tsx`;
+    const exists = existsSync(path);
+    let ok = false;
+    if (exists) {
+      const src = readFileSync(path, "utf-8");
+      ok =
+        src.includes('data-test="token-counter-badge"') &&
+        /total\s*<=\s*0/.test(src) &&
+        src.includes("formatTokens") &&
+        src.includes("formatCost");
+    }
+    check(
+      "C-D17-17 #170 token-counter-badge.tsx 존재 + 0건 시 null + 포맷 함수 박힘",
+      exists && ok,
+    );
+  }
+
+  // 171. (C-D17-17) conversation-view.tsx에서 chunk.kind==="usage" 분기에 appendUsage 호출 박힘.
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/conversation-view.tsx`,
+      "utf-8",
+    );
+    const hasImport = /from "@\/modules\/usage\/usage-store"/.test(src);
+    const hasCall =
+      /chunk\.kind\s*===\s*"usage"[\s\S]{0,400}appendUsage\(/.test(src);
+    check(
+      "C-D17-17 #171 conversation-view.tsx usage import + chunk.kind==='usage' → appendUsage 호출",
+      hasImport && hasCall,
+    );
+  }
+
+  // 172. (C-D17-17) HeaderCluster에 TokenCounterBadge 박힘 (데스크탑 + 모바일 양쪽 동일 슬롯).
+  {
+    const src = readFileSync(
+      `${projectRoot}/src/modules/conversation/header-cluster.tsx`,
+      "utf-8",
+    );
+    const ok =
+      /from "\.\/token-counter-badge"/.test(src) &&
+      /<TokenCounterBadge\s*\/>/.test(src);
+    check(
+      "C-D17-17 #172 HeaderCluster에 TokenCounterBadge 박힘",
+      ok,
+    );
+  }
+
+  // 173. (C-D17-17 비용 계산) usage-store computeCost — claude-sonnet-4-6, 1M input + 1M output → $18.
+  //   (1_000_000 / 1_000_000) * 3 + (1_000_000 / 1_000_000) * 15 = 18.
+  {
+    // 단위 테스트 — usage-store 직접 import 후 internal 함수 호출.
+    // import 경로 alias 회피 위해 require로 박음 (tsx로 실행 시 OK).
+    let cost: number | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require("../src/modules/usage/usage-store");
+      cost = mod.__usage_internal.computeCost("claude-sonnet-4-6", 1_000_000, 1_000_000);
+    } catch (err) {
+      cost = null;
+    }
+    check(
+      "C-D17-17 #173 usage-store.computeCost: sonnet 1M+1M = $18",
+      cost === 18,
+      `cost=${cost}`,
+    );
+  }
+
+  // 174. (C-D17-17 비용 계산) PRICING에 없는 모델 → cost=0 (안전 폴백).
+  {
+    let cost: number | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const mod = require("../src/modules/usage/usage-store");
+      cost = mod.__usage_internal.computeCost("unknown-model-xyz", 1_000_000, 1_000_000);
+    } catch (err) {
+      cost = null;
+    }
+    check(
+      "C-D17-17 #174 usage-store.computeCost: unknown model → cost=0 (silent 폴백)",
+      cost === 0,
+      `cost=${cost}`,
     );
   }
 }

@@ -11,6 +11,8 @@ import { useConversationStore } from "@/stores/conversation-store";
 import { useParticipantStore } from "@/stores/participant-store";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { useToastStore } from "@/modules/ui/toast";
+// C-D17-17 (Day 5 15시) F-16: BYOK 토큰/비용 누적 store. usage event 도착마다 appendUsage 호출.
+import { useUsageStore } from "@/modules/usage/usage-store";
 import { streamMessage } from "./conversation-api";
 import { pickNextSpeaker, type TurnMode } from "./turn-controller";
 import { InputBar } from "./input-bar";
@@ -175,6 +177,14 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
             });
           } else if (chunk.kind === "usage") {
             usagePatch = chunk.usage;
+            // C-D17-17 (Day 5 15시) F-16: 누적 토큰/비용 박제. 모델은 speaker.model 또는 fallback.
+            //   chunk.usage는 input/output 둘 중 하나만 박혀 있을 수 있음(message_start vs message_delta) — 0 처리.
+            //   usage-store는 in-memory + IndexedDB 양쪽 박힘. 차단 환경에선 silent fallback.
+            void useUsageStore.getState().appendUsage({
+              model: speaker.model ?? "claude-sonnet-4-6",
+              input: chunk.usage.inputTokens ?? 0,
+              output: chunk.usage.outputTokens ?? 0,
+            });
           } else if (chunk.kind === "aborted") {
             aborted = true;
             break;

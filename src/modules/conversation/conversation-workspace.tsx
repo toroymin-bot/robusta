@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
-import { maskApiKey } from "@/modules/api-keys/api-key-mask";
+// ~~maskApiKey~~ — C-D17-13 (Day 5 15시) HeaderCluster로 이관, 본 파일에서 직접 호출 X.
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
 import { ToastViewport } from "@/modules/ui/toast";
 import { useThemeStore } from "@/modules/ui/theme";
@@ -14,6 +14,9 @@ import { ConversationView } from "./conversation-view";
 //   ~~next/dynamic ssr:false 분리 시도~~ — manifest /page∪/layout gzip 합산은 같은 chunks=8로
 //     0.2KB만 절약(효과 미미). 정적 import로 복원하고 게이트 +2KB 상향(C-D11-7b)으로 박음.
 import { AutoLoopHeader } from "./auto-loop-header";
+// C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12: 모바일 햄버거 메뉴 분기.
+//   ~~기존 인라인 4도구 div~~ → HeaderCluster (데스크탑 인라인 + 모바일 풀스크린 오버레이).
+import { HeaderCluster } from "./header-cluster";
 // D-12.3 (Day 6): 부트 시 1회 등록. 이미 등록되어 있으면 noop.
 import { registerOnlineListener } from "@/modules/ui/online-listener";
 // D-15.2 (Day 9, 2026-04-28) C-D9-2: 헤더 발언 모드 라벨 i18n.
@@ -125,62 +128,20 @@ export function ConversationWorkspace() {
       <main className="flex flex-1 flex-col">
         <header className="flex h-12 items-center justify-between border-b border-robusta-divider px-6 backdrop-blur">
           <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
-          <div className="flex items-center gap-3">
-            {/* D-D16-1 (Day 4 23시, 2026-04-29) C-D16-1: D-Day 라벨 동적 회전.
-                기존 정적 라벨(D-Day 3) 제거 → 동적 `Day {N} · Manual|Live` (Roadmap 기준 D5 라이브 시점 자동 회전).
-                turnMode 시각 피드백은 별도 라벨로 분리 (data-test=header-turn-mode-label). */}
-            {/* D-D17-4 (Day 5 03시) C-D17-4: borderLeftColor를 day 기반 티어로 분기.
-                ~~인라인 #F5C518 단일~~ → ROADMAP_COLOR_HEX[티어] 도출 (Day 1~3 노랑 / Day 4 오렌지 / Day 5+ 녹색).
-                D-D17-5 (Day 5 03시) C-D17-5 가드: 모바일 375px에서 라벨 줄바꿈 방지 — whitespace-nowrap 박음. */}
-            <span
-              className={`whitespace-nowrap text-xs uppercase tracking-widest ${getModeClassName(true)}`}
-              style={{ borderLeftColor: roadmapColor }}
-              data-test="header-mode-label"
-            >
-              {roadmapLabel}
-            </span>
-            <span
-              className="whitespace-nowrap text-xs uppercase tracking-widest text-robusta-inkDim"
-              data-test="header-turn-mode-label"
-            >
-              {t(TURN_MODE_LABEL_KEY[turnMode])}
-            </span>
-            {/* D-8.6: 다크모드 토글 (☀ ⇄ 🌙) — hydration 전에는 비활성 */}
-            {/* F-7 (Day 5 07시 슬롯, 2026-04-30) — 똘이 v1 §14 F-7 채택:
-                hydration 가드 동안 사용자가 "비활성 버튼"을 보고 의문 갖지 않도록
-                aria-label에 "(로딩 중)" 박음. 시각적 변화 0, 스크린리더 인지 비용만 0. */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              disabled={!themeHydrated}
-              className="rounded border border-robusta-divider px-2 py-1 text-xs text-robusta-ink hover:border-robusta-accent disabled:opacity-50"
-              aria-label={
-                !themeHydrated
-                  ? "테마 토글 로딩 중"
-                  : themeMode === "dark"
-                    ? "라이트 모드로 전환"
-                    : "다크 모드로 전환"
-              }
-              title={themeMode === "dark" ? "라이트 모드" : "다크 모드"}
-            >
-              {themeMode === "dark" ? "☀" : "🌙"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setKeysOpen(true)}
-              className="flex items-center gap-2 rounded border border-robusta-divider px-3 py-1 text-xs text-robusta-ink hover:border-robusta-accent"
-              aria-label="API 키 관리"
-            >
-              {anthropicKey ? (
-                <>
-                  <span className="font-mono">⚙ Keys · {maskApiKey(anthropicKey)}</span>
-                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                </>
-              ) : (
-                <span>⚙ Keys</span>
-              )}
-            </button>
-          </div>
+          {/* C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12 / Roy id-19 직접 대응:
+              ~~기존 인라인 4도구 div (mode-label, turn-mode-label, theme-toggle, ⚙ Keys)~~
+              → HeaderCluster: 데스크탑 ≥ md 인라인 동일 / 모바일 < md 햄버거 + 풀스크린 오버레이.
+              data-test 셀렉터(header-mode-label, header-turn-mode-label)는 HeaderCluster 내부에 그대로 박힘 → 회귀 0. */}
+          <HeaderCluster
+            roadmapLabel={roadmapLabel}
+            roadmapColor={roadmapColor}
+            turnModeLabel={t(TURN_MODE_LABEL_KEY[turnMode])}
+            themeHydrated={themeHydrated}
+            themeMode={themeMode}
+            onToggleTheme={toggleTheme}
+            onOpenApiKeyModal={() => setKeysOpen(true)}
+            anthropicKey={anthropicKey ?? ""}
+          />
         </header>
 
         {/* D-D11-2 (Day 11) C-D11-2: AI-Auto 컨트롤 헤더 — 컴포넌트 자체가 turnMode==='ai-auto' 가드. */}
