@@ -25,14 +25,23 @@
 - **마우스 커서**: 보이게 (사용자 액션 명확)
 - **속도**: 자연스러운 인간 속도. 2x 빠르게 X (잡스 원칙 — 천천히 본질만)
 
-## 꼬미 자동 생성 GIF — 보류 (macOS 권한 이슈)
+## 꼬미 자동 생성 GIF — ✅ 완료
 
-⚠ **꼬미 자동 영상/GIF 생성 시도 결과: 실패**.
-- `screencapture` 명령에 macOS Screen Recording 권한 미부여 → `could not create image from display`
-- Chrome MCP의 screenshot은 tool result로 이미지 받지만 디스크에 직접 쓰기 X
-- 권한 부여해도 BYOK 진짜 키는 Sensitive type이라 꼬미 접근 X — 라이브 대화 segment 부정확
+`demo-frames/robusta-demo-30s.gif` — 720×349, **30초**, **153KB** (X 5MB 한도의 3%).
 
-**결정**: R5 데모 영상은 Roy 본인이 직접 녹화. 꼬미는 텍스트 + 스토리보드 + 가이드까지 박고 종료.
+### 우회 경로 (정직 박음)
+1. macOS `screencapture` 권한 미부여 → 직접 캡처 불가
+2. **html2canvas + Chrome MCP**로 우회: 페이지 안에서 DOM → canvas → blob → download trigger
+3. 6 프레임 캡처 후 ffmpeg로 GIF 합성
+4. BYOK 모달 segment는 Roy 라이브 대화 페이지 자체로 대체 — 더 진정성 있음
+
+### 한계
+- BYOK 모달 오픈 + ✅ 검증 토스트 정확한 segment 부재 (Roy 본인 녹화 시 더 풍부)
+- 정적 화면 6장 × 5초 fade — 진짜 인터랙션(스트리밍 caret 등) 없음
+- 1280×720 권장 viewport보다 1512×788로 캡처됨 (Chrome 실제 viewport 반영)
+
+### 확장 옵션 (Roy 직접 녹화 시)
+아래 단계로 더 풍부한 영상 가능. 30분 투입 가치 있다고 판단되면 진행.
 
 ## Roy 직접 녹화 — 30초 GIF 생성 단계 (10분)
 
