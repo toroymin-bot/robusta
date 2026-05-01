@@ -39,6 +39,8 @@ export const MESSAGES = {
     "toast.persona.saved": "{name} 저장됨",
     "toast.fallback": "{from} 미사용 → {to} 폴백",
     "toast.error.network": "네트워크 오류 — 재시도하세요",
+    // C-D23-2 (D6 23시, 2026-05-01) — F-22 컨텍스트 슬라이서 자동 압축 알림.
+    "toast.context.compacted": "이전 대화 {original}건을 자동으로 {shrunk}건으로 요약했어요",
     // D-10.2 (Day 5, F-D4-1) BYOK 키 ping 결과 카피 3종
     "toast.byok.verified": "API 키 확인 완료",
     "toast.byok.unauthorized": "API 키 인증 실패 — 키 확인 필요",
@@ -152,6 +154,8 @@ export const MESSAGES = {
     "toast.persona.saved": "{name} saved",
     "toast.fallback": "{from} unavailable → fell back to {to}",
     "toast.error.network": "Network error — please retry",
+    // C-D23-2 (D6 23:00 KST, 2026-05-01) — F-22 context slicer auto-compaction notice.
+    "toast.context.compacted": "Auto-summarised {original} earlier messages into {shrunk}",
     "toast.byok.verified": "API key verified",
     "toast.byok.unauthorized": "Unauthorized — please check the key",
     "toast.byok.checkLater": "Key saved — auth will be checked on first use",

@@ -39,7 +39,55 @@ export const robustaTokens = {
   },
 } as const;
 
-export const PARTICIPANT_HUE_SEEDS = [20, 200, 130, 280, 50, 320] as const;
+/**
+ * C-D23-1 (D6 23시 슬롯, 2026-05-01) — KQ_16 자체 결정 (똘이 21시 미응답).
+ *
+ * 똘이 §4 D-22 ("참여자 색상 시스템 v2 — 5베이스 WCAG AA") 와 정렬.
+ * 5베이스(노랑·청록·라일락·주황·민트) 의 hue 시드 5개로 축소·재정렬.
+ *
+ * 변경 전(D-D22): [20, 200, 130, 280, 50, 320] (6 hues).
+ * 변경 후(D-D23): [20, 50, 150, 200, 280]      (5 hues).
+ *   · 핫핑크(320) 제거 — D-22 5베이스 외.
+ *   · 130 → 150 (민트는 청록(200)과 거리 50° 확보 — minDistance 30° 게이트 충족 + 시각 구분 강화).
+ *   · 라일락(280) 보존, 주황(20) / 노랑(50) / 청록(200) 보존.
+ *
+ * 영향: 신규 참여자 color 자동 부여 시 5베이스 우선. 기존 conv 의 저장된 hue 는 그대로(영속).
+ * 색맹 보강(hueToShape) 은 5분면 boundary 0/72/144/216/288 — 5 hue 가 각 분면에 1개씩 정확 배치.
+ *
+ * 똘이 21시·다음 슬롯에서 hue 시드 변경 요청 시 본 const 만 교체하면 됨 (호출처 비종속).
+ */
+export const PARTICIPANT_HUE_SEEDS = [20, 50, 150, 200, 280] as const;
+
+/**
+ * C-D23-1: 5베이스 hue 의 시맨틱 이름 — i18n / 디버그 / aria 보강용.
+ *   배열 인덱스가 PARTICIPANT_HUE_SEEDS 와 동기. 길이 5 강제 — 추가 시 양 const 같이 수정.
+ *   ko/en 양면 — 호출자가 locale 결정.
+ */
+export const PARTICIPANT_HUE_SEED_NAMES = {
+  ko: ["주황", "노랑", "민트", "청록", "라일락"],
+  en: ["orange", "yellow", "mint", "teal", "lilac"],
+} as const;
+
+/**
+ * C-D23-1: 임의 hue 값(0~360) → 5베이스 중 가장 가까운 이름 반환.
+ *   Wrap-around 거리 계산 — 350° 와 10° 는 20° 거리.
+ *   참여자 hue 가 baseSeed 와 정확히 같지 않아도 1차 분면에서 결정적 매핑.
+ */
+export function hueToBaseName(hue: number, locale: "ko" | "en" = "ko"): string {
+  const norm = ((hue % 360) + 360) % 360;
+  let bestIdx = 0;
+  let bestDist = 360;
+  for (let i = 0; i < PARTICIPANT_HUE_SEEDS.length; i += 1) {
+    const seed = PARTICIPANT_HUE_SEEDS[i]!;
+    const d = Math.abs(norm - seed);
+    const dist = Math.min(d, 360 - d);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIdx = i;
+    }
+  }
+  return PARTICIPANT_HUE_SEED_NAMES[locale][bestIdx]!;
+}
 
 export type RobustaTheme = typeof robustaTokens;
 export type ThemeMode = "light" | "dark";

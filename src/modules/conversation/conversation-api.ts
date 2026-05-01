@@ -51,7 +51,11 @@ export type StreamChunk =
   // D-8.3: 모델 ID 폴백 발생 시 view가 info 토스트 띄우도록 알림.
   | { kind: "fallback"; from: string; to: string }
   // D-10.3: 5xx 자동 재시도 직전 알림 (attempt: 1-based, status: 5xx 코드).
-  | { kind: "retrying"; attempt: number; status: number };
+  | { kind: "retrying"; attempt: number; status: number }
+  // C-D23-2 (D6 23시, 2026-05-01) — F-22 컨텍스트 슬라이서 UI 가시화.
+  //   shrunk: 압축 후 메시지 개수 (시스템 + 요약 1건 + KEEP_TAIL 보존), original: 압축 전 개수.
+  //   view 가 1줄 info 토스트 — "이전 대화 N건을 요약했어요" — 로 사용자에게 알림.
+  | { kind: "compacted"; original: number; shrunk: number };
 
 /** D-10.3: 5xx 백오프 재시도 최대 횟수. 초과 시 error 전파. */
 const MAX_SERVER_RETRIES = 3;
@@ -236,6 +240,16 @@ export async function* streamMessage(
     DEFAULT_MODEL_CONTEXT_TOKENS,
     input.apiKey,
   );
+  // C-D23-2 (D6 23시) — F-22 가시화: 압축이 실제 발생한 경우 view 에 알림.
+  //   maybeCompactHistory 는 압축 미발생/실패 시 원본 reference 를 그대로 반환 → 길이 동일.
+  //   압축 성공 시 마지막 KEEP_TAIL건 + 요약 1건 + 시스템(현재 0건) 으로 줄어듦.
+  if (compactedHistory.length < input.history.length) {
+    yield {
+      kind: "compacted",
+      original: input.history.length,
+      shrunk: compactedHistory.length,
+    };
+  }
   const messages = historyToAnthropicMessages(
     compactedHistory,
     input.speaker.id,

@@ -365,6 +365,16 @@ export const useConversationStore = create<ConversationStore>()(
           console.info(
             `[robusta] 5xx 자동 재시도 ${chunk.attempt}/3 (status=${chunk.status})`,
           );
+        } else if (chunk.kind === "compacted") {
+          // C-D23-2 (D6 23시) F-22 가시화 — 컨텍스트 슬라이서가 자동 압축한 경우 1줄 info 토스트.
+          //   사용자가 "이전 대화가 사라졌나?" 오해 방지 — 시스템이 잘 처리했음을 명시.
+          pushToast({
+            tone: "info",
+            message: t("toast.context.compacted", {
+              original: String(chunk.original),
+              shrunk: String(chunk.shrunk),
+            }),
+          });
         } else if (chunk.kind === "done") {
           break;
         }
@@ -709,7 +719,9 @@ async function runAutoTurn(
       } else if (chunk.kind === "done") {
         break;
       }
-      // fallback / retrying chunk는 store가 별도 토스트 X — AutoLoop 모드는 노이즈 최소화.
+      // fallback / retrying / compacted chunk는 store가 별도 토스트 X — AutoLoop 모드는 노이즈 최소화.
+      //   메인 send 경로(상단 streamMessage)는 사용자 명시 액션이라 토스트 노출,
+      //   AutoLoop 은 백그라운드 자동 발화라 토스트 누적 방지.
     }
   } catch (err) {
     lastError = {

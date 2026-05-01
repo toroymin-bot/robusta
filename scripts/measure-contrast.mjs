@@ -70,6 +70,36 @@ function resolveValue(raw, vars) {
 const rootVars = parseVars(rootBlock);
 const darkVars = parseVars(darkBlock);
 
+// C-D23-3 (D6 23시 슬롯, 2026-05-01) — 참여자 hue 5베이스 콘트라스트 자동 검증.
+//   PARTICIPANT_HUE_SEEDS = [20, 50, 150, 200, 280] (theme.ts 와 동기 — 변경 시 양쪽 같이 갱신).
+//   각 hue 의 hsl(h 65% 55%) 색을 hex 로 환산 → ink/inkDim 텍스트 위 콘트라스트 측정.
+//   hueToHsl 와 동일한 채도/명도 — participant-color.ts 와 정합.
+const PARTICIPANT_HUE_SEEDS = [20, 50, 150, 200, 280];
+const PARTICIPANT_HUE_NAMES = ["주황", "노랑", "민트", "청록", "라일락"];
+const PARTICIPANT_HUE_SAT = 65; // %
+const PARTICIPANT_HUE_LIG = 55; // %
+
+// hsl(h s% l%) → "#RRGGBB". h:[0,360), s,l:[0,1].
+//   알고리즘: HSL → RGB (CSS Color 4 § 6.1).
+function hslToHex(h, s, l) {
+  const hh = ((h % 360) + 360) % 360 / 60;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((hh % 2) - 1));
+  let r1 = 0, g1 = 0, b1 = 0;
+  if (hh < 1) [r1, g1, b1] = [c, x, 0];
+  else if (hh < 2) [r1, g1, b1] = [x, c, 0];
+  else if (hh < 3) [r1, g1, b1] = [0, c, x];
+  else if (hh < 4) [r1, g1, b1] = [0, x, c];
+  else if (hh < 5) [r1, g1, b1] = [x, 0, c];
+  else [r1, g1, b1] = [c, 0, x];
+  const m = l - c / 2;
+  const r = Math.round((r1 + m) * 255);
+  const g = Math.round((g1 + m) * 255);
+  const b = Math.round((b1 + m) * 255);
+  const toHex = (n) => n.toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 // hex → {r,g,b} (0-255).
 function parseHex(hex) {
   const cleaned = hex.replace(/^#/, "").trim();
@@ -216,6 +246,25 @@ const results = [];
 for (const pair of PAIRS) {
   results.push(evaluatePair(pair, rootVars, "light"));
   results.push(evaluatePair(pair, darkVars, "dark"));
+}
+
+// C-D23-3 — 참여자 hue 5베이스 × ink 콘트라스트 자동 검증.
+//   pair 정의: ink (또는 #000000) on hsl(hue 65% 55%) — bubble background 위 텍스트 가독성.
+//   기준: AA Large 3:1 — bubble 안 텍스트는 통상 14pt 이상 굵은체로 large text 정의 충족.
+//   optional: false — 5베이스 모두 필수 통과해야 D-22 색상 시스템 v2 합격.
+//   라이트/다크 모드 동일 (hue 색상 자체는 모드 비종속 — 토큰 5베이스는 둘 다 적용).
+for (let i = 0; i < PARTICIPANT_HUE_SEEDS.length; i += 1) {
+  const hue = PARTICIPANT_HUE_SEEDS[i];
+  const name = PARTICIPANT_HUE_NAMES[i];
+  const bubbleHex = hslToHex(hue, PARTICIPANT_HUE_SAT / 100, PARTICIPANT_HUE_LIG / 100);
+  const bubblePair = {
+    label: `black on ${name}(${hue}°) (참여자 버블 텍스트)`,
+    fg: "#000000",
+    bg: bubbleHex,
+    requiresAaLarge: true,
+  };
+  // hue 색은 라이트/다크 동일 — 한 번만 평가 (mode='hue').
+  results.push(evaluatePair(bubblePair, rootVars, "hue"));
 }
 
 // 출력.
