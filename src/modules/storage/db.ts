@@ -3,6 +3,7 @@
 import Dexie, { type Table } from "dexie";
 import type { Participant } from "@/modules/participants/participant-types";
 import type { Persona } from "@/modules/personas/persona-types";
+import type { InsightKind } from "@/modules/conversation/conversation-types";
 
 export interface StoredApiKey {
   provider: string;
@@ -65,6 +66,23 @@ export interface ApiKeyMetaRecord {
   updatedAt: number;
 }
 
+/**
+ * C-D25-2 (D6 07시 슬롯, 2026-05-02) — Tori spec C-D25-2, B-57/F-57.
+ *   Dexie v7 신규 테이블. 인사이트 영구화 — zustand 메모리(C-D24-4) → 새로고침 시 0 손실.
+ *   PK 'id' (uuid). 인덱스: roomId / sourceMessageId / [roomId+createdAt] (룸별 최신순).
+ *   markedBy = 사용자 수동 마크('user') vs 자동 마크('auto', C-D25-1).
+ */
+export interface InsightRow {
+  id: string;
+  roomId: string;
+  sourceMessageId: string;
+  text: string;
+  personaId: string | null;
+  insightKind: InsightKind | null;
+  markedBy: "user" | "auto";
+  createdAt: number;
+}
+
 export class RobustaDB extends Dexie {
   participants!: Table<Participant, string>;
   conversations!: Table<StoredConversation, string>;
@@ -76,6 +94,8 @@ export class RobustaDB extends Dexie {
   apiKeyMeta!: Table<ApiKeyMetaRecord, string>;
   // D-13.0 (Day 7, 2026-04-29) 신규 테이블 — 페르소나 카탈로그(프리셋 + 사용자 커스텀).
   personas!: Table<Persona, string>;
+  // C-D25-2 (D6 07시 슬롯, 2026-05-02) — 인사이트 영구화 (B-57/F-57).
+  insights!: Table<InsightRow, string>;
 
   constructor() {
     super("robusta");
@@ -183,6 +203,21 @@ export class RobustaDB extends Dexie {
           updatedAt: Date.now(),
         });
       });
+    // v7 — C-D25-2 (D6 07시 슬롯, 2026-05-02) — Tori spec B-57/F-57: insights 테이블 신규.
+    //   기존 v6 테이블(participants/conversations/messages/apiKeys/settings/apiKeyMeta/personas) Dexie auto-carry — 0 손실.
+    //   인덱스: PK id / roomId(룸별 카운트) / sourceMessageId(메시지 ↔ 인사이트 역참조) / [roomId+createdAt](룸별 최신순).
+    //   upgrade 함수 없음 — 신규 테이블만 추가, 기존 row 변경 0.
+    this.version(7).stores({
+      participants: "id, kind, name",
+      conversations: "id, updatedAt",
+      messages:
+        "id, conversationId, createdAt, status, streamingStartedAt",
+      apiKeys: "provider",
+      settings: "key",
+      apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+      personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
+      insights: "id, roomId, sourceMessageId, [roomId+createdAt]", // 신규
+    });
   }
 }
 

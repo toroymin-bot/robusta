@@ -144,15 +144,27 @@ export function InsightFooter({
       )}
       {message.insight && (
         <div
-          className="
+          className={`
             mt-1 flex items-center gap-2
-            border-t border-dotted border-robusta-divider pt-1
+            border-t pt-1
+            ${message.insight.markedBy === "auto" ? "border-dashed" : "border-solid"}
+            border-robusta-divider
             text-[11px] italic text-robusta-inkDim
-          "
+          `}
           data-test={`insight-footer-marked-${message.insight.kind}`}
+          data-marked-by={message.insight.markedBy}
         >
           <span aria-hidden>{KIND_GLYPH[message.insight.kind]}</span>
           <span>{t(KIND_LABEL_KEY[message.insight.kind])}</span>
+          {message.insight.markedBy === "auto" && (
+            <span
+              className="rounded bg-robusta-accentSoft/40 px-1 text-[10px] font-normal not-italic text-robusta-inkDim"
+              data-test="insight-auto-label"
+              title={t("insight.auto.label")}
+            >
+              {t("insight.auto.label")}
+            </span>
+          )}
           <button
             type="button"
             onClick={handleCapture}

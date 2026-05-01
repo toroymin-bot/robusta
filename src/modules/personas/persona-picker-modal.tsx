@@ -34,8 +34,13 @@ import { usePersonaStore } from "./persona-store";
 import {
   colorTokenToCssVar,
   type Persona,
+  type PersonaColorToken,
   type PersonaKind,
 } from "./persona-types";
+// C-D25-3 (D6 07시 슬롯, 2026-05-02) — KQ_18.2 (b) picker-card 우상단 5베이스 hue dot.
+//   기존 colorToken (CSS) 시스템 보존, hue 라벨은 매핑 함수로 합성.
+import { PersonaCardColorDot } from "./persona-card-color-dot";
+import { personaColorTokenToHue } from "@/modules/ui/theme";
 import { t, type MessageKey } from "@/modules/i18n/messages";
 
 /** D-14.2 참여자 제한 상수 — participants-panel과 동기화. */
@@ -246,7 +251,7 @@ export function PersonaPickerModal({
                   }
                 }}
                 className={`
-                  flex flex-col gap-1
+                  relative flex flex-col gap-1
                   overflow-hidden whitespace-nowrap
                   rounded-md border border-robusta-divider
                   bg-robusta-canvas p-3 sm:p-4 text-left
@@ -261,6 +266,19 @@ export function PersonaPickerModal({
                   borderLeftWidth: 4,
                 }}
               >
+                {/* C-D25-3 (D6 07시) KQ_18.2 (b): 카드 우상단 5베이스 hue dot. C-D24-1 컴포넌트 재사용.
+                    colorToken → hue 시드 매핑(personaColorTokenToHue) 으로 합성. */}
+                <span
+                  aria-hidden={false}
+                  className="pointer-events-none absolute right-2 top-2"
+                  data-test="picker-card-color-dot"
+                >
+                  <PersonaCardColorDot
+                    hue={personaColorTokenToHue(p.colorToken as PersonaColorToken)}
+                    locale="ko"
+                    size={12}
+                  />
+                </span>
                 {/* 1행: 모노그램 원 + 이름(ko) + R&R(en) truncate */}
                 <span className="flex items-center gap-3 whitespace-nowrap">
                   <span

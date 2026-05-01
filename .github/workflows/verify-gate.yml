@@ -74,5 +74,13 @@ jobs:
       - name: D-D24 통합 검증
         run: node scripts/verify-d24.mjs
 
+      # C-D25-5 (D6 07시 슬롯, 2026-05-02) — B-59 Robusta 컨셉 사수 게이트 정식 도입.
+      - name: 컨셉 사수 (Blend식 어휘 0 hits)
+        run: node scripts/check-concept-copy.mjs
+
+      # C-D25-5 (D6 07시 슬롯, 2026-05-02) — D-D25 5건 통합 회귀 (43 assertion).
+      - name: D-D25 통합 검증
+        run: node scripts/verify-d25.mjs
+
       - name: Next build (1st Load JS 게이트 시각 회귀)
         run: npm run build

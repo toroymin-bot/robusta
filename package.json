@@ -17,7 +17,9 @@
     "verify:d22": "node scripts/verify-d22.mjs",
     "verify:d23": "node scripts/verify-d23.mjs",
     "verify:d24": "node scripts/verify-d24.mjs",
-    "verify:hue-sync": "node scripts/verify-hue-sync.mjs"
+    "verify:d25": "node scripts/verify-d25.mjs",
+    "verify:hue-sync": "node scripts/verify-hue-sync.mjs",
+    "check:concept-copy": "node scripts/check-concept-copy.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

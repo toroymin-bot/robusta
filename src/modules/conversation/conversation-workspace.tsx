@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import { lazy, Suspense, useEffect, useState } from "react";
 // C-D24-4 (D6 03시 슬롯, 2026-05-02) — B-52 인사이트 라이브러리 진입점 + 사이드 시트.
 //   InsightLibrarySheet 는 dynamic import — 메인 번들 +0 의무 (168 kB 게이트 유지).
-import { useInsightStore } from "@/modules/insights/insight-store";
+//   C-D25-5 (D6 07시 슬롯, 2026-05-02) — F-59 168 회복: insight-store 정적 import 제거,
+//     useEffect 비동기 dynamic import 로 메인 번들 분리. 첫 페인트는 placeholder "(...)".
+//   ~~import { useInsightStore } from "@/modules/insights/insight-store";~~ — C-D25-5 lazy 분리.
 import { DEFAULT_CONVERSATION_ID } from "./conversation-types";
 const InsightLibrarySheet = dynamic(
   () =>
@@ -97,9 +99,27 @@ export function ConversationWorkspace() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   // C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 open state.
   const [insightLibraryOpen, setInsightLibraryOpen] = useState(false);
-  const insightCount = useInsightStore((s) =>
-    s.count(DEFAULT_CONVERSATION_ID),
-  );
+  // C-D25-5 (D6 07시 슬롯, 2026-05-02) — F-59 168 회복: insight count 비동기 dynamic 로드.
+  //   첫 페인트 = null → placeholder "(...)". useEffect 마운트 직후 dynamic import + subscribe.
+  const [insightCount, setInsightCount] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
+    void import("@/modules/insights/insight-store").then((mod) => {
+      if (cancelled) return;
+      const store = mod.useInsightStore;
+      // 룸 진입 1회 hydrate (Dexie → 메모리). C-D25-2 영구화.
+      void store.getState().hydrate(DEFAULT_CONVERSATION_ID).catch(() => {});
+      const sync = () =>
+        setInsightCount(store.getState().count(DEFAULT_CONVERSATION_ID));
+      sync();
+      unsub = store.subscribe(sync);
+    });
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, []);
   // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: D-Day 라벨 클라 시점 계산.
   //   SSR/CSR hydration mismatch 회피를 위해 SSR 폴백 = Day 5 (라이브 시점 정합).
   //   useEffect로 클라 시점 1회 set → 렌더 직후 실제 D-Day로 회전.
@@ -177,7 +197,7 @@ export function ConversationWorkspace() {
             >
               {t("insightLibrary.entry.label").replace(
                 "{count}",
-                String(insightCount),
+                insightCount === null ? "..." : String(insightCount),
               )}
             </button>
             <HeaderCluster

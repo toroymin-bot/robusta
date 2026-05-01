@@ -83,6 +83,34 @@ export const PARTICIPANT_HUE_SEED_NAMES = {
 } as const;
 
 /**
+ * C-D25-3 (D6 07시 슬롯, 2026-05-02) — KQ_18.2 (b) 답변 구현 — Tori spec §3.2.
+ *   PersonaColorToken (CSS 변수 이름) → 5베이스 hue 시드 1:1 매핑.
+ *
+ *   policy:
+ *     - AI participant 5 토큰(robusta-color-participant-1..5) → 5베이스 hue 인덱스 매핑.
+ *       (CSS 색은 historical hex 그대로 보존, hue 시드는 "색명 라벨" 분면 결정용.)
+ *     - human 1 → 청록(200), human 2 → 라일락(280) — 인간은 5베이스 외에서도 fallback 가능.
+ *     - 매핑 누락 시 tsc 에러 (`satisfies Record<PersonaColorToken, number>`).
+ *
+ *   호출처: persona-picker-modal picker-card 우상단 PersonaCardColorDot. hueToBaseName 으로 "주황·노랑..." 라벨.
+ */
+import type { PersonaColorToken } from "@/modules/personas/persona-types";
+
+export const PERSONA_COLOR_TOKEN_TO_HUE: Record<PersonaColorToken, number> = {
+  "robusta-color-participant-1": 20,
+  "robusta-color-participant-2": 50,
+  "robusta-color-participant-3": 150,
+  "robusta-color-participant-4": 200,
+  "robusta-color-participant-5": 280,
+  "robusta-color-participant-human-1": 200,
+  "robusta-color-participant-human-2": 280,
+} as const satisfies Record<PersonaColorToken, number>;
+
+export function personaColorTokenToHue(token: PersonaColorToken): number {
+  return PERSONA_COLOR_TOKEN_TO_HUE[token];
+}
+
+/**
  * C-D23-1: 임의 hue 값(0~360) → 5베이스 중 가장 가까운 이름 반환.
  *   Wrap-around 거리 계산 — 350° 와 10° 는 20° 거리.
  *   참여자 hue 가 baseSeed 와 정확히 같지 않아도 1차 분면에서 결정적 매핑.

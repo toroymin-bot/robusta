@@ -140,12 +140,23 @@ export const MESSAGES = {
     "insight.markButton.tooltip": "통찰로 마크",
     "insight.unmark.toast": "마크가 해제되었습니다",
     "insight.unmark.action": "되돌리기",
+    // C-D25-1 (D6 07시 슬롯, 2026-05-02) — B-56/F-56/D-56 자동 마크 v0 라벨.
+    //   markedBy='auto' 시 사용자 마크와 시각 분리 + sr-only / 툴팁 라벨.
+    "insight.auto.label": "AI 추정",
     // C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 v0.
     "insightLibrary.title": "인사이트",
     "insightLibrary.empty": "아직 캡처된 통찰이 없습니다.",
     "insightLibrary.entry.button": "인사이트 라이브러리 열기",
     "insightLibrary.entry.label": "💡 인사이트 ({count})",
     "insightLibrary.capture.guide": "메시지 푸터에서 통찰 후보를 마크하세요.",
+    // C-D25-3 (D6 07시 슬롯, 2026-05-02) — B-58 페르소나 카탈로그 v1 이름 5종 등록.
+    //   desc / seedHint 는 D-D26 본문 보강 (Tori §9: 본 슬롯은 이름만 등록, 168 게이트 회복 우선).
+    //   카탈로그 자체는 persona-catalog.ts 에 metadata 정의 — Spec 004 진입 시 picker 에 노출.
+    "persona.catalog.criticalMate.name": "비판적 동료",
+    "persona.catalog.optimisticMate.name": "낙관적 동료",
+    "persona.catalog.dataMate.name": "데이터 동료",
+    "persona.catalog.designer.name": "디자이너",
+    "persona.catalog.userAdvocate.name": "사용자 대변자",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -257,12 +268,20 @@ export const MESSAGES = {
     "insight.markButton.tooltip": "Mark as insight",
     "insight.unmark.toast": "Mark cleared",
     "insight.unmark.action": "Undo",
+    // C-D25-1 (D6 07시 슬롯, 2026-05-02) — auto-mark v0 label (en parity).
+    "insight.auto.label": "AI inferred",
     // C-D24-4 (D6 03시 슬롯, 2026-05-02) — Insight library side sheet v0 — KO mirror.
     "insightLibrary.title": "Insights",
     "insightLibrary.empty": "No insights captured yet.",
     "insightLibrary.entry.button": "Open insight library",
     "insightLibrary.entry.label": "💡 Insights ({count})",
     "insightLibrary.capture.guide": "Mark insight candidates from the message footer.",
+    // C-D25-3 (D6 07시 슬롯, 2026-05-02) — Persona catalog v1 names only (en parity).
+    "persona.catalog.criticalMate.name": "Critical Mate",
+    "persona.catalog.optimisticMate.name": "Optimistic Mate",
+    "persona.catalog.dataMate.name": "Data Mate",
+    "persona.catalog.designer.name": "Designer",
+    "persona.catalog.userAdvocate.name": "User Advocate",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

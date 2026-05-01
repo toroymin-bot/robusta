@@ -23,6 +23,9 @@ import type { Participant } from "@/modules/participants/participant-types";
 //   shouldCompact 는 순수 함수(휴리스틱) — 메인 번들 영향 ≪ 1kB. 정적 import.
 //   compact + createAnthropicLLMClient 는 dynamic import — 메인 번들 무영향 (별도 chunk).
 import { shouldCompact, type Msg } from "@/services/context/contextWindowGuard";
+// C-D25-4 (D6 07시 슬롯, 2026-05-02) — KQ_19 답변 / F-58 ROBUSTA_TEST_MODE 가드 정식.
+//   production NODE_ENV → getTestInjection 항상 null → tree-shaker dead code.
+//   C-D25-5 (D6 07시) 168 회복: dynamic import — production 빌드 시 클라이언트 번들에서 test-mode 모듈 자체 0.
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
@@ -224,6 +227,39 @@ export async function* streamMessage(
   if (input.signal?.aborted) {
     yield { kind: "aborted" };
     return;
+  }
+
+  // C-D25-4 (D6 07시) — KQ_19 / F-58: ROBUSTA_TEST_MODE 가드 정식.
+  //   production 빌드에서 getTestInjection 은 항상 null (test-mode.ts isTestMode 단락) → dead code.
+  //   자동 테스트 환경에서만 globalThis.__robustaTestInject 으로 1회성 chunk 주입 가능.
+  //   C-D25-5 (D6 07시) 168 회복: dynamic import — production 빌드에서 test-mode 모듈 0 fetched.
+  if (
+    typeof process !== "undefined" &&
+    process.env?.ROBUSTA_TEST_MODE === "true" &&
+    process.env?.NODE_ENV !== "production"
+  ) {
+    const tm = await import("./test-mode");
+    const injection = tm.getTestInjection();
+    if (injection) {
+      if (injection.kind === "compacted") {
+        yield {
+          kind: "compacted",
+          original: injection.original ?? 200000,
+          shrunk: injection.shrunk ?? 32000,
+        };
+      } else if (injection.kind === "error") {
+        yield {
+          kind: "error",
+          reason: injection.reason ?? "test-injected error",
+          status: injection.status,
+        };
+        tm.clearTestInjection();
+        return;
+      } else if (injection.kind === "slow") {
+        await new Promise((r) => setTimeout(r, injection.delayMs ?? 100));
+      }
+      tm.clearTestInjection();
+    }
   }
 
   // D-8.3: while 루프 + attempts 가드. 최대 2번 (1차 + 폴백 1회).

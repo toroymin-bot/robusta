@@ -32,6 +32,8 @@ import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
 // D-12.2 (Day 6): 첫 401 발생 시 키 메타에 마킹.
 import { markUnauthorized } from "@/modules/api-keys/api-key-meta";
+// C-D25-1 (D6 07시 슬롯, 2026-05-02) — B-56 자동 마크 v0. AI 응답 'done' 분기 마다 호출.
+//   C-D25-5 168 회복: dynamic import — 어휘 사전이 메인 번들에 영향 0.
 
 const PERSIST_DEBOUNCE_MS = 200;
 
@@ -440,10 +442,23 @@ export const useConversationStore = create<ConversationStore>()(
       return;
     }
 
+    // C-D25-1 (D6 07시) — B-56 자동 마크 v0. retry는 동일 speaker(AI)로만 plan 통과.
+    //   C-D25-5 168 회복: dynamic import — 메인 번들 영향 0.
+    const { maybeAutoMark: maybeAutoMarkRetry } = await import(
+      "@/modules/insights/auto-mark"
+    );
+    const autoMark = maybeAutoMarkRetry({
+      content: accumulated,
+      participantKind: plan.speaker.kind,
+      participantId: plan.speaker.id,
+      existingMark: undefined,
+      locale: "ko",
+    });
     await state.updateMessage(plan.placeholder.id, {
       status: "done",
       content: accumulated,
       ...(usagePatch ? { usage: usagePatch } : {}),
+      ...(autoMark ? { insight: autoMark } : {}),
     });
   },
 
@@ -751,10 +766,24 @@ async function runAutoTurn(
     throw new Error(lastError.reason);
   }
 
+  // C-D25-1 (D6 07시) — B-56 자동 마크 v0. AutoLoop 한 턴 종료 시 자동 마크 후보 적용.
+  //   speaker는 함수 진입 시 ai로 검증됨. system 가드는 maybeAutoMark 내부.
+  //   C-D25-5 168 회복: dynamic import — 메인 번들 영향 0.
+  const { maybeAutoMark: maybeAutoMarkAuto } = await import(
+    "@/modules/insights/auto-mark"
+  );
+  const autoMark = maybeAutoMarkAuto({
+    content: accumulated,
+    participantKind: speaker.kind,
+    participantId: speaker.id,
+    existingMark: undefined,
+    locale: "ko",
+  });
   await state.updateMessage(placeholderId, {
     status: "done",
     content: accumulated,
     ...(usagePatch ? { usage: usagePatch } : {}),
+    ...(autoMark ? { insight: autoMark } : {}),
   });
 }
 

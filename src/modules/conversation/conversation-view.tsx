@@ -30,6 +30,8 @@ import { useConversationEmptyState } from "@/views/conversation/useConversationE
 import type { EmptyCtaIntent } from "@/modules/onboarding/empty-state-registry";
 // C-D20-3 (D6 11시 슬롯, 2026-05-01) — handleEmptyIntent → openMenu 진화 결합 store.
 import { useHeaderClusterStore } from "@/stores/header-cluster-store";
+// C-D25-1 (D6 07시 슬롯, 2026-05-02) — B-56/F-56 자동 마크 v0. 'done' 분기에서 호출.
+//   C-D25-5 168 회복: 정적 import → dynamic — done 분기는 비파괴 await 가능.
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -280,10 +282,22 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
         return;
       }
 
+      // C-D25-1 (D6 07시) — B-56 자동 마크 v0. AI 응답 완료 시 시그널 어휘로 markedBy='auto'.
+      //   C-D25-5 168 회복: dynamic import — 어휘 사전 + 매핑 함수가 메인 번들에 0 영향.
+      //   import.then 은 done 분기에서만 await 되므로 사용자 perceived latency 0 (이미 완료된 메시지).
+      const { maybeAutoMark } = await import("@/modules/insights/auto-mark");
+      const autoMark = maybeAutoMark({
+        content: accumulated,
+        participantKind: speaker.kind,
+        participantId: speaker.id,
+        existingMark: undefined,
+        locale: "ko",
+      });
       await updateMessage(placeholderId, {
         status: "done",
         content: accumulated,
         usage: usagePatch,
+        ...(autoMark ? { insight: autoMark } : {}),
       });
     },
     [
