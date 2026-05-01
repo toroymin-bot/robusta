@@ -1,6 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { lazy, Suspense, useEffect, useState } from "react";
+// C-D24-4 (D6 03시 슬롯, 2026-05-02) — B-52 인사이트 라이브러리 진입점 + 사이드 시트.
+//   InsightLibrarySheet 는 dynamic import — 메인 번들 +0 의무 (168 kB 게이트 유지).
+import { useInsightStore } from "@/modules/insights/insight-store";
+import { DEFAULT_CONVERSATION_ID } from "./conversation-types";
+const InsightLibrarySheet = dynamic(
+  () =>
+    import("@/modules/insights/insight-library-sheet").then(
+      (m) => m.InsightLibrarySheet,
+    ),
+  { ssr: false, loading: () => null },
+);
 import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
 // ~~maskApiKey~~ — C-D17-13 (Day 5 15시) HeaderCluster로 이관, 본 파일에서 직접 호출 X.
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
@@ -83,6 +95,11 @@ export function ConversationWorkspace() {
   const [keysOpen, setKeysOpen] = useState(false);
   // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 스케줄 모달 open state.
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  // C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 open state.
+  const [insightLibraryOpen, setInsightLibraryOpen] = useState(false);
+  const insightCount = useInsightStore((s) =>
+    s.count(DEFAULT_CONVERSATION_ID),
+  );
   // D-D16-1 (Day 4 23시 슬롯, 2026-04-29) C-D16-1: D-Day 라벨 클라 시점 계산.
   //   SSR/CSR hydration mismatch 회피를 위해 SSR 폴백 = Day 5 (라이브 시점 정합).
   //   useEffect로 클라 시점 1회 set → 렌더 직후 실제 D-Day로 회전.
@@ -143,19 +160,40 @@ export function ConversationWorkspace() {
               ~~기존 인라인 4도구 div (mode-label, turn-mode-label, theme-toggle, ⚙ Keys)~~
               → HeaderCluster: 데스크탑 ≥ md 인라인 동일 / 모바일 < md 햄버거 + 풀스크린 오버레이.
               data-test 셀렉터(header-mode-label, header-turn-mode-label)는 HeaderCluster 내부에 그대로 정의됨 → 회귀 0. */}
-          <HeaderCluster
-            roadmapLabel={roadmapLabel}
-            roadmapColor={roadmapColor}
-            turnModeLabel={t(TURN_MODE_LABEL_KEY[turnMode])}
-            themeHydrated={themeHydrated}
-            themeMode={themeMode}
-            onToggleTheme={toggleTheme}
-            themeChoice={themeChoice}
-            onSetThemeChoice={setThemeChoice}
-            onOpenApiKeyModal={() => setKeysOpen(true)}
-            onOpenScheduleModal={() => setScheduleOpen(true)}
-            anthropicKey={anthropicKey ?? ""}
-          />
+          <div className="flex items-center gap-2">
+            {/* C-D24-4 (D6 03시 슬롯, 2026-05-02) — F-52 인사이트 라이브러리 진입 버튼.
+                HeaderCluster 좌측 고정 — 헤더 4도구는 그대로 유지 (회귀 0). 모바일 시 햄버거 옆 노출. */}
+            <button
+              type="button"
+              onClick={() => setInsightLibraryOpen(true)}
+              data-test="insight-library-entry"
+              aria-label={t("insightLibrary.entry.button")}
+              title={t("insightLibrary.entry.button")}
+              className="
+                inline-flex items-center gap-1
+                rounded border border-robusta-divider px-2 py-1
+                text-[12px] text-robusta-inkDim hover:text-robusta-ink hover:border-robusta-accent
+              "
+            >
+              {t("insightLibrary.entry.label").replace(
+                "{count}",
+                String(insightCount),
+              )}
+            </button>
+            <HeaderCluster
+              roadmapLabel={roadmapLabel}
+              roadmapColor={roadmapColor}
+              turnModeLabel={t(TURN_MODE_LABEL_KEY[turnMode])}
+              themeHydrated={themeHydrated}
+              themeMode={themeMode}
+              onToggleTheme={toggleTheme}
+              themeChoice={themeChoice}
+              onSetThemeChoice={setThemeChoice}
+              onOpenApiKeyModal={() => setKeysOpen(true)}
+              onOpenScheduleModal={() => setScheduleOpen(true)}
+              anthropicKey={anthropicKey ?? ""}
+            />
+          </div>
         </header>
 
         {/* D-D11-2 (Day 11) C-D11-2: AI-Auto 컨트롤 헤더 — 컴포넌트 자체가 turnMode==='ai-auto' 가드. */}
@@ -170,6 +208,14 @@ export function ConversationWorkspace() {
         <Suspense fallback={null}>
           <ScheduleModal onClose={() => setScheduleOpen(false)} />
         </Suspense>
+      )}
+      {/* C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 (dynamic, 클릭 시점 로드). */}
+      {insightLibraryOpen && (
+        <InsightLibrarySheet
+          roomId={DEFAULT_CONVERSATION_ID}
+          open={insightLibraryOpen}
+          onClose={() => setInsightLibraryOpen(false)}
+        />
       )}
       <ToastViewport />
     </div>

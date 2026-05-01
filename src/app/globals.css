@@ -30,6 +30,14 @@
   --robusta-color-participant-5: #7c3aed;        /* 보라 — researcher (리서처) */
   --robusta-color-participant-human-1: #1e3a8a;  /* 네이비 — 인간 1 */
   --robusta-color-participant-human-2: #475569;  /* 슬레이트 — 인간 2 */
+  /* C-D24-2 (D6 03시 슬롯, 2026-05-02) F-53 — 5베이스 hue 시드 CSS 변수.
+     theme.ts PARTICIPANT_HUE_SEEDS 와 single source.
+     verify-hue-sync.mjs 가 TS↔CSS 동기 보장 (CI 차단). hue 는 mode 비종속이므로 :root 만 정의. */
+  --participant-hue-base-1: 20;   /* 주황 / orange */
+  --participant-hue-base-2: 50;   /* 노랑 / yellow */
+  --participant-hue-base-3: 150;  /* 민트 / mint */
+  --participant-hue-base-4: 200;  /* 청록 / teal */
+  --participant-hue-base-5: 280;  /* 라일락 / lilac */
 }
 
 [data-theme="dark"] {

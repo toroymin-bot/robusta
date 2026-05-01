@@ -130,6 +130,22 @@ export const MESSAGES = {
     // C-D22-2 (D6 19시 슬롯, 2026-05-01) D-22 hueToShape — 색맹 동반 도형 라벨 합성.
     //   참여자 카드의 aria-label 에 "{name} (참여자, {shape})" 형태로 합성.
     "participants.shape.aria": "{name} (참여자, {shape})",
+    // C-D24-1·2 (D6 03시 슬롯, 2026-05-02) — F-54 hueToBaseName 합성 + KQ_17 (a) 색명 라벨.
+    "participants.shapeColor.aria": "{name} (참여자, {shape}, {color})",
+    "personaCard.colorDot.tooltip": "참여자 색: {color}",
+    // C-D24-3 (D6 03시 슬롯, 2026-05-02) — Spec 003 통찰 강조 푸터 (F-51 수동 마크).
+    "insight.kind.newView": "다른 시각",
+    "insight.kind.counter": "반대 근거",
+    "insight.kind.augment": "보완",
+    "insight.markButton.tooltip": "통찰로 마크",
+    "insight.unmark.toast": "마크가 해제되었습니다",
+    "insight.unmark.action": "되돌리기",
+    // C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 v0.
+    "insightLibrary.title": "인사이트",
+    "insightLibrary.empty": "아직 캡처된 통찰이 없습니다.",
+    "insightLibrary.entry.button": "인사이트 라이브러리 열기",
+    "insightLibrary.entry.label": "💡 인사이트 ({count})",
+    "insightLibrary.capture.guide": "메시지 푸터에서 통찰 후보를 마크하세요.",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -231,6 +247,22 @@ export const MESSAGES = {
     "export.disabled.empty": "Empty room cannot be exported.",
     // C-D22-2 (D6 19시 슬롯, 2026-05-01) D-22 hueToShape — KO mirror.
     "participants.shape.aria": "{name} (participant, {shape})",
+    // C-D24-1·2 (D6 03시 슬롯, 2026-05-02) — F-54 hueToBaseName + KQ_17 (a) — KO mirror.
+    "participants.shapeColor.aria": "{name} (participant, {shape}, {color})",
+    "personaCard.colorDot.tooltip": "Participant color: {color}",
+    // C-D24-3 (D6 03시 슬롯, 2026-05-02) — Insight footer (manual mark) — KO mirror.
+    "insight.kind.newView": "Different view",
+    "insight.kind.counter": "Counter argument",
+    "insight.kind.augment": "Augment",
+    "insight.markButton.tooltip": "Mark as insight",
+    "insight.unmark.toast": "Mark cleared",
+    "insight.unmark.action": "Undo",
+    // C-D24-4 (D6 03시 슬롯, 2026-05-02) — Insight library side sheet v0 — KO mirror.
+    "insightLibrary.title": "Insights",
+    "insightLibrary.empty": "No insights captured yet.",
+    "insightLibrary.entry.button": "Open insight library",
+    "insightLibrary.entry.label": "💡 Insights ({count})",
+    "insightLibrary.capture.guide": "Mark insight candidates from the message footer.",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

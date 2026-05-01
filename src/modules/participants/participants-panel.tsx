@@ -41,6 +41,10 @@ import {
   hueToShapeAria,
   parseHueFromColor,
 } from "./participant-color";
+// C-D24-1·2 (D6 03시 슬롯, 2026-05-02) — F-54 hueToBaseName 호출처 연결.
+//   참여자 li aria-label 에 색명 합성 (예: "주황", "lilac") + 카드 우상단 색 dot 컴포넌트.
+import { hueToBaseName } from "@/modules/ui/theme";
+import { PersonaCardColorDot } from "@/modules/personas/persona-card-color-dot";
 
 /**
  * D-14.1 (Day 8) PersonaEditModal/PersonaPickerModal 모두 lazy 로드.
@@ -244,13 +248,25 @@ export function ParticipantsPanel() {
           //   color 가 hsl(...) 가 아니면 hue=null → shape 미노출 (CSS var 등 비-hsl 호환 보존).
           const hue = parseHueFromColor(p.color);
           const shapeAria = hue !== null ? hueToShapeAria(hue, "ko") : null;
+          // C-D24-2 (D6 03시): hue 가 있으면 5베이스 색명 (주황/노랑/민트/청록/라일락) 추출.
+          //   hueToBaseName 이 wrap-around 거리로 가장 가까운 시드의 이름 결정.
+          const colorName = hue !== null ? hueToBaseName(hue, "ko") : null;
           const displayName = displayNames.get(p.id) ?? p.name;
           // aria-label 합성 — 시각 정보(색)에 의존하지 않는 SR 보강.
-          const liAriaLabel = shapeAria
-            ? t("participants.shape.aria")
-                .replace("{name}", displayName)
-                .replace("{shape}", shapeAria.label)
-            : displayName;
+          //   hue + shape 둘 다 있을 때: "{name} (참여자, {shape}, {color})" 신규 키.
+          //   shape 만: 기존 "participants.shape.aria" (회귀 0).
+          //   둘 다 없음: displayName.
+          const liAriaLabel =
+            shapeAria && colorName
+              ? t("participants.shapeColor.aria")
+                  .replace("{name}", displayName)
+                  .replace("{shape}", shapeAria.label)
+                  .replace("{color}", colorName)
+              : shapeAria
+                ? t("participants.shape.aria")
+                    .replace("{name}", displayName)
+                    .replace("{shape}", shapeAria.label)
+                : displayName;
           return (
             <li
               key={p.id}
@@ -264,6 +280,17 @@ export function ParticipantsPanel() {
                 hover:bg-robusta-accentSoft/40
               "
             >
+              {/* C-D24-1 (D6 03시 슬롯, 2026-05-02) — KQ_17 (a) 답변 구현.
+                  카드 우상단 12×12 색 dot + 호버 툴팁 색명 + sr-only 색명 (a11y 양면).
+                  hue 미파싱 시 마운트 X (CSS var 기반 인격 보존). */}
+              {hue !== null && (
+                <span
+                  className="pointer-events-none absolute right-2 top-2 z-[1]"
+                  data-test={`persona-color-dot-${hue}`}
+                >
+                  <PersonaCardColorDot hue={hue} locale="ko" size={12} />
+                </span>
+              )}
               <span
                 className="relative mt-1 flex h-3 w-3 shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: p.color }}

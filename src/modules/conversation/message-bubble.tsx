@@ -1,20 +1,30 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   hueToBubbleBorder,
   parseHueFromColor,
 } from "@/modules/participants/participant-color";
 import type { Participant } from "@/modules/participants/participant-types";
-import type { Message } from "./conversation-types";
+import type { InsightMark, Message } from "./conversation-types";
 import { StreamingCaret } from "./streaming-caret";
 // D-10.3 (Day 5, 2026-04-28): error/aborted 메시지에 [↻ 재전송] 버튼 노출.
 import { useConversationStore } from "@/stores/conversation-store";
 import { t } from "@/modules/i18n/messages";
 
+// C-D24-3 (D6 03시 슬롯, 2026-05-02) — 통찰 강조 푸터 lazy 로드.
+//   메인 번들 +0 의무 (168 kB 게이트 유지). InsightFooter 는 클릭 시점에만 fetch.
+const InsightFooter = dynamic(
+  () => import("./insight-mark").then((m) => m.InsightFooter),
+  { ssr: false, loading: () => null },
+);
+
 interface MessageBubbleProps {
   message: Message;
   participant: Participant | undefined;
   isFirstInGroup: boolean;
+  /** C-D24-3: 캡처 콜백 — 부모(워크스페이스)가 인사이트 라이브러리 사이드 시트 open. 미전달 시 캡처 시 noop. */
+  onInsightCapture?: (mark: InsightMark) => void;
 }
 
 function formatTokens(usage?: Message["usage"]): string | null {
@@ -30,6 +40,7 @@ export function MessageBubble({
   message,
   participant,
   isFirstInGroup,
+  onInsightCapture,
 }: MessageBubbleProps) {
   const isAi = participant?.kind === "ai";
   const hue = participant ? parseHueFromColor(participant.color) : null;
@@ -136,6 +147,13 @@ export function MessageBubble({
           </div>
         )}
       </div>
+      {/* C-D24-3 (D6 03시 슬롯, 2026-05-02) — Spec 003 통찰 강조 푸터.
+          dynamic import — InsightFooter 클릭 시점에만 로드. 메인 번들 +0.
+          시스템 메시지·context-slicer 메시지는 InsightFooter 내부 가드로 미마운트.
+          상태가 streaming/error/aborted 인 경우는 마크 의미가 없으므로 done 인 메시지에만 노출. */}
+      {message.status === "done" && (
+        <InsightFooter message={message} onCapture={onInsightCapture} />
+      )}
     </div>
   );
 }

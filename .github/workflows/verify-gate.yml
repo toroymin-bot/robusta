@@ -66,5 +66,13 @@ jobs:
       - name: D-D23 통합 검증
         run: node scripts/verify-d23.mjs
 
+      # C-D24-2 (D6 03시 슬롯, 2026-05-02) — F-53 5베이스 hue TS↔CSS single source 동기 검증.
+      - name: 5 hue TS↔CSS 동기 (verify-hue-sync)
+        run: node scripts/verify-hue-sync.mjs
+
+      # C-D24-5 (D6 03시 슬롯, 2026-05-02) — D-D24 5건 통합 회귀 (38 assertion).
+      - name: D-D24 통합 검증
+        run: node scripts/verify-d24.mjs
+
       - name: Next build (1st Load JS 게이트 시각 회귀)
         run: npm run build

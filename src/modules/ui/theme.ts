@@ -59,6 +59,20 @@ export const robustaTokens = {
 export const PARTICIPANT_HUE_SEEDS = [20, 50, 150, 200, 280] as const;
 
 /**
+ * C-D24-2 (D6 03시 슬롯, 2026-05-02) — F-53 5베이스 hue CSS 변수 토큰화.
+ *   globals.css :root --participant-hue-base-1..5 와 1:1 매핑.
+ *   디자이너가 globals.css 1곳을 조정하면 verify-hue-sync.mjs 가 TS 상수와 동기 강제.
+ *   배열 인덱스 = PARTICIPANT_HUE_SEEDS 인덱스 (length 5 강제).
+ */
+export const PARTICIPANT_HUE_SEED_CSS_VARS = [
+  "--participant-hue-base-1",
+  "--participant-hue-base-2",
+  "--participant-hue-base-3",
+  "--participant-hue-base-4",
+  "--participant-hue-base-5",
+] as const;
+
+/**
  * C-D23-1: 5베이스 hue 의 시맨틱 이름 — i18n / 디버그 / aria 보강용.
  *   배열 인덱스가 PARTICIPANT_HUE_SEEDS 와 동기. 길이 5 강제 — 추가 시 양 const 같이 수정.
  *   ko/en 양면 — 호출자가 locale 결정.
