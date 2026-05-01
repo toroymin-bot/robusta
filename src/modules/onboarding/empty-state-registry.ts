@@ -15,7 +15,7 @@
  *
  * 다국어:
  *   - i18n 통합은 D-9.3 라우팅(P1) 들어오면 modules/i18n/messages.ts 로 마이그레이션.
- *     현재(D6)는 인라인 ko/en 박는 게 검증·업데이트 빠름 (KQ_13 카피가 바뀔 가능성 있음).
+ *     현재(D6)는 인라인 ko/en 기록하는 게 검증·업데이트 빠름 (KQ_13 카피가 바뀔 가능성 있음).
  */
 
 import { useEffect, useState } from "react";

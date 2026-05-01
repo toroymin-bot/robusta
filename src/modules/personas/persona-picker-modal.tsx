@@ -1,12 +1,12 @@
 /**
  * persona-picker-modal.tsx
  *   - D-13.3 (Day 7, 2026-04-29) 페르소나 추가 모달.
- *   - D-14.2 (Day 8, 2026-04-28) limit 시 카드 disabled + 토스트 1회 박음 (꼬미 정정 13.3 + 똘이 보강).
+ *   - D-14.2 (Day 8, 2026-04-28) limit 시 카드 disabled + 토스트 1회 정의 (꼬미 정정 13.3 + 똘이 보강).
  *     · 닫지 않고 유지 (마찰 ↓).
  *     · 카드: opacity-40 + cursor-not-allowed + aria-disabled='true' + tabIndex=-1.
  *     · 토스트는 picker open 동안 1회만(중복 차단). kind 토글 시 reset.
  *     · 카드 v2: 1행(circle + 이름 + R&R truncate) + 2행(systemPrompt 60자 truncate) — 명세 §5.2.
- *   - D-14.4 (Day 8) data-test='picker-card' 박음 (모바일 320px 회귀 자동화).
+ *   - D-14.4 (Day 8) data-test='picker-card' 정의 (모바일 320px 회귀 자동화).
  *
  * 진입점: 워크스페이스 [+참여자 추가] 버튼.
  * 구성:
@@ -110,7 +110,7 @@ export function PersonaPickerModal({
     toastShownRef.current = false;
   }, [kind]);
 
-  // 프리셋만 박음 (커스텀은 별도 흐름 — 명세 §4)
+  // 프리셋만 정의 (커스텀은 별도 흐름 — 명세 §4)
   const cards: Persona[] = useMemo(
     () => personas.filter((p) => p.isPreset && p.kind === kind),
     [personas, kind],

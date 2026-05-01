@@ -3,7 +3,7 @@
  *   - C-D17-16 (Day 5 23시 슬롯, 2026-04-30) — F-15 자동 발언 스케줄 UI 골격.
  *     · Zustand store + IndexedDB persist via settings 테이블 key="schedule.rules".
  *     · 영구화: 단일 JSON 레코드 (rules 배열). per-rule 인덱스 X — 헤더/모달은 전체 list만 필요.
- *     · 트리거 X: 본 store는 데이터 모델만 박힘. cron 트리거는 D11+ Vercel Cron 박은 후 별도 모듈.
+ *     · 트리거 X: 본 store는 데이터 모델만 등록됨. cron 트리거는 D11+ Vercel Cron 박은 후 별도 모듈.
  *
  * 보안/비용 정책:
  *   - 키 저장 X — 스케줄 메타만 (participantId, frequency, enabled).
@@ -36,7 +36,7 @@ interface ScheduleStore {
   removeRule: (id: string) => Promise<void>;
   /** id의 enabled 토글. 존재하지 않으면 noop. */
   toggleRule: (id: string) => Promise<void>;
-  /** 특정 참여자에 박힌 룰 목록. */
+  /** 특정 참여자에 등록된 룰 목록. */
   getRulesForParticipant: (participantId: string) => ScheduleRule[];
 }
 

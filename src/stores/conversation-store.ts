@@ -206,7 +206,7 @@ export const useConversationStore = create<ConversationStore>()(
   },
 
   async appendMessage(msg) {
-    // D-12.1: status='streaming'인 신규 메시지는 streamingStartedAt 박음.
+    // D-12.1: status='streaming'인 신규 메시지는 streamingStartedAt 정의.
     //   기존에 streamingStartedAt이 있으면 보존(재시도 placeholder 등이 명시 박은 케이스).
     const enriched: Message =
       msg.status === "streaming" && msg.streamingStartedAt === undefined
@@ -401,7 +401,7 @@ export const useConversationStore = create<ConversationStore>()(
           },
         });
       } else if (status === 401) {
-        // D-12.2: 첫 401 → 키 메타에 lastUnauthorizedAt 박음. BYOK 모달 재진입 시 ⚠ 배지.
+        // D-12.2: 첫 401 → 키 메타에 lastUnauthorizedAt 정의. BYOK 모달 재진입 시 ⚠ 배지.
         // markUnauthorized는 throw 안 함 (silent fallback 내장).
         void markUnauthorized("anthropic", apiKey!);
         pushToast({

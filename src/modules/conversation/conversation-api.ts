@@ -19,6 +19,10 @@ import { composeSystemPrompt } from "./system-prompt-composer";
 import { parseAnthropicStream } from "./stream-parser";
 import type { Message, MessageUsage } from "./conversation-types";
 import type { Participant } from "@/modules/participants/participant-types";
+// C-D20-2 (D6 11시 슬롯, 2026-05-01) — 꼬미 §3 권장 ② 흡수.
+//   shouldCompact 는 순수 함수(휴리스틱) — 메인 번들 영향 ≪ 1kB. 정적 import.
+//   compact + createAnthropicLLMClient 는 dynamic import — 메인 번들 무영향 (별도 chunk).
+import { shouldCompact, type Msg } from "@/services/context/contextWindowGuard";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
@@ -135,8 +139,75 @@ async function describeErrorResponse(res: Response): Promise<string> {
 }
 
 /**
+ * C-D20-2 (D6 11시 슬롯, 2026-05-01) — 컨텍스트 슬라이서 통합 헬퍼.
+ *   - history 가 모델 한도의 80% 초과 시 LLM 1회 호출로 압축 1줄 요약 + 마지막 KEEP_TAIL건 보존.
+ *   - apiKey 미입력 → 압축 스킵 (원본 반환). compact 자체 실패 → 원본 반환 + 에러 로깅.
+ *   - dynamic import → anthropic-llm-client 가 메인 번들 외 chunk 로 분리.
+ *
+ * (입력) history: Message[], modelMaxTokens: number, apiKey: string
+ * (출력) Promise<Message[]> — 압축된 (또는 원본) 메시지 배열
+ */
+async function maybeCompactHistory(
+  history: Message[],
+  modelMaxTokens: number,
+  apiKey: string,
+): Promise<Message[]> {
+  // Message → Msg (contextWindowGuard 인터페이스). speaker 매핑은 본 모듈 책임 외 — id 만 보존.
+  const msgs: Msg[] = history.map((h) => ({
+    id: h.id,
+    role: "user", // history 단계에서는 모두 user 로 취급 — 압축 의미상 충분.
+    content: h.content,
+    createdAt: h.createdAt,
+  }));
+
+  if (!shouldCompact(msgs, modelMaxTokens)) return history;
+  if (!apiKey) {
+    // BYOK 미입력 — 압축 스킵, 원본 반환. (4xx token-limit 발생 시 호출자가 사용자에게 안내)
+    return history;
+  }
+
+  try {
+    const [{ compact }, { createAnthropicLLMClient }] = await Promise.all([
+      import("@/services/context/contextWindowGuard"),
+      import("@/services/context/anthropic-llm-client"),
+    ]);
+    const llm = createAnthropicLLMClient({ apiKey });
+    const compacted = await compact(msgs, llm);
+
+    // 압축된 Msg → 원본 Message 매핑. 압축 결과는 마지막 KEEP_TAIL건은 원본 그대로 + 요약 1건이 앞.
+    // id 매칭으로 원본 Message 복원 — 매칭 실패 (=요약 신규) 시 동기 합성 Message 1건 생성.
+    const byId = new Map<string, Message>();
+    for (const h of history) byId.set(h.id, h);
+    return compacted.map((m): Message => {
+      const orig = byId.get(m.id);
+      if (orig) return orig;
+      // 요약 신규 메시지 — 호출자가 LLM 송신 페이로드로만 사용 (DB 저장 X).
+      return {
+        id: m.id,
+        conversationId: history[0]?.conversationId ?? "",
+        participantId: history[0]?.participantId ?? "",
+        content: m.content,
+        createdAt: m.createdAt,
+        status: "done",
+      };
+    });
+  } catch (e) {
+    // 압축 실패 — 원본 반환 + 에러 로깅 (서비스 중단 X).
+    // eslint-disable-next-line no-console
+    console.error("[contextCompact] failed:", e);
+    return history;
+  }
+}
+
+/** Anthropic 모델별 컨텍스트 한도(추정) — 압축 임계치 계산용.
+ *  추정: claude-haiku-4-5 = 200k, claude-sonnet-4-6 = 200k, claude-opus-4-7[1m] = 1M.
+ *  본 슬롯에서는 보수적으로 200k 기본값 적용 (모델별 분기는 차후 슬롯). */
+const DEFAULT_MODEL_CONTEXT_TOKENS = 200_000;
+
+/**
  * Anthropic Messages API SSE 호출 + 파싱.
  * D-8.3: 모델 ID 4xx 시 1회 폴백 후 재호출. 폴백 후 4xx도 그대로 에러.
+ * C-D20-2: streamMessage 진입부에서 컨텍스트 한도 80% 초과 시 자동 압축.
  */
 export async function* streamMessage(
   input: StreamMessageInput,
@@ -159,8 +230,14 @@ export async function* streamMessage(
     locale: "ko",
     conversationTitle: input.conversationTitle,
   });
-  const messages = historyToAnthropicMessages(
+  // C-D20-2: 송신 직전 자동 압축 — apiKey 누락/실패 시 원본 그대로 진행.
+  const compactedHistory = await maybeCompactHistory(
     input.history,
+    DEFAULT_MODEL_CONTEXT_TOKENS,
+    input.apiKey,
+  );
+  const messages = historyToAnthropicMessages(
+    compactedHistory,
     input.speaker.id,
     input.participants,
   );

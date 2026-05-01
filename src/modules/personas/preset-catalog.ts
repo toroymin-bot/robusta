@@ -6,9 +6,9 @@
  * - Human 1종: Me (인간 기본 — systemPrompt 비어있음)
  *
  * 본문은 i18n 카탈로그(`src/modules/i18n/messages.ts`)의 'persona.preset.*' 키와 동기화.
- * 본 파일은 카드 표시(이름·아이콘·색상)와 시드 메타만 박는다.
+ * 본 파일은 카드 표시(이름·아이콘·색상)와 시드 메타만 기록한다.
  *
- * ensurePresetSeed: 첫 부팅 또는 누락 시 멱등 시드. 이미 박힌 프리셋은 건너뜀.
+ * ensurePresetSeed: 첫 부팅 또는 누락 시 멱등 시드. 이미 등록된 프리셋은 건너뜀.
  */
 
 import { getDb, type RobustaDB } from "@/modules/storage/db";
@@ -16,7 +16,7 @@ import type { Persona } from "./persona-types";
 
 /**
  * 본문은 직접 systemPrompt에 미리 박아둠 — i18n 키와 본문 둘 다 동일.
- * (i18n 키를 런타임에 lookup하면 store가 i18n 모듈 의존이 강해져서, 본문을 직접 박는 게 단순.)
+ * (i18n 키를 런타임에 lookup하면 store가 i18n 모듈 의존이 강해져서, 본문을 직접 기록하는 게 단순.)
  */
 const PRESETS: Array<Omit<Persona, "createdAt" | "updatedAt">> = [
   {
@@ -56,9 +56,9 @@ const PRESETS: Array<Omit<Persona, "createdAt" | "updatedAt">> = [
     iconMonogram: "비",
     colorToken: "robusta-color-participant-3",
     // D-15.1 (Day 9, 2026-04-28) C-D9-1: 인사·스몰토크 비판 제외. messages.ts와 동기화 (자율 영역 외).
-    //   ~~"너는 비판자다. 약점·실패 시나리오·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 출처 또는 근거 없으면 비판하지 마라."~~ (D-13.1)
+    //   ~~"너는 비판자다. 약점·실패 시나리오·반증·리스크를 우선 기록한다. 동의는 마지막. 칭찬 금지. 출처 또는 근거 없으면 비판하지 마라."~~ (D-13.1)
     systemPromptKo:
-      "너는 비판자다. 약점·실패·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 비판할 때는 근거 없으면 비판하지 마라. 단, 인사·스몰토크는 비판 없이 자연스럽게 답한다.",
+      "너는 비판자다. 약점·실패·반증·리스크를 우선 기록한다. 동의는 마지막. 칭찬 금지. 비판할 때는 근거 없으면 비판하지 마라. 단, 인사·스몰토크는 비판 없이 자연스럽게 답한다.",
     systemPromptEn:
       "You are the Critic. Surface weaknesses, failures, counterevidence, risks first. Agreement last. No praise. Critique only with evidence. Greetings and small-talk get natural replies, no critique.",
     defaultProvider: "anthropic",
@@ -72,7 +72,7 @@ const PRESETS: Array<Omit<Persona, "createdAt" | "updatedAt">> = [
     iconMonogram: "낙",
     colorToken: "robusta-color-participant-4",
     systemPromptKo:
-      "너는 낙관론자다. 가능성·기회·확장 시나리오를 박는다. 단, 거짓 희망 금지. 데이터 기반 낙관만 허용.",
+      "너는 낙관론자다. 가능성·기회·확장 시나리오를 기록한다. 단, 거짓 희망 금지. 데이터 기반 낙관만 허용.",
     systemPromptEn:
       "You are the Optimist. Highlight possibilities, opportunities, expansion paths. No false hope — only data-grounded optimism.",
     defaultProvider: "anthropic",
@@ -101,7 +101,7 @@ const PRESETS: Array<Omit<Persona, "createdAt" | "updatedAt">> = [
     colorToken: "robusta-color-participant-human-1",
     systemPromptKo: "",
     systemPromptEn: "",
-    // human은 defaultProvider undefined — 명시적으로 박지 않음
+    // human은 defaultProvider undefined — 명시적으로 등록하지 않음
   },
 ];
 
@@ -112,7 +112,7 @@ export const PERSONA_PRESETS: ReadonlyArray<
 
 /**
  * 첫 부팅 또는 personas 테이블에 프리셋이 비어있을 때 6종 시드.
- *   이미 박혀있으면 skip (id 단위 멱등 체크).
+ *   이미 정의되어있으면 skip (id 단위 멱등 체크).
  *   호출 위치: persona-store.hydrate() 안에서 1회 (자율 영역 — 명세 §12).
  */
 export async function ensurePresetSeed(db?: RobustaDB): Promise<void> {

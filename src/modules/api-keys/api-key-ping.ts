@@ -10,8 +10,8 @@
  * 비용: max_tokens=1 → ≈$0.000003 미만. AbortController 타임아웃 5초.
  *
  * 명세 §2 §10 — 명세상 위치는 src/modules/security/api-key-store.ts였으나
- * 실제 모듈 구조에 맞춰 src/modules/api-keys/api-key-ping.ts로 박음.
- * 동작은 명세 §2와 동일. (꼬미 자율 §9 — 위치 정정 메모는 Task_2026-04-27 §11에 박음.)
+ * 실제 모듈 구조에 맞춰 src/modules/api-keys/api-key-ping.ts로 정의.
+ * 동작은 명세 §2와 동일. (꼬미 자율 §9 — 위치 정정 메모는 Task_2026-04-27 §11에 정의.)
  */
 
 import type { ApiKeyProvider } from "./api-key-types";

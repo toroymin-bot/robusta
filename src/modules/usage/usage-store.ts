@@ -2,8 +2,8 @@
  * usage-store.ts
  *   - C-D17-17 (Day 5 15시 슬롯, 2026-04-30) — F-16 BYOK 비용 가시성.
  *     · BYOK 사용자가 본인 키로 얼마 썼는지 헤더 뱃지로 즉시 인지.
- *     · 누적 inputTokens + outputTokens + 비용($) 박음.
- *     · 영구화: IndexedDB settings 테이블의 "usage.cumulative" key 단일 레코드 박음.
+ *     · 누적 inputTokens + outputTokens + 비용($) 정의.
+ *     · 영구화: IndexedDB settings 테이블의 "usage.cumulative" key 단일 레코드 정의.
  *       (per-message 별도 테이블 X — 헤더 뱃지에는 누적값만 필요. 추후 분석 화면 필요시 별도 store 추가.)
  *   - 모델별 가격: PRICING 표 — 누락 모델은 cost=undefined로 처리(토큰만 표시).
  *   - 호출 시점: conversation-view.tsx의 runAiTurn에서 chunk.kind==="usage" 받을 때 appendUsage 호출.
@@ -21,7 +21,7 @@ import { getDb } from "@/modules/storage/db";
 
 const SETTINGS_USAGE_KEY = "usage.cumulative";
 
-/** 모델별 per-MTok 가격 (USD). 똘이 §36.5 명세 정합 + fallback 모델 박음.
+/** 모델별 per-MTok 가격 (USD). 똘이 §36.5 명세 정합 + fallback 모델 정의.
  *  배치 모드 50% 할인은 본 SDK 호출 경로엔 적용 X — 일반 가격만. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-6": { input: 3, output: 15 },
@@ -34,7 +34,7 @@ export const PRICING: Record<string, { input: number; output: number }> = {
 export interface ModelUsage {
   inputs: number;
   outputs: number;
-  cost: number; // USD, 누적. 가격표에 없는 모델은 0(cost) 박힘.
+  cost: number; // USD, 누적. 가격표에 없는 모델은 0(cost) 등록됨.
 }
 
 interface UsagePersisted {

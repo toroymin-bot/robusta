@@ -131,6 +131,7 @@ export function InputBar({
             className="flex-1 resize-none rounded border border-robusta-divider bg-robusta-canvas px-3 py-2 text-sm text-robusta-ink outline-none focus:border-robusta-accent"
             disabled={isStreaming && currentSpeaker?.kind !== "ai"}
             aria-label="메시지 입력"
+            data-test="message-input"
           />
           {isStreaming ? (
             <button

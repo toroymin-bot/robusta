@@ -72,7 +72,7 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
       const rows = await db.personas.toArray();
       set({ personas: rows, hydrated: true });
     } catch (err) {
-      // IndexedDB 차단 fallback — 메모리에만 프리셋 박음.
+      // IndexedDB 차단 fallback — 메모리에만 프리셋 정의.
       console.warn(
         "[robusta] persona hydrate failed, falling back to in-memory presets",
         err,
@@ -99,14 +99,14 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
 
   async upsert(input) {
     const current = get().personas;
-    // 기존 id 박혀있고 그 대상이 프리셋이면 거부.
+    // 기존 id 정의되어있고 그 대상이 프리셋이면 거부.
     if (input.id) {
       const existing = current.find((p) => p.id === input.id);
       if (existing?.isPreset) {
         throw new PresetImmutableError("upsert", input.id);
       }
     }
-    // isPreset=true로 새로 박는 것도 차단 (시드 외엔 프리셋 생성 금지).
+    // isPreset=true로 새로 기록하는 것도 차단 (시드 외엔 프리셋 생성 금지).
     if (!input.id && input.isPreset) {
       throw new PresetImmutableError("upsert", "(new preset)");
     }
@@ -170,7 +170,7 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
       ...preset,
       id: newId(),
       isPreset: false,
-      // 명세 §3: 이름 끝에 ' 사본' / ' (copy)' 박음.
+      // 명세 §3: 이름 끝에 ' 사본' / ' (copy)' 정의.
       nameKo: `${preset.nameKo} 사본`,
       nameEn: `${preset.nameEn} (copy)`,
       createdAt: now,

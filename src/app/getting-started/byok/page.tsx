@@ -3,21 +3,22 @@
  *   B28-B v2 명세 §20.2.2 채택 — KQ7-2 정정 룰 적용:
  *     - 영어 t-r-i-a-l 단어 절대 사용 안 함 (사실 오기재 회피)
  *     - "$5 크레딧" 단정 X → "콘솔에서 확인" 추상화
- *     - 모델 가격은 시점 박제 (2026-04-29 기준)
+ *     - 모델 가격은 시점 보존 (2026-04-29 기준)
  *   라우트: /getting-started/byok (단일 — [locale] 폴더 미존재 추정 #88)
  *   회귀 위험 0 — 정적 페이지 1개 추가, 기존 라우트/컴포넌트 변경 X.
  *   1st Load 영향 ≤ 1KB (정적 HTML).
  */
 import type { Metadata } from "next";
+import Link from "next/link";
 
 // D-D17-3 (Day 5 03시 슬롯, 2026-04-30) C-D17-3: og:image / twitter 메타 누락 정정.
 //   똘이 v1 §1.3 V-3 부수 검증 — /getting-started/byok는 og:image 자체 누락 + twitter:image도 없음.
-//   홈 / 와 동일한 og.png 1200×630 박음 (소셜 카드 일관성).
+//   홈 / 와 동일한 og.png 1200×630 정의 (소셜 카드 일관성).
 export const metadata: Metadata = {
   title: "BYOK 시작 — Robusta",
   description:
     "Anthropic API 키 1분 발급 가이드. Robusta는 사용자 본인의 API 키로 동작합니다.",
-  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 박음 — 라우트별 단일 정의 URL 가드.
+  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 정의 — 라우트별 단일 정의 URL 가드.
   alternates: { canonical: "/getting-started/byok" },
   openGraph: {
     title: "BYOK 시작 — Robusta",
@@ -100,12 +101,12 @@ export default function ByokGuidePage() {
 
       <p style={{ fontSize: 14, color: "#888" }}>
         ↩{" "}
-        <a
+        <Link
           href="/"
           style={{ color: "#1f6feb", textDecoration: "underline" }}
         >
           Robusta 홈
-        </a>
+        </Link>
       </p>
     </main>
   );

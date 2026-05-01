@@ -28,6 +28,8 @@ import { WelcomeCard } from "./welcome-card";
 // C-D19-2 (D6 07시 슬롯, 2026-05-01) F-28: 빈 상태 자동 분기 (zeroParticipants/onlyHuman/zeroMessages).
 import { useConversationEmptyState } from "@/views/conversation/useConversationEmptyState";
 import type { EmptyCtaIntent } from "@/modules/onboarding/empty-state-registry";
+// C-D20-3 (D6 11시 슬롯, 2026-05-01) — handleEmptyIntent → openMenu 진화 결합 store.
+import { useHeaderClusterStore } from "@/stores/header-cluster-store";
 
 const SCROLL_THRESHOLD_PX = 100;
 
@@ -182,9 +184,9 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
             });
           } else if (chunk.kind === "usage") {
             usagePatch = chunk.usage;
-            // C-D17-17 (Day 5 15시) F-16: 누적 토큰/비용 박제. 모델은 speaker.model 또는 fallback.
-            //   chunk.usage는 input/output 둘 중 하나만 박혀 있을 수 있음(message_start vs message_delta) — 0 처리.
-            //   usage-store는 in-memory + IndexedDB 양쪽 박힘. 차단 환경에선 silent fallback.
+            // C-D17-17 (Day 5 15시) F-16: 누적 토큰/비용 보존. 모델은 speaker.model 또는 fallback.
+            //   chunk.usage는 input/output 둘 중 하나만 정의되어 있을 수 있음(message_start vs message_delta) — 0 처리.
+            //   usage-store는 in-memory + IndexedDB 양쪽 등록됨. 차단 환경에선 silent fallback.
             void useUsageStore.getState().appendUsage({
               model: speaker.model ?? "claude-sonnet-4-6",
               input: chunk.usage.inputTokens ?? 0,
@@ -204,7 +206,7 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
             });
           } else if (chunk.kind === "retrying") {
             // D-10.3: 5xx 자동 재시도 진행 중 — 별도 토스트는 X (자동이므로 노이즈 방지).
-            // bubble은 streaming 상태 유지. 진단 로그만 콘솔에 박음.
+            // bubble은 streaming 상태 유지. 진단 로그만 콘솔에 정의.
             // eslint-disable-next-line no-console
             console.info(
               `[robusta] 5xx 자동 재시도 ${chunk.attempt}/3 (status=${chunk.status})`,
@@ -436,8 +438,8 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       return;
     }
     // D-D10-5 (Day 9, 2026-04-28) C-D10-5: ai-auto 골격 — enum/순수 함수.
-    // D-D11-1 (Day 10, 2026-04-29) C-D11-1: 트리거 풀 본체 박음 → ai-auto 전환 시 자동 시작.
-    //   ~~"AI-Auto 모드는 골격만 박혀 있습니다 — 자율 발화 트리거는 곧 제공됩니다."~~ (D-D10-5 안내 제거)
+    // D-D11-1 (Day 10, 2026-04-29) C-D11-1: 트리거 풀 본체 정의 → ai-auto 전환 시 자동 시작.
+    //   ~~"AI-Auto 모드는 골격만 정의되어 있습니다 — 자율 발화 트리거는 곧 제공됩니다."~~ (D-D10-5 안내 제거)
     //   AI < 2명 가드: pickNextSpeakerAutoAi가 null 반환 → 시작 직후 noSpeaker 토스트로 폴백되지만,
     //   사용자 혼란 방지 위해 진입 시점에서 한 번 차단.
     // D-D11-2b (Day 11, 2026-04-29, B19) C-D11-2b: BYOK 사전 체크 추가.
@@ -481,33 +483,49 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
     loaded: conversationsHydrated && participantsHydrated,
   });
 
-  // C-D19-2: registry variant CTA 클릭 시 의도(addParticipant/addAI/focusInput) 매핑.
-  //   SideSheet(C-D19-1) 통합 전까지는 토스트로 안내. 다음 슬롯에서 진화.
+  // C-D19-2 → C-D20-3 (D6 11시 슬롯, 2026-05-01) — 꼬미 §3 권장 ③ 흡수.
+  //   addParticipant/addAI 의도 → useHeaderClusterStore.openMenu() 호출 (모바일 < md 시 메뉴 열림).
+  //   데스크탑은 좌측 패널이 인라인 노출 → 메뉴 open 무영향. focusInput 만 입력창 포커스 fallback.
+  //   기존 토스트 안내는 desktop 폴백 + 사용자 인지 보강용으로 유지.
+  const openHeaderMenu = useHeaderClusterStore((s) => s.openMenu);
   const handleEmptyIntent = useCallback(
     (intent: EmptyCtaIntent) => {
       if (intent === "focusInput") {
-        pushToast({
-          tone: "info",
-          message: "하단 입력창에 메시지를 입력하세요.",
-        });
+        const inputEl =
+          typeof document !== "undefined"
+            ? document.querySelector<HTMLTextAreaElement>(
+                "[data-test='message-input']",
+              )
+            : null;
+        if (inputEl) {
+          inputEl.focus();
+        } else {
+          pushToast({
+            tone: "info",
+            message: "하단 입력창에 메시지를 입력하세요.",
+          });
+        }
         return;
       }
-      if (intent === "addParticipant") {
+      if (intent === "addParticipant" || intent === "addAI") {
+        // 모바일 < md: SideSheet/풀스크린 오버레이 안에 참여자 패널 노출 → 메뉴 열기.
+        // 데스크탑 ≥ md: 좌측 패널 항상 노출 → 토스트로 시선 유도 (메뉴 토글 불필요).
+        const isMobile =
+          typeof window !== "undefined" && window.innerWidth < 768;
+        if (isMobile) {
+          openHeaderMenu();
+        }
         pushToast({
           tone: "info",
-          message: "좌측 패널에서 참여자를 추가하세요.",
-        });
-        return;
-      }
-      if (intent === "addAI") {
-        pushToast({
-          tone: "info",
-          message: "좌측 패널에서 AI 참여자를 추가하세요.",
+          message:
+            intent === "addAI"
+              ? "좌측 패널에서 AI 참여자를 추가하세요."
+              : "좌측 패널에서 참여자를 추가하세요.",
         });
         return;
       }
     },
-    [pushToast],
+    [pushToast, openHeaderMenu],
   );
 
   // group consecutive messages by participant for "isFirstInGroup"
@@ -554,7 +572,7 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
           //   Tori_Note_3 (Confluence 21102621) 13시 슬롯에서 풀 랜딩 명세 박힐 때까지의 임시 다리.
           //   기존 안내 텍스트 + EmptyStateCta sample + (apiKey 없을 시) byok 카드 추가.
           <div className="mx-auto flex max-w-md flex-col gap-6 px-6 py-12 text-center text-sm text-robusta-inkDim">
-            {/* C-D17-18 (Day 5 19시 슬롯, 2026-04-30) F-21: 참여자 ≥ 1명 + 메시지 0건 시 환영 카드 박음.
+            {/* C-D17-18 (Day 5 19시 슬롯, 2026-04-30) F-21: 참여자 ≥ 1명 + 메시지 0건 시 환영 카드 정의.
                 dismissed=true 시 자체 null 반환. EmptyStateCta는 그대로 유지(변환 X). */}
             <WelcomeCard />
             <p>

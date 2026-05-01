@@ -2,7 +2,7 @@
  * schedule-modal.tsx
  *   - C-D17-16 (Day 5 23시 슬롯, 2026-04-30) — F-15 자동 발언 스케줄 UI 골격.
  *     · 모달 — AI 참여자별 스케줄 룰 add/list/toggle/remove.
- *     · 상단에 "비활성 안내" 배너: 트리거는 D11+에서 박힘 (현재는 영구화만).
+ *     · 상단에 "비활성 안내" 배너: 트리거는 D11+에서 등록됨 (현재는 영구화만).
  *     · 접근성: role="dialog" + aria-modal + Esc 닫기 + backdrop 클릭 닫기.
  *
  * UI 골격 (잡스 단순함):
@@ -115,8 +115,8 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
           data-test="schedule-inactive-banner"
           className="border-b border-robusta-divider bg-robusta-accent/10 px-5 py-3 text-xs text-robusta-ink"
         >
-          <strong className="font-semibold">D11+ 활성화 예정 —</strong> 현재는 룰을 저장만 하고 자동 발언은 박지 않습니다.
-          영구화는 즉시 동작하며, Vercel Cron 트리거가 박힌 후 자동 발언이 시작됩니다.
+          <strong className="font-semibold">D11+ 활성화 예정 —</strong> 현재는 룰을 저장만 하고 자동 발언은 등록하지 않습니다.
+          영구화는 즉시 동작하며, Vercel Cron 트리거가 등록된 후 자동 발언이 시작됩니다.
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">

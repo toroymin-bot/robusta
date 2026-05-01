@@ -1,9 +1,9 @@
 /**
  * welcome-card.tsx
  *   - C-D17-18 (Day 5 19시 슬롯, 2026-04-30) — F-21 첫 메시지 환영 카드.
- *     · 참여자 ≥ 1명 + 메시지 0건 시 본문 영역 중앙에 박힘.
+ *     · 참여자 ≥ 1명 + 메시지 0건 시 본문 영역 중앙에 등록됨.
  *     · "안녕 로이! 함께 시작할 준비 완료." + 똘이/꼬미 대기 중 안내 + dismiss(X) 버튼.
- *     · dismiss 시 IndexedDB settings.put("welcome.dismissed", "true") 박음 → 영구 mount X.
+ *     · dismiss 시 IndexedDB settings.put("welcome.dismissed", "true") 정의 → 영구 mount X.
  *     · OCP: 기존 빈상태 안내(EmptyStateCta) + 본 카드는 동시 mount (안내가 카드 위, 카드가 그 아래).
  *
  * Roy id-15 (초등학생 직관) + id-19 (모바일 가독성) 정합 — 본 카드는 max-w-md + 중앙 정렬 + 44px tap target.
@@ -21,7 +21,7 @@ interface WelcomeCardProps {
 }
 
 export function WelcomeCard({ onStart }: WelcomeCardProps) {
-  // dismissed 상태: undefined=loading / true=박지 않음 / false=마운트.
+  // dismissed 상태: undefined=loading / true=등록하지 않음 / false=마운트.
   //   IndexedDB 차단 환경에선 false로 마운트(silent fallback) — 가시 노이즈는 dismiss 1회로 해결 가능.
   const [dismissed, setDismissed] = useState<boolean | undefined>(undefined);
 

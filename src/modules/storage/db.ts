@@ -51,7 +51,7 @@ export interface SettingsRecord {
 
 /**
  * D-12.2 (Day 6, 2026-04-28): BYOK 키 메타. provider+keyMask 합성 PK.
- *   keyMask = maskApiKey(stored) 결과 ("sk-ant-...XXXX" 형태) — 평문 키는 박지 않음.
+ *   keyMask = maskApiKey(stored) 결과 ("sk-ant-...XXXX" 형태) — 평문 키는 등록하지 않음.
  *   lastUnauthorizedAt 24h 이내 → BYOK 모달에서 ⚠ 배지 + 토스트 권장.
  *   markVerified로 lastUnauthorizedAt 클리어.
  */
@@ -114,8 +114,8 @@ export class RobustaDB extends Dexie {
       settings: "key", // 신규
     });
     // v4 — D-12 (Day 6, 2026-04-28): messages.streamingStartedAt 인덱스 + apiKeyMeta 테이블 신규.
-    //   명세 Komi_Spec_Day6 §3 D-12.1은 v3로 박혔으나 v3는 settings 테이블이 점유.
-    //   꼬미 정정: 실제 다음 버전 v4로 박음. 데이터 보존(Dexie auto-carry).
+    //   명세 Komi_Spec_Day6 §3 D-12.1은 v3로 등록됐으나 v3는 settings 테이블이 점유.
+    //   꼬미 정정: 실제 다음 버전 v4로 정의. 데이터 보존(Dexie auto-carry).
     //   v3 → v4 사용자 환경에서 무손실 동작 (추정 27 검증 대상).
     //   streamingStartedAt 인덱스 추가는 기존 row를 재 작성하지 않으며, undefined 인덱스만 NULL.
     this.version(4)
@@ -129,7 +129,7 @@ export class RobustaDB extends Dexie {
         apiKeyMeta: "pk, provider, lastUnauthorizedAt", // 신규 테이블
       })
       .upgrade(async (tx) => {
-        // 옛 v2/v3 시점에 박힌 status='streaming' 잔재는 streamingStartedAt 미박힘.
+        // 옛 v2/v3 시점에 등록된 status='streaming' 잔재는 streamingStartedAt 미등록.
         // → 즉시 'aborted'로 리커버 (D-12.1 5분 임계 평가에 streamingStartedAt이 필요한데 없으므로).
         const messages = tx.table<StoredMessage, string>("messages");
         await messages.where("status").equals("streaming").modify((m) => {
@@ -142,7 +142,7 @@ export class RobustaDB extends Dexie {
     // v5 — D-13.0 (Day 7, 2026-04-29): personas 테이블 신규.
     //   기존 v4 테이블(participants/conversations/messages/apiKeys/settings/apiKeyMeta) Dexie auto-carry.
     //   isPreset은 boolean이지만 IndexedDB 인덱스에 boolean 직접 사용 불가 — Dexie에서 falsy 무시 이슈가 있어
-    //   numeric 0/1로 박는 게 표준이지만, 본 명세는 멱등 시드 + 'isPreset+kind' 합성 인덱스를 boolean 그대로 사용.
+    //   numeric 0/1로 기록하는 게 표준이지만, 본 명세는 멱등 시드 + 'isPreset+kind' 합성 인덱스를 boolean 그대로 사용.
     //   실 쿼리는 store에서 isPreset === true 필터로 in-memory 처리 → 인덱스는 문서화 의미만.
     this.version(5).stores({
       participants: "id, kind, name",
@@ -155,10 +155,10 @@ export class RobustaDB extends Dexie {
       personas: "&id, kind, isPreset, createdAt, [kind+isPreset]", // 신규 테이블
     });
     // v6 — D-15.1 (Day 9, 2026-04-28) C-D9-1: 기존 critic preset row 강제 갱신.
-    //   ensurePresetSeed는 멱등 시드(이미 박힌 항목 skip)라 D-13.1 본문이 그대로 남아 라이브 회귀(B-1) fix 미반영.
+    //   ensurePresetSeed는 멱등 시드(이미 등록된 항목 skip)라 D-13.1 본문이 그대로 남아 라이브 회귀(B-1) fix 미반영.
     //   v6 upgrade로 id='preset:critic'이고 isPreset=true인 row만 systemPromptKo/En을 D-15.1 본문으로 덮어쓴다.
     //   사용자 정의 critic(id != 'preset:critic')은 영향 없음. updatedAt도 갱신.
-    //   본 마이그레이션은 1회성 — v6 박힌 후 재실행되지 않음.
+    //   본 마이그레이션은 1회성 — v6 등록된 후 재실행되지 않음.
     this.version(6)
       .stores({
         participants: "id, kind, name",
@@ -177,7 +177,7 @@ export class RobustaDB extends Dexie {
         // D-15.1 (Day 9) 새 본문 — preset-catalog.ts / messages.ts와 1:1 동기화.
         await personas.update("preset:critic", {
           systemPromptKo:
-            "너는 비판자다. 약점·실패·반증·리스크를 우선 박는다. 동의는 마지막. 칭찬 금지. 비판할 때는 근거 없으면 비판하지 마라. 단, 인사·스몰토크는 비판 없이 자연스럽게 답한다.",
+            "너는 비판자다. 약점·실패·반증·리스크를 우선 기록한다. 동의는 마지막. 칭찬 금지. 비판할 때는 근거 없으면 비판하지 마라. 단, 인사·스몰토크는 비판 없이 자연스럽게 답한다.",
           systemPromptEn:
             "You are the Critic. Surface weaknesses, failures, counterevidence, risks first. Agreement last. No praise. Critique only with evidence. Greetings and small-talk get natural replies, no critique.",
           updatedAt: Date.now(),
@@ -200,10 +200,10 @@ export function getDb(): RobustaDB {
 
 /**
  * D-12.1 (Day 6, 2026-04-28) streaming 잔재 5분 임계 정리.
- *   현재 부팅 시점에서 status='streaming' && streamingStartedAt 박혀 있고
+ *   현재 부팅 시점에서 status='streaming' && streamingStartedAt 정의되어 있고
  *   Date.now() - streamingStartedAt > STREAMING_STALE_MS인 row만 'aborted' 마킹.
  *   5분 이내는 보존 (멀티 탭 안전).
- *   streamingStartedAt 미박힘 row는 v4 upgrade에서 이미 처리됨 — 본 함수는 v4 이후 박힌 row만.
+ *   streamingStartedAt 미등록 row는 v4 upgrade에서 이미 처리됨 — 본 함수는 v4 이후 등록된 row만.
  *   호출자: conversation-store.loadFromDb 직후 1회.
  */
 export const STREAMING_STALE_MS = 5 * 60 * 1000;
@@ -270,7 +270,7 @@ export async function migrateThemeFromLocalStorage(): Promise<void> {
     try {
       window.localStorage.removeItem("robusta:theme");
     } catch {
-      // 제거 실패 — 다음 부트에 noop (이미 settings에 박힘 → existing path)
+      // 제거 실패 — 다음 부트에 noop (이미 settings에 등록됨 → existing path)
     }
   } catch {
     // IndexedDB 차단 — silent

@@ -11,14 +11,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import sample from "@/data/sample-conversation.json";
 
-// D-D17-3 (Day 5 03시 슬롯, 2026-04-30) C-D17-3: og:image width/height 일관성 박음.
+// D-D17-3 (Day 5 03시 슬롯, 2026-04-30) C-D17-3: og:image width/height 일관성 정의.
 //   똘이 v1 §1.3 V-3 부수 검증 결과 — /sample은 og:image만 박히고 width/height 누락 → 일부 카드 클라이언트 비율 추정 실패 가능.
-//   ~~images: ["/og.png"]~~ → images: [{ url, width, height, alt }] 박음 (홈 / 와 동일 패턴).
+//   ~~images: ["/og.png"]~~ → images: [{ url, width, height, alt }] 정의 (홈 / 와 동일 패턴).
 //   회귀 위험 0 — 빌드 시점 메타 추가, 1st Load 영향 0.
 export const metadata: Metadata = {
   title: "Robusta — 샘플 대화",
   description: "AI 둘과 함께한 브레인스토밍 1건 — Roy + Tori + Komi",
-  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 박음 — 라우트별 단일 정의 URL 가드.
+  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 정의 — 라우트별 단일 정의 URL 가드.
   alternates: { canonical: "/sample" },
   openGraph: {
     title: "Robusta — 샘플 대화",

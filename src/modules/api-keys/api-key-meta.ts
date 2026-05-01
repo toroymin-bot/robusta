@@ -1,11 +1,11 @@
 /**
  * api-key-meta.ts — D-12.2 (Day 6, 2026-04-28) BYOK 키 만료 자동 감지.
  *
- * conversation-api streamMessage 첫 401 → markUnauthorized (lastUnauthorizedAt 박음).
+ * conversation-api streamMessage 첫 401 → markUnauthorized (lastUnauthorizedAt 정의).
  * BYOK 모달이 열릴 때 키 카드: lastUnauthorizedAt 24h 이내 → ⚠ 배지 + 토스트 권장.
  * recheckKey → pingApiKey 재호출 → verified 시 lastUnauthorizedAt 클리어 + lastVerifiedAt 갱신.
  *
- * 평문 키는 박지 않고 maskApiKey 결과만 박는다 (보안 — 키 평문이 IndexedDB에 중복 저장 안 됨).
+ * 평문 키는 등록하지 않고 maskApiKey 결과만 기록한다 (보안 — 키 평문이 IndexedDB에 중복 저장 안 됨).
  *
  * IndexedDB 미지원(시크릿 모드) → silent fallback. streaming/error 동작은 유지.
  */
@@ -25,7 +25,7 @@ function pk(provider: string, keyMask: string): string {
 }
 
 /**
- * 401 발생 시 호출 — provider+key를 마스킹하여 meta에 박음.
+ * 401 발생 시 호출 — provider+key를 마스킹하여 meta에 정의.
  * IndexedDB 차단 시 silent (catch).
  */
 export async function markUnauthorized(
@@ -119,7 +119,7 @@ export function isMaybeExpired(
  * recheck 액션 — pingApiKey 재호출 + 결과별 meta 갱신.
  * verified → markVerified (lastUnauthorizedAt 클리어).
  * unauthorized → markUnauthorized (lastUnauthorizedAt 갱신, 카운트 리셋).
- * unknown → 메타 박지 않음 (현 상태 유지).
+ * unknown → 메타 등록하지 않음 (현 상태 유지).
  */
 export async function recheckKey(
   provider: ApiKeyProvider,

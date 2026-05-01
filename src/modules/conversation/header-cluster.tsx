@@ -9,18 +9,35 @@
  *   - iOS Safari 100vh ≠ 실 viewport 회피: min-h-[100svh] 적용.
  *   - OCP: 기존 헤더의 4도구 마크업/className은 그대로 유지(데스크탑 슬롯 + 모바일 슬롯 양쪽에 동일 레이아웃).
  *
+ *   - C-D20-1 (D6 11시 슬롯, 2026-05-01) — 꼬미 §3 권장 ① 흡수.
+ *     · feature flag NEXT_PUBLIC_ROBUSTA_SIDE_SHEET 분기 — flag ON 시 풀스크린 오버레이 → SideSheet 좌측 60% 슬라이드 인.
+ *     · flag OFF (기본) → 기존 풀스크린 오버레이 유지 (회귀 0). dual-track 검증.
+ *     · 30분 검증 후 다음 슬롯에서 풀스크린 OCP 정합 후 제거 명세 별도 등록.
+ *   - C-D20-3 (D6 11시 슬롯, 2026-05-01) — useHeaderClusterStore 동기화. 외부(EmptyIntent) 에서 openMenu 호출 가능.
+ *
  * Roy id-19 (Do v30 2026-04-30) 직접 대응:
  *   "모바일에서 메뉴버튼을 클릭하면 메인 화면을 가리는 현상등을 없애기"
  *   → 풀스크린 오버레이는 메인 화면 위에 표시되지만 body scroll lock + Esc/backdrop 닫기 + 명확한 X 버튼으로
  *      사용자가 언제든 즉시 닫을 수 있어 가림이 마찰이 되지 X.
+ *   → C-D20-1 SideSheet flag ON 시 좌측 60% 만 차지 → 메인 콘텐츠 40% 가시성 유지로 가림 완전 해결.
  */
 
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 import { maskApiKey } from "@/modules/api-keys/api-key-mask";
 // C-D17-17 (Day 5 15시) F-16 토큰 카운터 뱃지 — 헤더에 등록. 누적 0건이면 자체적으로 마운트 X.
 import { TokenCounterBadge } from "./token-counter-badge";
+// C-D20-1 (D6 11시) — SideSheet flag dual-track. flag ON 시 마운트.
+import { SideSheet } from "@/components/SideSheet/SideSheet";
+// C-D20-3 (D6 11시) — 글로벌 메뉴 open 상태. 외부(EmptyIntent) 에서 openMenu 호출 가능.
+import { useHeaderClusterStore } from "@/stores/header-cluster-store";
+
+// C-D20-1: feature flag — env 미설정 또는 'on' 외 값이면 OFF (기본 풀스크린 오버레이 유지, 회귀 0).
+//   빌드 타임 상수 — hydration mismatch 회피.
+const SIDE_SHEET_FLAG_ON =
+  typeof process !== "undefined" &&
+  process.env.NEXT_PUBLIC_ROBUSTA_SIDE_SHEET === "on";
 
 interface HeaderClusterProps {
   /** Day N · Live|Manual 라벨. */
@@ -190,7 +207,9 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
 }
 
 export function HeaderCluster(props: HeaderClusterProps) {
-  const [open, setOpen] = useState(false);
+  // C-D20-3: open 상태를 글로벌 store 로 lift. 외부(EmptyIntent) 에서 openMenu 호출 가능.
+  const open = useHeaderClusterStore((s) => s.menuOpen);
+  const setOpen = useHeaderClusterStore((s) => s.setMenuOpen);
   const overlayId = useId();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -208,10 +227,12 @@ export function HeaderCluster(props: HeaderClusterProps) {
       return () => mql.removeEventListener("change", handler);
     }
     return undefined;
-  }, []);
+  }, [setOpen]);
 
   // body scroll lock + Esc keydown listener — open 상태에서만.
+  // C-D20-1: SideSheet flag ON 시 SideSheet 자체가 body lock + Esc 처리 → 본 effect skip.
   useEffect(() => {
+    if (SIDE_SHEET_FLAG_ON) return;
     if (!open) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -225,17 +246,7 @@ export function HeaderCluster(props: HeaderClusterProps) {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
-
-  // 오버레이 닫힐 때 트리거 버튼으로 포커스 복귀 — 키보드 사용자 정합.
-  useEffect(() => {
-    if (!open) {
-      // 마운트 직후 첫 false 렌더에서는 호출 X — triggerRef.current가 null일 수 있음.
-      if (triggerRef.current && document.activeElement === document.body) {
-        // no-op: 의도된 포커스가 다른 곳에 있다면 손대지 않음.
-      }
-    }
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
     <>
@@ -270,54 +281,98 @@ export function HeaderCluster(props: HeaderClusterProps) {
         </svg>
       </button>
 
-      {/* 풀스크린 오버레이 — open 시만 mount. */}
-      {open && (
-        <div
-          id={overlayId}
-          role="dialog"
-          aria-modal="true"
-          aria-label="메뉴"
-          data-test="mobile-menu-overlay"
-          className="fixed inset-0 z-50 flex min-h-[100svh] flex-col bg-robusta-canvas md:hidden"
+      {/* C-D20-1: SideSheet flag ON 시 — SideSheet 좌측 60% 슬라이드 인. 메인 콘텐츠 40% 가시성 유지. */}
+      {SIDE_SHEET_FLAG_ON ? (
+        <SideSheet
+          open={open}
+          onOpenChange={setOpen}
+          side="left"
+          ariaLabel="메뉴"
+          widthPct={60}
+          breakpoint={768}
         >
-          {/* backdrop 클릭 영역은 컨테이너 자체. 내부 콘텐츠 클릭은 stopPropagation 호출하지 않고
-              상단 X 버튼으로 명시적 닫기 유도 (외부 클릭 = 컨테이너 빈 하단 영역 클릭 시 닫힘). */}
-          <div className="flex items-center justify-between border-b border-robusta-divider px-4 py-3">
-            <span className="text-sm font-semibold text-robusta-ink">메뉴</span>
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="메뉴 닫기"
-              data-test="mobile-menu-close"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-robusta-divider text-robusta-ink hover:border-robusta-accent"
-            >
-              <svg
-                aria-hidden="true"
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
+          <div
+            data-test="side-sheet-mobile-menu"
+            className="flex h-full min-h-[100svh] flex-col bg-robusta-canvas md:hidden"
+          >
+            <div className="flex items-center justify-between border-b border-robusta-divider px-4 py-3">
+              <span className="text-sm font-semibold text-robusta-ink">
+                메뉴
+              </span>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="메뉴 닫기"
+                data-test="side-sheet-mobile-close"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-robusta-divider text-robusta-ink hover:border-robusta-accent"
               >
-                <path d="M5 5l10 10M15 5L5 15" />
-              </svg>
-            </button>
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
+              </button>
+            </div>
+            <HeaderTools {...props} compact />
           </div>
-          {/* HeaderTools를 compact=true 모드로 적용 — 세로 정렬 + 44px 최소 tap target. */}
-          <HeaderTools {...props} compact />
-          {/* 하단 빈 영역 클릭 시 닫기 (backdrop 패턴) — 키보드 사용자는 Esc/X 사용. */}
-          <button
-            type="button"
-            aria-hidden="true"
-            tabIndex={-1}
-            onClick={() => setOpen(false)}
-            data-test="mobile-menu-backdrop"
-            className="flex-1 cursor-default"
-          />
-        </div>
+        </SideSheet>
+      ) : (
+        // 풀스크린 오버레이 — flag OFF 기본 동작 (기존 동작 보존, 회귀 0).
+        // ~~deprecated 2026-05-01 — see C-D20-1, kept for dual-track verification, removed in next slot~~
+        open && (
+          <div
+            id={overlayId}
+            role="dialog"
+            aria-modal="true"
+            aria-label="메뉴"
+            data-test="mobile-menu-overlay"
+            className="fixed inset-0 z-50 flex min-h-[100svh] flex-col bg-robusta-canvas md:hidden"
+          >
+            <div className="flex items-center justify-between border-b border-robusta-divider px-4 py-3">
+              <span className="text-sm font-semibold text-robusta-ink">
+                메뉴
+              </span>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="메뉴 닫기"
+                data-test="mobile-menu-close"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded border border-robusta-divider text-robusta-ink hover:border-robusta-accent"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
+              </button>
+            </div>
+            <HeaderTools {...props} compact />
+            <button
+              type="button"
+              aria-hidden="true"
+              tabIndex={-1}
+              onClick={() => setOpen(false)}
+              data-test="mobile-menu-backdrop"
+              className="flex-1 cursor-default"
+            />
+          </div>
+        )
       )}
     </>
   );

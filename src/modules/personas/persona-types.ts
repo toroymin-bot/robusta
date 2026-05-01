@@ -121,7 +121,7 @@ export function colorCssVarToToken(
 
 /**
  * D-14.3 Participant → PersonaInput.
- *   PersonaEditModal initial로 박는다 (편집 모드 표시용).
+ *   PersonaEditModal initial로 기록한다 (편집 모드 표시용).
  *   - nameKo ← participant.name (단일 언어 → 한국어 슬롯)
  *   - nameEn ← '' (Participant에 영문 이름 없음 — 사용자가 채울 수 있음)
  *   - iconMonogram ← name 첫 글자
@@ -157,7 +157,7 @@ export function personaInputToParticipant(
     ...prev,
     name: input.nameKo.trim() || input.nameEn.trim() || prev.name,
     color: colorTokenToCssVar(input.colorToken),
-    // AI에서만 systemPrompt 박음 (PersonaModal 기존 동작과 동일).
+    // AI에서만 systemPrompt 정의 (PersonaModal 기존 동작과 동일).
     systemPrompt:
       prev.kind === "ai" ? input.systemPromptKo : prev.systemPrompt,
   };

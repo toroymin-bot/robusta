@@ -15,7 +15,7 @@
  *     · D-14.1: PersonaEditModal을 next/dynamic 으로 lazy 로드 (1st Load JS 회복).
  *     · D-14.2: 제한 도달 시 picker 진입 유지(닫지 않음). 카드 disabled + 1회 토스트.
  *     · D-14.3: ⚙ 클릭 → PersonaEditModal mode='edit' 직접 호출 (PersonaModal shim 미사용).
- *     · D-14.4: data-test='add-participant' / 'settings-button' 박음 (모바일 320px 회귀 자동화).
+ *     · D-14.4: data-test='add-participant' / 'settings-button' 정의 (모바일 320px 회귀 자동화).
  */
 
 "use client";
@@ -64,7 +64,7 @@ const PARTICIPANT_LIMIT_TOTAL = 4;
 const PARTICIPANT_LIMIT_HUMAN = 2;
 const PARTICIPANT_LIMIT_AI = 3;
 
-/** 페르소나 → 참여자 추가 변환. colorToken은 CSS var로 박음. */
+/** 페르소나 → 참여자 추가 변환. colorToken은 CSS var로 정의. */
 function personaToParticipantInput(p: Persona): {
   name: string;
   kind: Participant["kind"];
@@ -118,7 +118,7 @@ export function ParticipantsPanel() {
   //   lazy 청크 분리와 함께 1st Load JS 게이트 회복. 본 코드는 ./participant-form.tsx에 잔존.
   // D-13.5: PersonaPickerModal 표시 여부.
   const [showPicker, setShowPicker] = useState(false);
-  // D-13.5: PersonaEditModal "직접 만들기" 진입용 — null이면 닫힘, kind 박혀있으면 빈 폼 진입.
+  // D-13.5: PersonaEditModal "직접 만들기" 진입용 — null이면 닫힘, kind 정의되어있으면 빈 폼 진입.
   const [editKind, setEditKind] = useState<PersonaKind | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -271,7 +271,7 @@ export function ParticipantsPanel() {
                 {p.kind === "ai" ? "AI" : "Human"}
               </span>
               {/* D-9.2 / D-14.3: ⚙ 인격 모달 트리거 — PersonaEditModal mode='edit' 직접 진입.
-                  D-14.4: data-test='settings-button' 박음 (모바일 320px 회귀 자동화). */}
+                  D-14.4: data-test='settings-button' 정의 (모바일 320px 회귀 자동화). */}
               <button
                 type="button"
                 aria-label={t("card.persona")}
@@ -316,7 +316,7 @@ export function ParticipantsPanel() {
       )}
 
       <div className="border-t border-robusta-divider p-3">
-        {/* D-14.4: data-test='add-participant' 박음 (모바일 320px 회귀 자동화 셀렉터). */}
+        {/* D-14.4: data-test='add-participant' 정의 (모바일 320px 회귀 자동화 셀렉터). */}
         <button
           type="button"
           onClick={handleAddClick}

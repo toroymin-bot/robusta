@@ -10,7 +10,7 @@
  *     /getting-started/byok  (getting-started/byok/page.tsx)
  *     /qatest      (qatest/page.tsx) — 검증용 내부 페이지, sitemap 제외 (검색 노출 의도 없음)
  *
- *   추정 #93 검증 결과: [locale] 라우트 미존재 → 단일 경로만 박음.
+ *   추정 #93 검증 결과: [locale] 라우트 미존재 → 단일 경로만 정의.
  *   추정 #94 검증 결과: src/app/api/ 미존재 → 별도 disallow 불요 (robots.ts에서 미래 가드).
  *
  *   회귀 위험 0 — 신규 정적 메타 라우트, 1st Load JS 영향 0 (RSC 빌드 타임 only).

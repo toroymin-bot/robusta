@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://robusta.ai4min.com"),
   title: "Robusta",
   description: "Human + Web AI + Code AI — three-way collaboration",
-  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 박음 — robots.ts/sitemap.ts와 묶음 SEO 시드.
+  // C-D17-7 (Day 5 07시, 2026-04-30): canonical 정의 — robots.ts/sitemap.ts와 묶음 SEO 시드.
   //   metadataBase 기준 절대 URL 자동 합성 ("/" → "https://robusta.ai4min.com/").
   alternates: { canonical: "/" },
   openGraph: {
@@ -80,7 +80,7 @@ const themeBootScript = `
       }
     }
     if (theme === null) {
-      // cookie 미박힘 → prefers-color-scheme 폴백 (matchMedia 미지원이면 'light').
+      // cookie 미등록 → prefers-color-scheme 폴백 (matchMedia 미지원이면 'light').
       if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
         theme = "dark";
       } else {

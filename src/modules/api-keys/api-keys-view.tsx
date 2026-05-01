@@ -155,7 +155,7 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
       setSaving(false);
       setPingState("unauthorized");
       setAnimKey((k) => k + 1);
-      // D-12.2: 저장 차단되어도 401 사실은 메타에 박음 (다음 모달 진입 시 ⚠ 표시).
+      // D-12.2: 저장 차단되어도 401 사실은 메타에 정의 (다음 모달 진입 시 ⚠ 표시).
       void markUnauthorized("anthropic", draft);
       const reasonSuffix = pingResult.reason ? ` (${pingResult.reason})` : "";
       setError(t("byok.modal.unauthorized") + reasonSuffix);

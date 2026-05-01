@@ -7,7 +7,7 @@
  *   trigger는 D4 P1로 ~~throw 유지~~.
  * D-D10-5 (Day 9, 2026-04-28, B12 채택분) C-D10-5: 'ai-auto' 4번째 모드 골격.
  *   AI-AI 자율 발언 — N초마다 인간 제외 AI 라운드로빈. 클라이언트 setInterval 트리거(C-D11-1로 분리).
- *   본 슬롯은 enum + 순수 함수(pickNextSpeakerAutoAi)만 박음. 안정성 게이트(타임아웃 누수, 토큰 폭주, abort 정합성)는 C-D11-1 검증 후 박는다.
+ *   본 슬롯은 enum + 순수 함수(pickNextSpeakerAutoAi)만 정의. 안정성 게이트(타임아웃 누수, 토큰 폭주, abort 정합성)는 C-D11-1 검증 후 기록한다.
  */
 
 import type { Participant } from "@/modules/participants/participant-types";
@@ -92,7 +92,7 @@ export function pickNextSpeaker(opts: PickNextSpeakerOptions): string {
  * D-D10-5 (Day 9, 2026-04-28) C-D10-5: AI-Auto 자율 발언 다음 화자 선택 (B12 채택분).
  *   인간 제외 AI 참여자 중 lastSpeaker 다음 인덱스(라운드로빈) + intervalMs delay 반환.
  *   AI 0명 → null (호출자는 토글 비활성 처리 또는 토스트 안내).
- *   본 함수는 순수 — setInterval/타이머 진입점은 호출자(C-D11-1)에서 박음.
+ *   본 함수는 순수 — setInterval/타이머 진입점은 호출자(C-D11-1)에서 정의.
  *
  *   엣지 케이스:
  *   - AI 0명: null
@@ -127,7 +127,7 @@ export function pickNextSpeakerAutoAi(
 // ============================================================================
 // D-D11-1 (Day 10, 2026-04-29) C-D11-1: AI-Auto 트리거 풀 + 5종 안정성 가드 (B14 본체).
 //   클라이언트 setInterval 라이프사이클 + visibilitychange/maxTurns/byok/abort/intercept 가드.
-//   순수 함수(pickNextSpeakerAutoAi) 위에 부수효과 레이어만 박음. OCP 유지 — 기존 로직 변경 X.
+//   순수 함수(pickNextSpeakerAutoAi) 위에 부수효과 레이어만 정의. OCP 유지 — 기존 로직 변경 X.
 // ============================================================================
 
 /**
@@ -197,7 +197,7 @@ export interface AutoLoopHandle {
  *   재시작 시 turnsCompleted 0 리셋. resume과 다름.
  *
  *   엣지 (명세 §4.5):
- *   E1 인간 가로채기 → caller가 handle.stop("human") (E1은 store action에서 박음)
+ *   E1 인간 가로채기 → caller가 handle.stop("human") (E1은 store action에서 정의)
  *   E2 isStreaming=true → tick skip (다음 tick 재평가)
  *   E3 BYOK 부재 → stop("byokMissing") + onError
  *   E4 visibilitychange hidden=true → stop("hidden") (자동 resume X)

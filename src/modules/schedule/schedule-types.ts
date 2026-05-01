@@ -1,8 +1,8 @@
 /**
  * schedule-types.ts
  *   - C-D17-16 (Day 5 23시 슬롯, 2026-04-30) — F-15 자동 발언 스케줄 UI 골격.
- *     · 본 슬롯에서는 타입 + IndexedDB 스키마만 박음. 실 cron 트리거는 D11+ Vercel Cron 박은 후.
- *     · Do 페이지 핵심 명세: "매 정각/30분/시간 단위" → 3가지 frequency kind 박음.
+ *     · 본 슬롯에서는 타입 + IndexedDB 스키마만 정의. 실 cron 트리거는 D11+ Vercel Cron 박은 후.
+ *     · Do 페이지 핵심 명세: "매 정각/30분/시간 단위" → 3가지 frequency kind 정의.
  *
  * frequency kind 분기:
  *   - "every-minutes" — N분마다 (5/10/15/30/60). 단순 폴링용.

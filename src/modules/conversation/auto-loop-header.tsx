@@ -13,7 +13,7 @@
  *     4) 인터벌 셀렉트 — 5/15/30/60초 (sm 이상에서만 노출)
  *     5) maxTurns 셀렉트 — 5/10/20/30 (sm 이상에서만 노출)
  *
- *   접근성: role="region" + aria-label 박음. 셀렉트는 native + label.
+ *   접근성: role="region" + aria-label 정의. 셀렉트는 native + label.
  *   회귀 게이트: self-check #115/#116 — export + workspace mount 검증.
  */
 

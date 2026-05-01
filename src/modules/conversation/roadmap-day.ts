@@ -51,7 +51,7 @@ export function formatRoadmapLabel(info: RoadmapDayInfo): string {
  * D-D17-4 (Day 5 03시 슬롯, 2026-04-30) C-D17-4: 헤더 모드 라벨 색상 티어.
  *   똘이 v1 §5 D-2 채택 — Day 1~3 노랑(kickoff), Day 4 오렌지(mid), Day 5+ 녹색(launch).
  *   첫 방문자가 즉시 "라이브 단계" 시각 인지 (Roy id-15 직관성 정합).
- *   기존 단일 #F5C518 박음을 보존하지 않고 티어 기반으로 정정 — kickoff 색상은 동일 유지하므로 D1~3 회귀 0.
+ *   기존 단일 #F5C518 정의을 보존하지 않고 티어 기반으로 정정 — kickoff 색상은 동일 유지하므로 D1~3 회귀 0.
  */
 export type RoadmapColorTier = "kickoff" | "mid" | "launch";
 
