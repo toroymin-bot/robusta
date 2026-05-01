@@ -11,7 +11,9 @@
     "verify-live": "playwright test --config=tests/playwright.config.ts",
     "preflight:d5": "tsx scripts/preflight-d5.ts",
     "measure:contrast": "node scripts/measure-contrast.mjs",
-    "check:vocab": "node scripts/check-vocab.mjs --all"
+    "check:vocab": "node scripts/check-vocab.mjs --all",
+    "check:i18n": "node scripts/check-i18n-keys.mjs",
+    "verify:d21": "node scripts/verify-d21.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

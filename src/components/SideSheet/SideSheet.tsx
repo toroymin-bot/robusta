@@ -2,7 +2,7 @@
  * SideSheet.tsx
  *   - C-D19-1 (D6 07시 슬롯, 2026-05-01) — D-26 / 꼬미 §1 ③ 발견사항 흡수.
  *   - C-D18-1 useResponsiveSheet 훅의 시각화 컴포넌트.
- *   - 책임: backdrop + sheet panel 마크업 + 포커스 트랩 + body scroll lock.
+ *   - 책임: backdrop + sheet panel 마크업 + 포커스 트랩 + body scroll lock + 포커스 복귀.
  *
  * 비-책임:
  *   - 폭/breakpoint 계산은 useResponsiveSheet 가 담당 (단일 책임).
@@ -16,6 +16,11 @@
  *   - prefers-reduced-motion: reduce → CSS transition 제거 (CSS module 처리).
  *   - body scroll lock: sheet 열릴 때 document.body.style.overflow='hidden', 닫힐 때 복구.
  *   - SSR: open=false 첫 렌더는 null — hydration mismatch 회피.
+ *
+ * 정책 (C-D21-2 D6 15시 슬롯, 2026-05-01) — 포커스 복귀:
+ *   - sheet open=true 마운트 시 document.activeElement 를 capture.
+ *   - sheet close 시 captured 요소로 focus 복귀(접근성 WCAG 2.4.3 / 2.4.7).
+ *   - 캡처 요소가 detached 또는 disabled 면 silently skip.
  */
 
 "use client";
@@ -83,10 +88,33 @@ export function SideSheet(props: SideSheetProps) {
 
   // 첫 마운트 포커스 트랩 시드 — initialFocusRef 우선, 없으면 dialog panel 자체.
   const panelRef = useRef<HTMLDivElement | null>(null);
+  // C-D21-2 (D6 15시) — 포커스 복귀: open 직전 활성 요소를 캡처.
+  //   sheet close 시 해당 요소로 focus 되돌림 (WCAG 2.4.3 / 2.4.7).
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!open) return;
+    // open=true 직전 활성 요소를 capture — 이미 sheet 내부 요소면 무시.
+    const active =
+      typeof document !== "undefined"
+        ? (document.activeElement as HTMLElement | null)
+        : null;
+    if (active && !panelRef.current?.contains(active)) {
+      previousFocusRef.current = active;
+    }
     const el = initialFocusRef?.current ?? panelRef.current;
     el?.focus();
+    return () => {
+      // close 시: capture 된 요소가 여전히 DOM 에 attach 되어 있고 focus 가능하면 복귀.
+      const prev = previousFocusRef.current;
+      if (prev && document.contains(prev) && typeof prev.focus === "function") {
+        try {
+          prev.focus();
+        } catch {
+          // 일부 disabled/detached 케이스에서 throw — 무시.
+        }
+      }
+      previousFocusRef.current = null;
+    };
   }, [open, initialFocusRef]);
 
   // Tab/Shift+Tab 포커스 순환 — sheet 외부로 이탈 방지.
