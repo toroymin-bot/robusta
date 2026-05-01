@@ -94,3 +94,59 @@ test.describe("verify-live (모바일 375x667 회귀 가드)", () => {
     expect(box.height, "add-participant height ≤ 36px (single line)").toBeLessThanOrEqual(36);
   });
 });
+
+/**
+ * C-D22-3 (D6 19시 슬롯, 2026-05-01) — D-D21 권장 ④ 흡수.
+ *   SideSheet 포커스 복귀(WCAG 2.4.3 / 2.4.7) 라이브 회귀 가드.
+ *
+ * 시나리오:
+ *   1) 모바일 viewport 진입 → 햄버거 트리거 fcous → click → SideSheet open.
+ *   2) ESC 키 → SideSheet close.
+ *   3) document.activeElement 가 트리거 버튼으로 복귀.
+ *
+ * 전제:
+ *   - NEXT_PUBLIC_ROBUSTA_SIDE_SHEET=on 환경에서만 SideSheet 분기 진입.
+ *     flag OFF (기본 dual-track) 일 경우 풀스크린 오버레이 분기 — 본 케이스는 SKIP.
+ *   - SIDE_SHEET_FLAG_ON 추정 — 본 슬롯의 BASE_URL Vercel 빌드가 flag ON 인지 추정 #92.
+ *     라이브가 OFF 면 이 케이스는 page.locator("[data-test='side-sheet-panel']") 가 보이지 않으므로
+ *     test.skip() 동적 처리.
+ */
+test.describe("verify-live (C-D22-3 SideSheet ESC focus 복귀)", () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test("F: SideSheet open → ESC 닫기 → 트리거로 focus 복귀", async ({ page }) => {
+    await page.goto(`${BASE_URL}/`, {
+      waitUntil: "networkidle",
+      timeout: 30_000,
+    });
+
+    const trigger = page.locator('[data-test="mobile-menu-trigger"]');
+    await expect(trigger).toBeVisible();
+
+    // 트리거에 명시적 포커스 — keyboard tab 흐름과 동일한 시점.
+    await trigger.focus();
+    await trigger.click();
+
+    // SIDE_SHEET_FLAG_ON 분기 검증 — flag OFF 면 panel 미표시 → test.skip.
+    const panel = page.locator('[data-test="side-sheet-panel"]');
+    const opened = await panel.isVisible().catch(() => false);
+    if (!opened) {
+      test.skip(true, "SIDE_SHEET_FLAG_ON OFF — 풀스크린 오버레이 분기 (C-D22-3 회귀 영향 없음)");
+    }
+
+    // ESC 키 → SideSheet close.
+    await page.keyboard.press("Escape");
+
+    // 패널이 closed 되었는지 확인 — open=false 시 SideSheet 가 null 반환.
+    await expect(panel).toBeHidden({ timeout: 2_000 });
+
+    // 포커스 복귀 — 트리거 버튼이 다시 active element 여야 함.
+    const activeTestId = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      return el?.getAttribute("data-test") ?? null;
+    });
+    expect(activeTestId, "ESC 후 focus 가 mobile-menu-trigger 로 복귀").toBe(
+      "mobile-menu-trigger",
+    );
+  });
+});

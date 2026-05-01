@@ -1,0 +1,64 @@
+# C-D22-4 (D6 19시 슬롯, 2026-05-01) — D-D21 권장 ③ 흡수.
+#   i18n 키 회귀 가드 + 어휘 룰 + 콘트라스트 + 빌드/타입체크 통합 게이트.
+#
+# 트리거:
+#   - main 브랜치 push (꼬미가 매 슬롯 직접 push 하므로 사후 검증).
+#   - PR open/sync.
+#   - 수동 dispatch.
+#
+# 정책:
+#   - 의존성 0 추가 — npm ci + node 스크립트만 사용.
+#   - 게이트 4종(i18n / vocab / contrast / verify-d22) + tsc + next build 통과 시 PASS.
+#   - main 직접 push 모델이라 fail 시 수정은 다음 슬롯에서. 본 슬롯은 등록만.
+
+name: verify-gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "eslint.config.mjs"
+      - ".github/workflows/verify-gate.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: i18n key 회귀 가드 (C-D21-1)
+        run: node scripts/check-i18n-keys.mjs
+
+      - name: 어휘 룰 (Confluence Do v30 #21)
+        run: node scripts/check-vocab.mjs --all
+
+      - name: 콘트라스트 (WCAG AA)
+        run: node scripts/measure-contrast.mjs
+
+      - name: D-D22 통합 검증
+        run: node scripts/verify-d22.mjs
+
+      - name: Next build (1st Load JS 게이트 시각 회귀)
+        run: npm run build

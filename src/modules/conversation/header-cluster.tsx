@@ -32,6 +32,8 @@ import { TokenCounterBadge } from "./token-counter-badge";
 import { SideSheet } from "@/components/SideSheet/SideSheet";
 // C-D20-3 (D6 11시) — 글로벌 메뉴 open 상태. 외부(EmptyIntent) 에서 openMenu 호출 가능.
 import { useHeaderClusterStore } from "@/stores/header-cluster-store";
+// C-D22-1 (D6 19시) — F-24 Export 메뉴 (SideSheet 내부 "도구" 섹션). KQ_15 자율 결정.
+import { ExportMenu } from "./export-menu";
 
 // C-D20-1: feature flag — env 미설정 또는 'on' 외 값이면 OFF (기본 풀스크린 오버레이 유지, 회귀 0).
 //   빌드 타임 상수 — hydration mismatch 회피.
@@ -322,6 +324,10 @@ export function HeaderCluster(props: HeaderClusterProps) {
               </button>
             </div>
             <HeaderTools {...props} compact />
+            {/* C-D22-1 (D6 19시) — Export 메뉴를 SideSheet 하단 "도구" 섹션에 등록.
+                KQ_15 자율 결정: 헤더 4도구 + 토큰 카운터로 포화 → 사이드 시트 진입.
+                풀스크린 오버레이(deprecated) 분기에는 미연결 — flag ON dual-track 만 노출. */}
+            <ExportMenu />
           </div>
         </SideSheet>
       ) : (

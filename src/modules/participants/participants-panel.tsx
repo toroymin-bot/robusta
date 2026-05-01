@@ -35,6 +35,12 @@ import {
 import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
 import type { Participant } from "./participant-types";
+// C-D22-2 (D6 19시 슬롯, 2026-05-01) — D-22 색맹 동반 도형 매핑 호출처 연결.
+//   hue 만으로 구분 시 deuteranopia/protanopia 사용자 식별 어려움 → shape glyph + aria-label 합성.
+import {
+  hueToShapeAria,
+  parseHueFromColor,
+} from "./participant-color";
 
 /**
  * D-14.1 (Day 8) PersonaEditModal/PersonaPickerModal 모두 lazy 로드.
@@ -234,9 +240,22 @@ export function ParticipantsPanel() {
           // D-9.2: AI 참여자에 systemPrompt가 비어있지 않으면 시그널 점.
           const hasPersona =
             p.kind === "ai" && (p.systemPrompt?.trim().length ?? 0) > 0;
+          // C-D22-2 (D6 19시): hue 추출 → 도형 + 라벨. 색맹 사용자 식별 보강.
+          //   color 가 hsl(...) 가 아니면 hue=null → shape 미노출 (CSS var 등 비-hsl 호환 보존).
+          const hue = parseHueFromColor(p.color);
+          const shapeAria = hue !== null ? hueToShapeAria(hue, "ko") : null;
+          const displayName = displayNames.get(p.id) ?? p.name;
+          // aria-label 합성 — 시각 정보(색)에 의존하지 않는 SR 보강.
+          const liAriaLabel = shapeAria
+            ? t("participants.shape.aria")
+                .replace("{name}", displayName)
+                .replace("{shape}", shapeAria.label)
+            : displayName;
           return (
             <li
               key={p.id}
+              aria-label={liAriaLabel}
+              data-test={`participant-row-${p.id}`}
               className="
                 group relative
                 flex items-start gap-3
@@ -246,13 +265,23 @@ export function ParticipantsPanel() {
               "
             >
               <span
-                className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                className="relative mt-1 flex h-3 w-3 shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: p.color }}
                 aria-hidden
-              />
+                data-test={shapeAria ? `participant-shape-${shapeAria.shape}` : undefined}
+              >
+                {/* C-D22-2: 도형 글리프 — color dot 위에 단색 미니 글리프. 시각적 보조. */}
+                {shapeAria && (
+                  <span
+                    className="pointer-events-none -mt-px text-[8px] leading-none text-white drop-shadow-[0_0_1px_rgba(0,0,0,0.6)]"
+                  >
+                    {shapeAria.shape}
+                  </span>
+                )}
+              </span>
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="flex items-center gap-1">
-                  <span className="truncate">{displayNames.get(p.id) ?? p.name}</span>
+                  <span className="truncate">{displayName}</span>
                   {hasPersona && (
                     <span
                       className="ml-1 h-1.5 w-1.5 shrink-0 rounded-full bg-robusta-inkDim/60"

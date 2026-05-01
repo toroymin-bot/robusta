@@ -13,7 +13,8 @@
     "measure:contrast": "node scripts/measure-contrast.mjs",
     "check:vocab": "node scripts/check-vocab.mjs --all",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
-    "verify:d21": "node scripts/verify-d21.mjs"
+    "verify:d21": "node scripts/verify-d21.mjs",
+    "verify:d22": "node scripts/verify-d22.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

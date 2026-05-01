@@ -115,6 +115,19 @@ export const MESSAGES = {
     "autoLoop.header.interval": "간격",
     "autoLoop.header.maxTurns": "최대 턴",
     "autoLoop.header.progress": "턴",
+    // C-D22-1 (D6 19시 슬롯, 2026-05-01) F-24 Export 메뉴 — SideSheet 하단 "도구" 그룹.
+    //   KQ_15 답변 (자율): 헤더 4도구 + 토큰 카운터로 포화 → 사이드 시트 하단 도구 그룹에 등록.
+    "export.menu.title": "내보내기",
+    "export.menu.section": "도구",
+    "export.menu.markdown": "Markdown",
+    "export.menu.json": "JSON",
+    "export.menu.aria": "현재 룸 내보내기",
+    "export.toast.success": "{format} 파일을 내려받았습니다.",
+    "export.toast.failure": "내보내기 실패 — 잠시 후 다시 시도하세요.",
+    "export.disabled.empty": "비어 있는 룸은 내보낼 수 없어요.",
+    // C-D22-2 (D6 19시 슬롯, 2026-05-01) D-22 hueToShape — 색맹 동반 도형 라벨 합성.
+    //   참여자 카드의 aria-label 에 "{name} (참여자, {shape})" 형태로 합성.
+    "participants.shape.aria": "{name} (참여자, {shape})",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -203,6 +216,17 @@ export const MESSAGES = {
     "autoLoop.header.interval": "Interval",
     "autoLoop.header.maxTurns": "Max turns",
     "autoLoop.header.progress": "turns",
+    // C-D22-1 (D6 19시 슬롯, 2026-05-01) F-24 Export menu — KO mirror.
+    "export.menu.title": "Export",
+    "export.menu.section": "Tools",
+    "export.menu.markdown": "Markdown",
+    "export.menu.json": "JSON",
+    "export.menu.aria": "Export current room",
+    "export.toast.success": "Downloaded {format} file.",
+    "export.toast.failure": "Export failed — please try again.",
+    "export.disabled.empty": "Empty room cannot be exported.",
+    // C-D22-2 (D6 19시 슬롯, 2026-05-01) D-22 hueToShape — KO mirror.
+    "participants.shape.aria": "{name} (participant, {shape})",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
