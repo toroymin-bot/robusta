@@ -166,6 +166,30 @@ export function ParticipantsPanel() {
   }
 
   async function handlePickPreset(personaId: string) {
+    // C-D27-4 (D6 15시 슬롯, 2026-05-02) — picker 'catalog:' prefix 분기.
+    //   catalog 카드 클릭 = personaId 'catalog:critical-mate' 형식 → CATALOG lookup → Persona 변환 → 등록.
+    //   기존 'custom' 탭은 personasFromStore lookup 보존 (회귀 0).
+    if (personaId.startsWith("catalog:")) {
+      const { PERSONA_CATALOG_V1 } = await import("@/modules/personas/persona-catalog");
+      const entry = PERSONA_CATALOG_V1.find((p) => p.id === personaId);
+      if (!entry) {
+        console.warn("[robusta] unknown catalog preset:", personaId);
+        return;
+      }
+      if (!canAddParticipant("ai")) {
+        showLimitToast();
+        return;
+      }
+      try {
+        const { personaFromPreset } = await import("@/modules/personas/persona-from-preset");
+        const persona = personaFromPreset(entry);
+        await add(personaToParticipantInput(persona));
+        setShowPicker(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "추가 실패");
+      }
+      return;
+    }
     const persona = personasFromStore.find((p) => p.id === personaId);
     if (!persona) return;
     if (!canAddParticipant(persona.kind)) {

@@ -12,7 +12,8 @@
 
 "use client";
 
-import { t, type MessageKey } from "@/modules/i18n/messages";
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 키는 catalog-i18n.ts (lazy chunk).
+import { tc, type CatalogKey } from "@/modules/i18n/catalog-i18n";
 import type { ScenarioPreset } from "./scenario-catalog";
 
 export interface ScenarioCardProps {
@@ -21,8 +22,8 @@ export interface ScenarioCardProps {
 }
 
 export function ScenarioCard({ preset, onSelect }: ScenarioCardProps) {
-  const titleKey = `${preset.i18nKey}.title` as MessageKey;
-  const descKey = `${preset.i18nKey}.desc` as MessageKey;
+  const titleKey = `${preset.i18nKey}.title` as CatalogKey;
+  const descKey = `${preset.i18nKey}.desc` as CatalogKey;
   const bg = `hsl(${preset.colorHue}, 65%, 55%)`;
   return (
     <button
@@ -45,14 +46,14 @@ export function ScenarioCard({ preset, onSelect }: ScenarioCardProps) {
           {preset.glyph}
         </span>
         <span className="text-sm font-semibold text-robusta-ink">
-          {t(titleKey)}
+          {tc(titleKey)}
         </span>
       </span>
       <span className="block min-w-0 truncate text-xs text-robusta-inkDim">
-        {t(descKey)}
+        {tc(descKey)}
       </span>
       <span className="mt-auto self-end rounded bg-robusta-accentSoft px-2 py-1 text-[11px] text-robusta-ink">
-        {t("scenario.start.button")}
+        {tc("scenario.start.button")}
       </span>
     </button>
   );

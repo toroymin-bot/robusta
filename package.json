@@ -19,6 +19,7 @@
     "verify:d24": "node scripts/verify-d24.mjs",
     "verify:d25": "node scripts/verify-d25.mjs",
     "verify:d26": "node scripts/verify-d26.mjs",
+    "verify:d27": "node scripts/verify-d27.mjs",
     "verify:hue-sync": "node scripts/verify-hue-sync.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",
     "e2e:mock": "playwright test --config=playwright.config.ts"

@@ -17,7 +17,8 @@
 
 import { ScenarioCard } from "./scenario-card";
 import { SCENARIO_CATALOG_V1, type ScenarioPreset } from "./scenario-catalog";
-import { t } from "@/modules/i18n/messages";
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 키는 catalog-i18n.ts (lazy chunk).
+import { tc } from "@/modules/i18n/catalog-i18n";
 
 export interface WelcomeViewProps {
   onPick: (preset: ScenarioPreset) => void;
@@ -28,14 +29,14 @@ export function WelcomeView({ onPick }: WelcomeViewProps) {
     <section
       className="mx-auto max-w-3xl px-4 py-8"
       data-test="welcome-view"
-      aria-label={t("scenario.welcome.headline")}
+      aria-label={tc("scenario.welcome.headline")}
     >
       <header className="mb-6 text-center">
         <h2 className="text-xl font-semibold text-robusta-ink">
-          {t("scenario.welcome.headline")}
+          {tc("scenario.welcome.headline")}
         </h2>
         <p className="mt-2 text-sm text-robusta-inkDim">
-          {t("scenario.welcome.body")}
+          {tc("scenario.welcome.body")}
         </p>
       </header>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

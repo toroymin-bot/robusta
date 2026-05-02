@@ -84,9 +84,16 @@ jobs:
 
       # C-D26-5 (D6 11시 슬롯, 2026-05-02) — D-D26 5건 통합 회귀 + 168 kB HARD GATE.
       #   verify-d26 가 내부에서 next build 를 한 번 실행해 First Load JS 168 kB 검증.
-      #   별도 build step 과의 중복을 피하기 위해 VERIFY_D26_SKIP_BUILD=1 로 위임 가능 — 본 워크플로우는 직접 실행 우선.
-      - name: D-D26 통합 검증 (168 kB HARD GATE 포함)
-        run: node scripts/verify-d26.mjs
+      - name: D-D26 통합 검증 (한시 175 게이트, KQ_21 클로즈 후 168 정식 복귀)
+        run: VERIFY_D26_SKIP_BUILD=1 node scripts/verify-d26.mjs
 
+      # C-D27-5 (D6 15시 슬롯, 2026-05-02) — D-D27 5건 통합 회귀 + **168 kB 정식 HARD GATE**.
+      #   한시 175 종료. catalog 5 namespace 분리 + dev-mode/PDF lazy 마운트로 메인 번들 −2 kB.
+      #   verify-d27 자체가 next build 1회 실행 후 First Load JS 파싱 → 168 강제.
+      - name: D-D27 통합 검증 (168 kB 정식 HARD GATE)
+        run: node scripts/verify-d27.mjs
+
+      # 별도 next build step — verify-d22 호환 게이트 (`npm run build` 문자열 회귀 가드).
+      #   verify-d27 가 이미 build 했으므로 .next 캐시 재사용 — 시간 ↓.
       - name: Next build (1st Load JS 게이트 시각 회귀)
         run: npm run build

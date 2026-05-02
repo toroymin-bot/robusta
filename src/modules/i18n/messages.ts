@@ -149,61 +149,10 @@ export const MESSAGES = {
     "insightLibrary.entry.button": "인사이트 라이브러리 열기",
     "insightLibrary.entry.label": "💡 인사이트 ({count})",
     "insightLibrary.capture.guide": "메시지 푸터에서 통찰 후보를 마크하세요.",
-    // C-D25-3 (D6 07시 슬롯, 2026-05-02) — B-58 페르소나 카탈로그 v1 이름 5종 등록.
-    //   desc / seedHint 는 D-D26 본문 보강 (Tori §9: 본 슬롯은 이름만 등록, 168 게이트 회복 우선).
-    //   카탈로그 자체는 persona-catalog.ts 에 metadata 정의 — Spec 004 진입 시 picker 에 노출.
-    "persona.catalog.criticalMate.name": "비판적 동료",
-    "persona.catalog.optimisticMate.name": "낙관적 동료",
-    "persona.catalog.dataMate.name": "데이터 동료",
-    "persona.catalog.designer.name": "디자이너",
-    "persona.catalog.userAdvocate.name": "사용자 대변자",
-    // C-D26-4 (D6 11시 슬롯, 2026-05-02) — B-64/F-64/D-64 페르소나 catalog desc + seedHint 정식.
-    //   5종 × {desc, seedHint} = 10 키. picker default 'catalog' 탭에 노출.
-    "persona.catalog.criticalMate.desc": "약점과 반대 시각을 짚어줍니다",
-    "persona.catalog.criticalMate.seedHint": "이 안의 약점은 뭐예요?",
-    "persona.catalog.optimisticMate.desc": "가능성과 강점을 강화합니다",
-    "persona.catalog.optimisticMate.seedHint": "이게 잘 풀리면 어떻게 되죠?",
-    "persona.catalog.dataMate.desc": "수치와 근거로 검증합니다",
-    "persona.catalog.dataMate.seedHint": "이걸 뒷받침할 데이터는요?",
-    "persona.catalog.designer.desc": "사용자 경험과 시각으로 봅니다",
-    "persona.catalog.designer.seedHint": "사용자는 이걸 어떻게 보게 될까요?",
-    "persona.catalog.userAdvocate.desc": "최종 사용자의 입장을 대변합니다",
-    "persona.catalog.userAdvocate.seedHint": "실제 사용자라면 뭐라 할까요?",
-    // C-D26-4 picker default 탭 라벨 + custom 탭 라벨.
-    "persona.picker.tab.catalog": "카탈로그",
-    "persona.picker.tab.custom": "내 페르소나",
-    // C-D26-2 (D6 11시 슬롯, 2026-05-02) — B-62/F-62/D-62 시나리오 카드 i18n 18 키.
-    //   3 시나리오 × {title, desc, seed} = 9 × ko/en = 18.
-    "scenario.decisionReview.title": "의사결정 검토",
-    "scenario.decisionReview.desc": "결정 직전 다른 시각 3개 받아보기",
-    "scenario.decisionReview.seed": "이 결정에 대해 여러분이라면 어떻게 보겠어요?",
-    "scenario.ideaForge.title": "아이디어 발전",
-    "scenario.ideaForge.desc": "초기 아이디어를 다각도로 다듬기",
-    "scenario.ideaForge.seed": "제 초기 아이디어는 이거예요. 어떻게 발전시킬 수 있을까요?",
-    "scenario.blindSpot.title": "사각지대 발견",
-    "scenario.blindSpot.desc": "내가 놓친 부분을 다른 관점이 짚어주기",
-    "scenario.blindSpot.seed": "제가 놓치고 있는 게 있을까요?",
-    // C-D26-2 시나리오 → 페르소나 사전 등록 라벨 + 시작 버튼.
-    "scenario.persona.critical": "비판적",
-    "scenario.persona.optimistic": "낙관적",
-    "scenario.persona.data": "데이터",
-    "scenario.persona.designer": "디자이너",
-    "scenario.persona.userAdvocate": "사용자",
-    "scenario.start.button": "시작하기",
-    "scenario.welcome.headline": "AI들과 함께 생각해봐요",
-    "scenario.welcome.body": "한 번에 여러 AI와 같이 브레인스토밍해서 통찰을 끌어냅니다.",
-    // C-D26-3 (D6 11시 슬롯, 2026-05-02) — B-63/F-63/D-63 PDF export 다이얼로그 i18n 8 키.
-    "pdfExport.menu.label": "PDF로 저장",
-    "pdfExport.dialog.title": "PDF로 저장",
-    "pdfExport.dialog.option.includeInsights": "통찰 마크 포함",
-    "pdfExport.dialog.option.includeSystem": "시스템 메시지 포함",
-    "pdfExport.dialog.start": "PDF 생성",
-    "pdfExport.dialog.progress.font": "한글 폰트 불러오는 중…",
-    "pdfExport.dialog.progress.render": "메시지 그리는 중… {percent}%",
-    "pdfExport.dialog.download": "다운로드",
-    // C-D26-1 dev-mode autoMark 정밀도 카드 (sample ≥ 100 시 노출).
-    "devMode.autoMark.precision": "🤖 auto: P {precision}% / R {recall}% / N {sample}",
-    "devMode.autoMark.sampling": "🤖 auto: ({sample}/100 sampling…)",
+    // C-D27-1 (D6 15시 슬롯, 2026-05-02) — KQ_21 (c) 채택분.
+    //   catalog 5 namespace (persona.catalog.* / persona.picker.tab.* / scenario.* /
+    //   pdfExport.* / devMode.*) 본 파일에서 분리 → messages-catalog-ko.ts (lazy chunk).
+    //   메인 번들 −2 kB → 168 정식 HARD GATE 복귀. 호출자는 catalog-i18n.ts 의 tc() 사용.
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -323,57 +272,7 @@ export const MESSAGES = {
     "insightLibrary.entry.button": "Open insight library",
     "insightLibrary.entry.label": "💡 Insights ({count})",
     "insightLibrary.capture.guide": "Mark insight candidates from the message footer.",
-    // C-D25-3 (D6 07시 슬롯, 2026-05-02) — Persona catalog v1 names only (en parity).
-    "persona.catalog.criticalMate.name": "Critical Mate",
-    "persona.catalog.optimisticMate.name": "Optimistic Mate",
-    "persona.catalog.dataMate.name": "Data Mate",
-    "persona.catalog.designer.name": "Designer",
-    "persona.catalog.userAdvocate.name": "User Advocate",
-    // C-D26-4 (D6 11시 슬롯, 2026-05-02) — Persona catalog desc + seedHint (en parity).
-    "persona.catalog.criticalMate.desc": "Spots weaknesses and counterpoints",
-    "persona.catalog.criticalMate.seedHint": "What are the weak points here?",
-    "persona.catalog.optimisticMate.desc": "Reinforces possibilities and strengths",
-    "persona.catalog.optimisticMate.seedHint": "What if this goes really well?",
-    "persona.catalog.dataMate.desc": "Validates with numbers and evidence",
-    "persona.catalog.dataMate.seedHint": "What data backs this up?",
-    "persona.catalog.designer.desc": "Sees through user experience and visuals",
-    "persona.catalog.designer.seedHint": "How will users see this?",
-    "persona.catalog.userAdvocate.desc": "Speaks for the end user",
-    "persona.catalog.userAdvocate.seedHint": "What would a real user say?",
-    // C-D26-4 picker default + custom tab labels.
-    "persona.picker.tab.catalog": "Catalog",
-    "persona.picker.tab.custom": "My personas",
-    // C-D26-2 (D6 11시 슬롯, 2026-05-02) — Scenario cards i18n (en parity).
-    "scenario.decisionReview.title": "Decision Review",
-    "scenario.decisionReview.desc": "Get 3 different views before deciding",
-    "scenario.decisionReview.seed": "How would each of you see this decision?",
-    "scenario.ideaForge.title": "Idea Forge",
-    "scenario.ideaForge.desc": "Refine an early idea from multiple angles",
-    "scenario.ideaForge.seed": "Here's my early idea. How can we refine it?",
-    "scenario.blindSpot.title": "Blind Spot",
-    "scenario.blindSpot.desc": "Have other perspectives spot what you miss",
-    "scenario.blindSpot.seed": "Is there something I'm missing?",
-    // C-D26-2 scenario → persona preset labels + start button.
-    "scenario.persona.critical": "Critical",
-    "scenario.persona.optimistic": "Optimistic",
-    "scenario.persona.data": "Data",
-    "scenario.persona.designer": "Designer",
-    "scenario.persona.userAdvocate": "User",
-    "scenario.start.button": "Start",
-    "scenario.welcome.headline": "Think together with AIs",
-    "scenario.welcome.body": "Brainstorm with multiple AIs at once and surface insight.",
-    // C-D26-3 (D6 11시 슬롯, 2026-05-02) — PDF export dialog (en parity).
-    "pdfExport.menu.label": "Save as PDF",
-    "pdfExport.dialog.title": "Save as PDF",
-    "pdfExport.dialog.option.includeInsights": "Include insight marks",
-    "pdfExport.dialog.option.includeSystem": "Include system messages",
-    "pdfExport.dialog.start": "Generate PDF",
-    "pdfExport.dialog.progress.font": "Loading Korean font…",
-    "pdfExport.dialog.progress.render": "Rendering messages… {percent}%",
-    "pdfExport.dialog.download": "Download",
-    // C-D26-1 dev-mode auto-mark precision card.
-    "devMode.autoMark.precision": "🤖 auto: P {precision}% / R {recall}% / N {sample}",
-    "devMode.autoMark.sampling": "🤖 auto: ({sample}/100 sampling…)",
+    // C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 5 namespace 분리 (en parity, messages-catalog-en.ts).
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

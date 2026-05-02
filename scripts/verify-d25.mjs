@@ -255,7 +255,16 @@ function tryExec(cmd) {
       catalog.includes("robusta-color-participant-5"),
   );
 
-  const i18n = await readSrc("src/modules/i18n/messages.ts");
+  // C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 5 namespace lazy 분리 후 messages.ts +
+  //   messages-catalog-{ko,en}.ts 합산으로 회귀 가드. 분리도 보존이다.
+  const i18nMain = await readSrc("src/modules/i18n/messages.ts");
+  const i18nCatKo = await readSrc(
+    "src/modules/i18n/messages-catalog-ko.ts",
+  ).catch(() => "");
+  const i18nCatEn = await readSrc(
+    "src/modules/i18n/messages-catalog-en.ts",
+  ).catch(() => "");
+  const i18n = i18nMain + "\n" + i18nCatKo + "\n" + i18nCatEn;
   // 5종 이름 × ko/en = 10 키. desc/seedHint 는 D-D26 본문 보강 (Tori §9 / 168 회복 우선).
   const nameCount = (
     i18n.match(/"persona\.catalog\.[a-zA-Z]+\.name":\s*"[^"]+"/g) || []

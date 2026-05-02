@@ -142,7 +142,15 @@ function tryExec(cmd, opts = {}) {
     `actual=${awaitCount}`,
   );
 
-  const i18n = await readSrc("src/modules/i18n/messages.ts");
+  // C-D27-1: catalog 5 namespace lazy 분리 호환 — messages.ts + catalog ko/en 합산.
+  const i18nMain = await readSrc("src/modules/i18n/messages.ts");
+  const i18nCatKo = await readSrc(
+    "src/modules/i18n/messages-catalog-ko.ts",
+  ).catch(() => "");
+  const i18nCatEn = await readSrc(
+    "src/modules/i18n/messages-catalog-en.ts",
+  ).catch(() => "");
+  const i18n = i18nMain + "\n" + i18nCatKo + "\n" + i18nCatEn;
   // devMode.autoMark.precision + .sampling × ko/en = 4 키.
   const devKeyCount = (
     i18n.match(/"devMode\.autoMark\.(precision|sampling)":/g) || []
@@ -200,7 +208,15 @@ function tryExec(cmd, opts = {}) {
       welcome.includes('data-test="welcome-view"'),
   );
 
-  const i18n = await readSrc("src/modules/i18n/messages.ts");
+  // C-D27-1: catalog 5 namespace lazy 분리 호환 — messages.ts + catalog ko/en 합산.
+  const i18nMain = await readSrc("src/modules/i18n/messages.ts");
+  const i18nCatKo = await readSrc(
+    "src/modules/i18n/messages-catalog-ko.ts",
+  ).catch(() => "");
+  const i18nCatEn = await readSrc(
+    "src/modules/i18n/messages-catalog-en.ts",
+  ).catch(() => "");
+  const i18n = i18nMain + "\n" + i18nCatKo + "\n" + i18nCatEn;
   // scenario.{decisionReview,ideaForge,blindSpot}.{title,desc,seed} = 9 × ko/en = 18.
   const sCount = (
     i18n.match(
@@ -272,7 +288,15 @@ function tryExec(cmd, opts = {}) {
       dlg.includes('"done"'),
   );
 
-  const i18n = await readSrc("src/modules/i18n/messages.ts");
+  // C-D27-1: catalog 5 namespace lazy 분리 호환 — messages.ts + catalog ko/en 합산.
+  const i18nMain = await readSrc("src/modules/i18n/messages.ts");
+  const i18nCatKo = await readSrc(
+    "src/modules/i18n/messages-catalog-ko.ts",
+  ).catch(() => "");
+  const i18nCatEn = await readSrc(
+    "src/modules/i18n/messages-catalog-en.ts",
+  ).catch(() => "");
+  const i18n = i18nMain + "\n" + i18nCatKo + "\n" + i18nCatEn;
   const pdfCount = (i18n.match(/"pdfExport\./g) || []).length;
   assert(
     "C-D26-3: i18n pdfExport.* 16 키 (8 × ko/en)",
@@ -285,7 +309,15 @@ function tryExec(cmd, opts = {}) {
 // 4) C-D26-4 — persona desc/seedHint i18n + catalog-card + picker tab
 // ─────────────────────────────────────────────────────────────────────────────
 {
-  const i18n = await readSrc("src/modules/i18n/messages.ts");
+  // C-D27-1: catalog 5 namespace lazy 분리 호환 — messages.ts + catalog ko/en 합산.
+  const i18nMain = await readSrc("src/modules/i18n/messages.ts");
+  const i18nCatKo = await readSrc(
+    "src/modules/i18n/messages-catalog-ko.ts",
+  ).catch(() => "");
+  const i18nCatEn = await readSrc(
+    "src/modules/i18n/messages-catalog-en.ts",
+  ).catch(() => "");
+  const i18n = i18nMain + "\n" + i18nCatKo + "\n" + i18nCatEn;
   const descCount = (
     i18n.match(/"persona\.catalog\.\w+\.desc":/g) || []
   ).length;

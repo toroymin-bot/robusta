@@ -24,6 +24,7 @@
 
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useId, useRef } from "react";
 import { maskApiKey } from "@/modules/api-keys/api-key-mask";
 // C-D17-17 (Day 5 15시) F-16 토큰 카운터 뱃지 — 헤더에 등록. 누적 0건이면 자체적으로 마운트 X.
@@ -34,6 +35,13 @@ import { SideSheet } from "@/components/SideSheet/SideSheet";
 import { useHeaderClusterStore } from "@/stores/header-cluster-store";
 // C-D22-1 (D6 19시) — F-24 Export 메뉴 (SideSheet 내부 "도구" 섹션). KQ_15 자율 결정.
 import { ExportMenu } from "./export-menu";
+// C-D27-5 (D6 15시 슬롯, 2026-05-02) — F-70/D-70 PDF 버튼. dynamic — catalog-i18n 함께 lazy chunk.
+import { DEFAULT_CONVERSATION_ID } from "./conversation-types";
+const HeaderPdfButton = dynamic(
+  () =>
+    import("./header-pdf-button").then((m) => m.HeaderPdfButton),
+  { ssr: false, loading: () => null },
+);
 
 // C-D20-1: feature flag — env 미설정 또는 'on' 외 값이면 OFF (기본 풀스크린 오버레이 유지, 회귀 0).
 //   빌드 타임 상수 — hydration mismatch 회피.
@@ -189,6 +197,8 @@ function HeaderTools(props: HeaderClusterProps & { compact?: boolean }) {
         <span aria-hidden>⏰</span>
         <span className="sr-only md:not-sr-only md:inline">스케줄</span>
       </button>
+      {/* C-D27-5 (D6 15시 슬롯, 2026-05-02) — PDF 버튼. lazy 마운트로 메인 번들 +0. */}
+      <HeaderPdfButton roomId={DEFAULT_CONVERSATION_ID} compact={compact} />
       <button
         type="button"
         onClick={onOpenApiKeyModal}

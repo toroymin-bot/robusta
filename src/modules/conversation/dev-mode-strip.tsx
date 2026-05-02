@@ -17,7 +17,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { measureAutoMarkPrecision } from "@/modules/insights/auto-mark-precision";
 import { useAutoMarkSampleStore } from "@/stores/auto-mark-sample-store";
-import { t } from "@/modules/i18n/messages";
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — devMode.* 키는 catalog-i18n.ts (lazy chunk).
+import { tc } from "@/modules/i18n/catalog-i18n";
 
 const SAMPLE_THRESHOLD = 100;
 
@@ -46,7 +47,7 @@ export function DevModeStrip() {
         data-test="dev-mode-strip"
         className="px-3 py-1 text-[11px] text-robusta-inkDim"
       >
-        {t("devMode.autoMark.sampling", { sample: String(result.sample) })}
+        {tc("devMode.autoMark.sampling", { sample: String(result.sample) })}
       </div>
     );
   }
@@ -58,7 +59,7 @@ export function DevModeStrip() {
       data-test="dev-mode-strip"
       className="px-3 py-1 text-[11px] text-robusta-inkDim"
     >
-      {t("devMode.autoMark.precision", {
+      {tc("devMode.autoMark.precision", {
         precision: String(precPct),
         recall: String(recPct),
         sample: String(result.sample),

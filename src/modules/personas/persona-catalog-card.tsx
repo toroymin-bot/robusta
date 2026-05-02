@@ -14,7 +14,8 @@
 
 import { PersonaCardColorDot } from "./persona-card-color-dot";
 import { personaColorTokenToHue } from "@/modules/ui/theme-hue";
-import { t, type MessageKey } from "@/modules/i18n/messages";
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 키는 catalog-i18n.ts (lazy chunk).
+import { tc, type CatalogKey } from "@/modules/i18n/catalog-i18n";
 import type { PersonaCatalogEntry } from "./persona-catalog";
 import type { PersonaColorToken } from "./persona-types";
 
@@ -47,13 +48,13 @@ export function PersonaCatalogCard({
         <PersonaCardColorDot hue={hue} locale="ko" size={12} />
       </span>
       <h4 className="pr-6 text-sm font-semibold text-robusta-ink">
-        {t(preset.i18nKey as MessageKey)}
+        {tc(preset.i18nKey as CatalogKey)}
       </h4>
       <p className="text-xs text-robusta-inkDim line-clamp-2">
-        {t(preset.descriptionKey as MessageKey)}
+        {tc(preset.descriptionKey as CatalogKey)}
       </p>
       <span className="mt-1 block text-xs italic text-robusta-inkDim line-clamp-2">
-        &quot;{t(preset.seedHintKey as MessageKey)}&quot;
+        &quot;{tc(preset.seedHintKey as CatalogKey)}&quot;
       </span>
     </button>
   );

@@ -15,6 +15,12 @@ const InsightLibrarySheet = dynamic(
     ),
   { ssr: false, loading: () => null },
 );
+// C-D27-5 (D6 15시 슬롯, 2026-05-02) — dev-mode-strip 마운트. #dev hash 가드는 컴포넌트 자체에서 처리.
+//   dynamic + ssr:false → 메인 번들 +0 (catalog-i18n / sample-store 함께 lazy chunk).
+const DevModeStrip = dynamic(
+  () => import("./dev-mode-strip").then((m) => m.DevModeStrip),
+  { ssr: false, loading: () => null },
+);
 import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
 // ~~maskApiKey~~ — C-D17-13 (Day 5 15시) HeaderCluster로 이관, 본 파일에서 직접 호출 X.
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
@@ -218,6 +224,10 @@ export function ConversationWorkspace() {
 
         {/* D-D11-2 (Day 11) C-D11-2: AI-Auto 컨트롤 헤더 — 컴포넌트 자체가 turnMode==='ai-auto' 가드. */}
         <AutoLoopHeader />
+
+        {/* C-D27-5 (D6 15시 슬롯, 2026-05-02) — dev-mode-strip dynamic 마운트.
+            #dev hash 활성 시만 노출 (컴포넌트 내부 가드). 일반 사용자 노출 0. */}
+        <DevModeStrip />
 
         <ConversationView onRequestApiKeyModal={() => setKeysOpen(true)} />
       </main>

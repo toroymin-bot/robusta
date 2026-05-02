@@ -90,6 +90,45 @@ if (dict.ko.size === 0 || dict.en.size === 0) {
   process.exit(2);
 }
 
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 5 namespace lazy chunk parity 게이트.
+//   messages-catalog-{ko,en}.ts 양면 키 100% 일치 검증. 미달 시 build fail.
+function extractCatalogKeys(source) {
+  const keys = new Set();
+  const re = /^[\t ]*"([a-zA-Z0-9_.-]+)"\s*:/gm;
+  let m;
+  while ((m = re.exec(source)) !== null) keys.add(m[1]);
+  return keys;
+}
+const catalogKoSrc = await readFile(
+  resolve(root, "src/modules/i18n/messages-catalog-ko.ts"),
+  "utf8",
+);
+const catalogEnSrc = await readFile(
+  resolve(root, "src/modules/i18n/messages-catalog-en.ts"),
+  "utf8",
+);
+const catalogKo = extractCatalogKeys(catalogKoSrc);
+const catalogEn = extractCatalogKeys(catalogEnSrc);
+const catalogErrors = [];
+for (const k of catalogKo) {
+  if (!catalogEn.has(k)) catalogErrors.push(`CATALOG-MISSING-EN: "${k}"`);
+}
+for (const k of catalogEn) {
+  if (!catalogKo.has(k)) catalogErrors.push(`CATALOG-MISSING-KO: "${k}"`);
+}
+console.log(
+  `[i18n catalog] ko ${catalogKo.size} / en ${catalogEn.size} (parity ${catalogErrors.length === 0 ? "PASS" : "FAIL"})`,
+);
+if (catalogErrors.length > 0) {
+  console.error(`\n✗ catalog parity 오류 ${catalogErrors.length}건:`);
+  for (const e of catalogErrors) console.error(`  · ${e}`);
+  process.exit(1);
+}
+
+// catalog 키는 본 검증 단계에서 dict.* 에 합산 (사용 키 검증 호환).
+for (const k of catalogKo) dict.ko.add(k);
+for (const k of catalogEn) dict.en.add(k);
+
 const files = await walkSrc(resolve(root, "src"));
 const allUsed = new Set();
 for (const f of files) {

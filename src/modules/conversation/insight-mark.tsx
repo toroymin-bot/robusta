@@ -29,6 +29,9 @@ import { t } from "@/modules/i18n/messages";
 import { useConversationStore } from "@/stores/conversation-store";
 import { useInsightStore } from "@/modules/insights/insight-store";
 import { useToastStore } from "@/modules/ui/toast";
+// C-D27-2 (D6 15시 슬롯, 2026-05-02) — auto-mark sample 누적: TP/FP/FN 3 케이스 분기.
+//   100건 도달 후 dev-mode-strip 정밀도/재현율 표시 활성. 메인 번들 영향 0.
+import { useAutoMarkSampleStore } from "@/stores/auto-mark-sample-store";
 
 /** 3종 글리프 매핑 — 잡스 단순. 추가 종류는 P2(예: ❓ 의문 제기) 분리. */
 export const KIND_GLYPH: Record<InsightKind, string> = {
@@ -90,10 +93,30 @@ export function InsightFooter({
       markedAt: new Date().toISOString(),
       markedBy: "user",
     };
+    // C-D27-2: 자동 마크 → 사용자 확정 (TP) 또는 자동 마크 미존재 → 사용자 신규 (FN/FP).
+    //   inferred = 기존 message.insight 의 kind (auto 였으면 추론값) / 없었으면 null.
+    //   actual = 사용자가 선택한 kind. classifySample 4 분기는 sample-store 적재 후 measure 함수가 산출.
+    const previousAuto =
+      message.insight && message.insight.markedBy === "auto"
+        ? message.insight.kind
+        : null;
+    useAutoMarkSampleStore.getState().add({
+      inferred: previousAuto,
+      actual: kind,
+      text: message.content,
+    });
     void updateMessage(message.id, { insight: mark });
   }
 
   function handleUnmark() {
+    // C-D27-2: auto 마크 사용자 거부 = FP. 'user' 마크 해제는 sample 미적재 (이미 add 시 적재됨).
+    if (message.insight && message.insight.markedBy === "auto") {
+      useAutoMarkSampleStore.getState().add({
+        inferred: message.insight.kind,
+        actual: null,
+        text: message.content,
+      });
+    }
     // 옵셔널 필드 해제 — patch 에 insight: undefined 로 명시.
     void updateMessage(message.id, { insight: undefined });
     pushToast({

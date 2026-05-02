@@ -16,6 +16,8 @@
 
 import { useEffect, useState } from "react";
 import { t } from "@/modules/i18n/messages";
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — pdfExport 키는 catalog-i18n.ts (lazy chunk).
+import { tc } from "@/modules/i18n/catalog-i18n";
 import {
   exportRoomToPdf,
   downloadBlob,
@@ -86,7 +88,7 @@ export function PdfExportDialog({ roomId, onClose }: PdfExportDialogProps) {
           id="pdf-export-title"
           className="mb-4 text-lg font-semibold text-robusta-ink"
         >
-          {t("pdfExport.dialog.title")}
+          {tc("pdfExport.dialog.title")}
         </h2>
 
         {phase === "start" && (
@@ -98,7 +100,7 @@ export function PdfExportDialog({ roomId, onClose }: PdfExportDialogProps) {
                 onChange={(e) => setIncludeInsights(e.target.checked)}
                 data-test="pdf-export-include-insights"
               />
-              {t("pdfExport.dialog.option.includeInsights")}
+              {tc("pdfExport.dialog.option.includeInsights")}
             </label>
             <label className="flex items-center gap-2 text-sm text-robusta-ink">
               <input
@@ -107,7 +109,7 @@ export function PdfExportDialog({ roomId, onClose }: PdfExportDialogProps) {
                 onChange={(e) => setIncludeSystem(e.target.checked)}
                 data-test="pdf-export-include-system"
               />
-              {t("pdfExport.dialog.option.includeSystem")}
+              {tc("pdfExport.dialog.option.includeSystem")}
             </label>
             {error && (
               <p className="text-xs text-red-600" data-test="pdf-export-error">
@@ -120,7 +122,7 @@ export function PdfExportDialog({ roomId, onClose }: PdfExportDialogProps) {
               data-test="pdf-export-start"
               className="mt-2 rounded bg-robusta-accent px-3 py-2 text-sm text-black hover:bg-robusta-accent/90"
             >
-              {t("pdfExport.dialog.start")}
+              {tc("pdfExport.dialog.start")}
             </button>
           </div>
         )}
@@ -134,10 +136,10 @@ export function PdfExportDialog({ roomId, onClose }: PdfExportDialogProps) {
               ⏳
             </span>
             {progress.phase === "loading-font" ? (
-              <p>{t("pdfExport.dialog.progress.font")}</p>
+              <p>{tc("pdfExport.dialog.progress.font")}</p>
             ) : (
               <p>
-                {t("pdfExport.dialog.progress.render", {
+                {tc("pdfExport.dialog.progress.render", {
                   percent: String(progress.percent),
                 })}
               </p>
@@ -153,7 +155,7 @@ export function PdfExportDialog({ roomId, onClose }: PdfExportDialogProps) {
               data-test="pdf-export-download"
               className="rounded bg-robusta-accent px-4 py-2 text-sm text-black hover:bg-robusta-accent/90"
             >
-              {t("pdfExport.dialog.download")}
+              {tc("pdfExport.dialog.download")}
             </button>
             <button
               type="button"

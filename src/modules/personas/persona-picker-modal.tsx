@@ -43,6 +43,8 @@ import { PersonaCardColorDot } from "./persona-card-color-dot";
 // C-D26-5 (D6 11시 슬롯, 2026-05-02) — 168 회복 분리: theme.ts → theme-hue.ts.
 import { personaColorTokenToHue } from "@/modules/ui/theme-hue";
 import { t, type MessageKey } from "@/modules/i18n/messages";
+// C-D27-1 (D6 15시 슬롯, 2026-05-02) — picker.tab catalog 키는 lazy chunk 분리.
+import { tc } from "@/modules/i18n/catalog-i18n";
 // C-D26-4 (D6 11시 슬롯, 2026-05-02) — picker default 탭 'catalog' + custom 탭 분리.
 import { PersonaCatalogCard } from "./persona-catalog-card";
 import {
@@ -223,8 +225,8 @@ export function PersonaPickerModal({
                 `}
               >
                 {tab === "catalog"
-                  ? t("persona.picker.tab.catalog")
-                  : t("persona.picker.tab.custom")}
+                  ? tc("persona.picker.tab.catalog")
+                  : tc("persona.picker.tab.custom")}
               </button>
             );
           })}
