@@ -162,6 +162,14 @@ export const MESSAGES = {
     //   catalog 5 namespace (persona.catalog.* / persona.picker.tab.* / scenario.* /
     //   pdfExport.* / devMode.*) 본 파일에서 분리 → messages-catalog-ko.ts (lazy chunk).
     //   메인 번들 −2 kB → 168 정식 HARD GATE 복귀. 호출자는 catalog-i18n.ts 의 tc() 사용.
+    // C-D30-1 (D-5 07시 슬롯, 2026-05-03) — BYOK 비용 cap 위젯/배지 6키 (B-D30-2 + D-D30-1).
+    "cost.cap.title": "BYOK 일일 비용 한도",
+    "cost.cap.subtitle":
+      "당신의 키, 당신의 한도. Robusta는 일일 $1 안전망만 제공합니다.",
+    "cost.cap.current": "{current} / {cap}",
+    "cost.cap.reset": "자정 {time} KST 리셋",
+    "cost.cap.tooltip": "비용 한도 {pct}% 사용",
+    "cost.cap.warn": "비용 한도 {pct}% 도달 — 자정 리셋까지 잠시 대기 권장",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -291,6 +299,15 @@ export const MESSAGES = {
     "insight.multi.kind.complement": "Complement",
     "insight.multi.kind.blindspot": "Blindspot",
     // C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 5 namespace 분리 (en parity, messages-catalog-en.ts).
+    // C-D30-1 (D-5 07시 슬롯, 2026-05-03) — BYOK cost cap widget/badge 6 keys (en parity).
+    "cost.cap.title": "BYOK daily cost cap",
+    "cost.cap.subtitle":
+      "Your key, your cap. Robusta only provides a $1 daily safety net.",
+    "cost.cap.current": "{current} / {cap}",
+    "cost.cap.reset": "Resets at {time} KST (midnight UTC)",
+    "cost.cap.tooltip": "Cost cap {pct}% used",
+    "cost.cap.warn":
+      "Cost cap {pct}% reached — consider waiting until reset",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

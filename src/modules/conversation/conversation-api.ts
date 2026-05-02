@@ -17,8 +17,12 @@
 
 import { composeSystemPrompt } from "./system-prompt-composer";
 import { parseAnthropicStream } from "./stream-parser";
-import type { Message, MessageUsage } from "./conversation-types";
+import type { Message, MessageUsage, Insight } from "./conversation-types";
 import type { Participant } from "@/modules/participants/participant-types";
+// C-D30-5 (D-5 07시 슬롯, 2026-05-03) — Insight 본문 마크업 파서 통합.
+//   호출자(store)가 메시지 done 시점에 parseMessageInsights(content, speakerId) 호출 → cleanText / insights 분리.
+//   본 모듈은 helper 만 export — 실제 wiring 은 store 책임 (보존 13 store 직접 수정 회피).
+import { parseInsights as parseInsightsRaw } from "./insight-parser";
 // C-D20-2 (D6 11시 슬롯, 2026-05-01) — 꼬미 §3 권장 ② 흡수.
 //   shouldCompact 는 순수 함수(휴리스틱) — 메인 번들 영향 ≪ 1kB. 정적 import.
 //   compact + createAnthropicLLMClient 는 dynamic import — 메인 번들 무영향 (별도 chunk).
@@ -493,3 +497,18 @@ export const __conversation_api_internal = {
   shouldFallbackModel,
   sleepWithAbort,
 };
+
+/**
+ * C-D30-5 (D-5 07시 슬롯, 2026-05-03) — 메시지 단위 insight 파싱 helper.
+ *   호출자: conversation-store / message receive flow — done 상태 도달 시 1회 호출 권장.
+ *   반환: { cleanText, insights } — cleanText 는 message.content 로, insights 는 message.insights 로.
+ *
+ *   speakerId 미정 (예: 인간 발화 / system) 시 호출자가 빈 string 또는 participantId 전달.
+ *   인간 발화는 마크업 적용 X (System Prompt 가이드는 AI 발화자만) — 호출자 정책 결정.
+ */
+export function parseMessageInsights(
+  content: string,
+  speakerId: string,
+): { cleanText: string; insights: Insight[] } {
+  return parseInsightsRaw(content, speakerId);
+}

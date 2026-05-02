@@ -44,4 +44,21 @@ SIL Open Font License 1.1 — `LICENSE.OFL.txt` 참조. 재배포 자유, 단독
 
 - [x] 디렉토리 + LICENSE + README 등록 (C-D29-3)
 - [x] font-loader.ts 어댑터 추가 (C-D29-3)
-- [ ] 실 ttf 다운로드 — 다음 슬롯 또는 D-2 (5/6) 액션
+- [x] `scripts/build-fonts.mjs` 빌드 스크립트 등록 (C-D30-4, 2026-05-03 07시)
+- [ ] 실 ttf 다운로드 — `npm run build:fonts` (수동 실행, pyftsubset 필요)
+
+## 빌드 절차 (C-D30-4)
+
+```bash
+# 1) fonttools 설치 (pyftsubset 포함)
+pip install fonttools brotli
+
+# 2) Robusta 루트에서 빌드 실행
+npm run build:fonts
+
+# 3) 결과 ttf + SHA256SUMS 커밋
+git add public/fonts/NotoSansKR-Regular.ttf public/fonts/NotoSansKR-Subset.ttf public/fonts/SHA256SUMS
+git commit -m "feat(fonts): NotoSansKR subset rebuild"
+```
+
+CI 자동 실행 X — 외부 네트워크 보안 + 재현성 위해 수동 only.

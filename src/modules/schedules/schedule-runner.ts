@@ -301,12 +301,23 @@ export function startScheduleRunner(
       dailyCounts.set(dk, (dailyCounts.get(dk) ?? 0) + 1);
       hourlyCounts.set(hk, (hourlyCounts.get(hk) ?? 0) + 1);
       // C-D29-1 — 가산 (memory + Dexie). 영속 실패는 silent (in-memory fallback).
+      // C-D30-2 (D-5 07시 슬롯, 2026-05-03) — 다른 탭 BroadcastChannel 알림.
+      //   addAccum 후 비동기로 broadcastCostUpdate (미지원 환경 silent).
       accumTick += estimate;
-      void costGuard.addAccum(estimate).catch((err) => {
-        if (typeof console !== "undefined") {
-          console.warn("[robusta] schedule-runner: addAccum failed", err);
-        }
-      });
+      const accumAfter = accumTick;
+      void costGuard.addAccum(estimate)
+        .then(() => {
+          void import("@/modules/cost-cap/cost-broadcast").then(({ broadcastCostUpdate }) => {
+            broadcastCostUpdate(accumAfter);
+          }).catch(() => {
+            // dynamic import 실패 — silent (폴링 fallback).
+          });
+        })
+        .catch((err) => {
+          if (typeof console !== "undefined") {
+            console.warn("[robusta] schedule-runner: addAccum failed", err);
+          }
+        });
       void opts.fire(r).catch((err) => {
         console.warn("[robusta] schedule fire failed", r.id, err);
       });

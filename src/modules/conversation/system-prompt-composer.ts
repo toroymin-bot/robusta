@@ -127,6 +127,18 @@ function composeKo({ self, others, conversationTitle, persona }: InternalArgs): 
   lines.push("4. 추측이 필요한 경우 \"추정\"이라 명시한다.");
   lines.push("5. 서로 다른 AI는 관점이 다르다. 동의/반대를 명확히 한다.");
 
+  // C-D30-5 (D-5 07시 슬롯, 2026-05-03) — Insight 마크업 규칙 (Spec 005 hybrid).
+  //   AI 가 자율 마크업 → conversation-api parseInsights 가 추출 → message-bubble 푸터 자동 활성.
+  lines.push("");
+  lines.push("# 통찰 마크업 (선택)");
+  lines.push(
+    "통찰을 강조하려면 본문에 `[!insight:kind]요약[/insight]` 형식으로 마크업하세요.",
+  );
+  lines.push(
+    "kind 는 다음 4종 중 하나: agreement(합의) / disagreement(반박) / complement(보완) / blindspot(사각지대).",
+  );
+  lines.push("요약은 100자 이내, 한 줄 권장.");
+
   // persona (있으면) — 명세 customAppend 역할
   if (persona.trim().length > 0) {
     lines.push("");
@@ -180,6 +192,17 @@ function composeEn({ self, others, conversationTitle, persona }: InternalArgs): 
   lines.push(
     "5. Different AIs have different views. State agreement or disagreement clearly.",
   );
+
+  // C-D30-5 (D-5 07시 슬롯, 2026-05-03) — Insight markup rules (KO mirror).
+  lines.push("");
+  lines.push("# Insight markup (optional)");
+  lines.push(
+    "To highlight an insight, embed `[!insight:kind]summary[/insight]` in the body.",
+  );
+  lines.push(
+    "kind must be one of: agreement / disagreement / complement / blindspot.",
+  );
+  lines.push("Keep the summary under 100 characters, single line preferred.");
 
   if (persona.trim().length > 0) {
     lines.push("");

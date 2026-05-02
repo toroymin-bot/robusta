@@ -23,8 +23,10 @@
     "verify:d28": "node scripts/verify-d28.mjs",
     "verify:d29": "node scripts/verify-d29.mjs",
     "verify:hue-sync": "node scripts/verify-hue-sync.mjs",
+    "verify:d30": "node scripts/verify-d30.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",
     "check:catalog-isolation": "node scripts/check-catalog-isolation.mjs",
+    "build:fonts": "node scripts/build-fonts.mjs",
     "e2e:mock": "playwright test --config=playwright.config.ts"
   },
   "dependencies": {
