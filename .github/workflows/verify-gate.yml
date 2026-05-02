@@ -93,6 +93,12 @@ jobs:
       - name: D-D27 통합 검증 (168 kB 정식 HARD GATE)
         run: node scripts/verify-d27.mjs
 
+      # C-D28-자-1 (D6 19시 자율 슬롯, 2026-05-02) — catalog 분리 일관성 자동 검증.
+      #   verify-d27 §1 의 workspace + header-cluster 2개 가드를 src 전체로 자동 확장.
+      #   Spec 005~011 신규 모듈 추가 시 catalog 의존이 메인 번들로 새는 회귀 0 보장.
+      - name: catalog 분리 일관성 (메인 번들 catalog 의존 0)
+        run: node scripts/check-catalog-isolation.mjs
+
       # 별도 next build step — verify-d22 호환 게이트 (`npm run build` 문자열 회귀 가드).
       #   verify-d27 가 이미 build 했으므로 .next 캐시 재사용 — 시간 ↓.
       - name: Next build (1st Load JS 게이트 시각 회귀)
