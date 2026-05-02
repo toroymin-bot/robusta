@@ -120,6 +120,19 @@ export interface AutoMarkSampleRow {
 }
 
 /**
+ * C-D29-1 (D-5 03시 슬롯, 2026-05-03) — Tori spec C-D29-1 (KQ_22 (2) BYOK 비용 cap wiring).
+ *   Dexie v9 신규 테이블. schedule-runner 4중 가드 (3) "비용 cap" 활성을 위한 일일 누적 USD.
+ *   PK = date ("YYYY-MM-DD" UTC). 자정 경계는 date 키 변경으로 자동 리셋.
+ *   usd = 정수 마이크로 USD 가 아닌 number — Dexie JSON 직렬화 그대로. 일일 1.0 USD 기준 부동소수 오차 무시 가능.
+ *   다중 탭 race 안전: addAccum 트랜잭션 (rw, costAccum) 으로 read-modify-write 원자.
+ */
+export interface CostAccumRow {
+  date: string; // "YYYY-MM-DD" UTC
+  usd: number;
+  updatedAt: number;
+}
+
+/**
  * C-D28-4: AutoMarkSample (메모리 1차) ↔ AutoMarkSampleRow (영속 1차) 변환 헬퍼.
  *   호출자 (auto-mark-sample-store) 가 add 시 row 변환, hydrate 시 sample 복원.
  */
@@ -158,6 +171,8 @@ export class RobustaDB extends Dexie {
   schedules!: Table<ScheduleRow, string>;
   // C-D28-4 (D6 23시 슬롯, 2026-05-02) — auto-mark sample 영구화 (LRU 1000 cap).
   autoMarks!: Table<AutoMarkSampleRow, number>;
+  // C-D29-1 (D-5 03시 슬롯, 2026-05-03) — schedule-runner 4중 가드 (3) 비용 cap 일일 누적.
+  costAccum!: Table<CostAccumRow, string>;
 
   constructor() {
     super("robusta");
@@ -298,6 +313,24 @@ export class RobustaDB extends Dexie {
       insights: "id, roomId, sourceMessageId, [roomId+createdAt]",
       schedules: "id, enabled, target_room, created_at, last_run", // C-D28-1 신규
       autoMarks: "++id, roomId, ts, [roomId+ts]", // C-D28-4 신규 (LRU 1000 cap은 store 단)
+    });
+    // v9 — C-D29-1 (D-5 03시 슬롯, 2026-05-03) — Tori spec C-D29-1.
+    //   costAccum 테이블 1건 신설 (KQ_22 (2) BYOK 비용 cap wiring).
+    //   PK = date "YYYY-MM-DD" UTC. 일일 1행 — 자정 경계는 date 키 변경으로 자동 리셋.
+    //   기존 v8 테이블 Dexie auto-carry — 0 손실. upgrade 함수 없음.
+    this.version(9).stores({
+      participants: "id, kind, name",
+      conversations: "id, updatedAt",
+      messages:
+        "id, conversationId, createdAt, status, streamingStartedAt",
+      apiKeys: "provider",
+      settings: "key",
+      apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+      personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
+      insights: "id, roomId, sourceMessageId, [roomId+createdAt]",
+      schedules: "id, enabled, target_room, created_at, last_run",
+      autoMarks: "++id, roomId, ts, [roomId+ts]",
+      costAccum: "date, updatedAt", // C-D29-1 신규
     });
   }
 }

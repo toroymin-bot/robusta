@@ -18,6 +18,13 @@ const InsightFooter = dynamic(
   () => import("./insight-mark").then((m) => m.InsightFooter),
   { ssr: false, loading: () => null },
 );
+// C-D29-2 (D-5 03시 슬롯, 2026-05-03) — 다중 발화자 통찰 푸터 lazy 로드.
+//   메시지에 message.insights?.length > 0 인 경우만 마운트. 메인 번들 +0 (lazy chunk).
+const MultiSpeakerInsightFooter = dynamic(
+  () =>
+    import("./insight-footer").then((m) => m.MultiSpeakerInsightFooter),
+  { ssr: false, loading: () => null },
+);
 
 interface MessageBubbleProps {
   message: Message;
@@ -154,6 +161,17 @@ export function MessageBubble({
       {message.status === "done" && (
         <InsightFooter message={message} onCapture={onInsightCapture} />
       )}
+      {/* C-D29-2 (D-5 03시 슬롯, 2026-05-03) — 다중 발화자 통찰 푸터 (Spec 003 폴리시 본체).
+          message.insights 배열이 1건 이상인 경우만 마운트. MVP 는 빈 배열 default → 미렌더.
+          Phase 2 (Spec 005+) 에서 LLM 메타 추론 wiring 후 활성. 메인 번들 +0 (lazy chunk). */}
+      {message.status === "done" &&
+        message.insights &&
+        message.insights.length > 0 && (
+          <MultiSpeakerInsightFooter
+            messageId={message.id}
+            insights={message.insights}
+          />
+        )}
     </div>
   );
 }

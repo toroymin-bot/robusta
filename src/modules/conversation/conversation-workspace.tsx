@@ -21,6 +21,15 @@ const DevModeStrip = dynamic(
   () => import("./dev-mode-strip").then((m) => m.DevModeStrip),
   { ssr: false, loading: () => null },
 );
+// C-D29-5 (D-5 03시 슬롯, 2026-05-03) — auto-mark sample-store hydrate 부트 호출처.
+//   StrictMode 이중 마운트 idempotent (store 내 hydrated 플래그). 메인 번들 +0 (lazy chunk).
+const InsightMarkMount = dynamic(
+  () =>
+    import("@/modules/insights/insight-mark-mount").then(
+      (m) => m.InsightMarkMount,
+    ),
+  { ssr: false, loading: () => null },
+);
 import { ApiKeysView } from "@/modules/api-keys/api-keys-view";
 // ~~maskApiKey~~ — C-D17-13 (Day 5 15시) HeaderCluster로 이관, 본 파일에서 직접 호출 X.
 import { ParticipantsPanel } from "@/modules/participants/participants-panel";
@@ -228,6 +237,9 @@ export function ConversationWorkspace() {
         {/* C-D27-5 (D6 15시 슬롯, 2026-05-02) — dev-mode-strip dynamic 마운트.
             #dev hash 활성 시만 노출 (컴포넌트 내부 가드). 일반 사용자 노출 0. */}
         <DevModeStrip />
+        {/* C-D29-5 (D-5 03시 슬롯, 2026-05-03) — auto-mark-sample-store hydrate 부트 호출.
+            null 렌더 — 일반 사용자 첫 페인트 시점에 sample 복원. StrictMode 이중 마운트 안전. */}
+        <InsightMarkMount />
 
         <ConversationView onRequestApiKeyModal={() => setKeysOpen(true)} />
       </main>

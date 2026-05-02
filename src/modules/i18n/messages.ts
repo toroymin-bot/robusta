@@ -149,6 +149,15 @@ export const MESSAGES = {
     "insightLibrary.entry.button": "인사이트 라이브러리 열기",
     "insightLibrary.entry.label": "💡 인사이트 ({count})",
     "insightLibrary.capture.guide": "메시지 푸터에서 통찰 후보를 마크하세요.",
+    // C-D29-2 (D-5 03시 슬롯, 2026-05-03) — 다중 발화자 통찰 푸터 (Spec 003 폴리시 본체).
+    "insight.footer.label": "통찰 {count}",
+    "insight.footer.panel.title": "다중 발화자 통찰 ({count})",
+    "insight.footer.panel.aria": "메시지 통찰 패널",
+    "insight.footer.speaker.deleted": "(삭제됨)",
+    "insight.multi.kind.agreement": "합의",
+    "insight.multi.kind.disagreement": "반박",
+    "insight.multi.kind.complement": "보완",
+    "insight.multi.kind.blindspot": "사각지대",
     // C-D27-1 (D6 15시 슬롯, 2026-05-02) — KQ_21 (c) 채택분.
     //   catalog 5 namespace (persona.catalog.* / persona.picker.tab.* / scenario.* /
     //   pdfExport.* / devMode.*) 본 파일에서 분리 → messages-catalog-ko.ts (lazy chunk).
@@ -272,6 +281,15 @@ export const MESSAGES = {
     "insightLibrary.entry.button": "Open insight library",
     "insightLibrary.entry.label": "💡 Insights ({count})",
     "insightLibrary.capture.guide": "Mark insight candidates from the message footer.",
+    // C-D29-2 (D-5 03시 슬롯, 2026-05-03) — Multi-speaker insight footer (Spec 003 evolved).
+    "insight.footer.label": "Insights {count}",
+    "insight.footer.panel.title": "Multi-speaker insights ({count})",
+    "insight.footer.panel.aria": "Message insight panel",
+    "insight.footer.speaker.deleted": "(deleted)",
+    "insight.multi.kind.agreement": "Agreement",
+    "insight.multi.kind.disagreement": "Disagreement",
+    "insight.multi.kind.complement": "Complement",
+    "insight.multi.kind.blindspot": "Blindspot",
     // C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 5 namespace 분리 (en parity, messages-catalog-en.ts).
   },
 } as const satisfies Record<Locale, Record<string, string>>;

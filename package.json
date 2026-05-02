@@ -20,6 +20,8 @@
     "verify:d25": "node scripts/verify-d25.mjs",
     "verify:d26": "node scripts/verify-d26.mjs",
     "verify:d27": "node scripts/verify-d27.mjs",
+    "verify:d28": "node scripts/verify-d28.mjs",
+    "verify:d29": "node scripts/verify-d29.mjs",
     "verify:hue-sync": "node scripts/verify-hue-sync.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",
     "check:catalog-isolation": "node scripts/check-catalog-isolation.mjs",
