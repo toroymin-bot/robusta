@@ -82,5 +82,11 @@ jobs:
       - name: D-D25 통합 검증
         run: node scripts/verify-d25.mjs
 
+      # C-D26-5 (D6 11시 슬롯, 2026-05-02) — D-D26 5건 통합 회귀 + 168 kB HARD GATE.
+      #   verify-d26 가 내부에서 next build 를 한 번 실행해 First Load JS 168 kB 검증.
+      #   별도 build step 과의 중복을 피하기 위해 VERIFY_D26_SKIP_BUILD=1 로 위임 가능 — 본 워크플로우는 직접 실행 우선.
+      - name: D-D26 통합 검증 (168 kB HARD GATE 포함)
+        run: node scripts/verify-d26.mjs
+
       - name: Next build (1st Load JS 게이트 시각 회귀)
         run: npm run build

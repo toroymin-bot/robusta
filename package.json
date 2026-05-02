@@ -18,13 +18,16 @@
     "verify:d23": "node scripts/verify-d23.mjs",
     "verify:d24": "node scripts/verify-d24.mjs",
     "verify:d25": "node scripts/verify-d25.mjs",
+    "verify:d26": "node scripts/verify-d26.mjs",
     "verify:hue-sync": "node scripts/verify-hue-sync.mjs",
-    "check:concept-copy": "node scripts/check-concept-copy.mjs"
+    "check:concept-copy": "node scripts/check-concept-copy.mjs",
+    "e2e:mock": "playwright test --config=playwright.config.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
     "dexie": "^4.0.10",
     "next": "^15.5.15",
+    "pdfkit": "^0.15.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "zustand": "^5.0.3"

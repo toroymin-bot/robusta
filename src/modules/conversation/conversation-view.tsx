@@ -285,8 +285,9 @@ export function ConversationView({ onRequestApiKeyModal }: ConversationViewProps
       // C-D25-1 (D6 07시) — B-56 자동 마크 v0. AI 응답 완료 시 시그널 어휘로 markedBy='auto'.
       //   C-D25-5 168 회복: dynamic import — 어휘 사전 + 매핑 함수가 메인 번들에 0 영향.
       //   import.then 은 done 분기에서만 await 되므로 사용자 perceived latency 0 (이미 완료된 메시지).
+      // C-D26-1 (D6 11시 슬롯) — auto-mark v1: vocab dynamic 분리, maybeAutoMark async.
       const { maybeAutoMark } = await import("@/modules/insights/auto-mark");
-      const autoMark = maybeAutoMark({
+      const autoMark = await maybeAutoMark({
         content: accumulated,
         participantKind: speaker.kind,
         participantId: speaker.id,

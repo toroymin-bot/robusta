@@ -444,10 +444,11 @@ export const useConversationStore = create<ConversationStore>()(
 
     // C-D25-1 (D6 07시) — B-56 자동 마크 v0. retry는 동일 speaker(AI)로만 plan 통과.
     //   C-D25-5 168 회복: dynamic import — 메인 번들 영향 0.
+    // C-D26-1 (D6 11시 슬롯) — auto-mark v1: vocab dynamic 분리로 maybeAutoMark async 화.
     const { maybeAutoMark: maybeAutoMarkRetry } = await import(
       "@/modules/insights/auto-mark"
     );
-    const autoMark = maybeAutoMarkRetry({
+    const autoMark = await maybeAutoMarkRetry({
       content: accumulated,
       participantKind: plan.speaker.kind,
       participantId: plan.speaker.id,
@@ -769,10 +770,11 @@ async function runAutoTurn(
   // C-D25-1 (D6 07시) — B-56 자동 마크 v0. AutoLoop 한 턴 종료 시 자동 마크 후보 적용.
   //   speaker는 함수 진입 시 ai로 검증됨. system 가드는 maybeAutoMark 내부.
   //   C-D25-5 168 회복: dynamic import — 메인 번들 영향 0.
+  // C-D26-1 (D6 11시 슬롯) — auto-mark v1: async 화 (vocab dynamic).
   const { maybeAutoMark: maybeAutoMarkAuto } = await import(
     "@/modules/insights/auto-mark"
   );
-  const autoMark = maybeAutoMarkAuto({
+  const autoMark = await maybeAutoMarkAuto({
     content: accumulated,
     participantKind: speaker.kind,
     participantId: speaker.id,

@@ -58,22 +58,27 @@ function tryExec(cmd) {
     "C-D25-1: auto-mark.ts 헤더 주석 (D6 07시)",
     auto.includes("C-D25-1") && auto.includes("2026-05-02"),
   );
+  // D-D26 (C-D26-1) 진화: inferInsightKind / maybeAutoMark 모두 async + vocab dynamic 으로 분리.
   assert(
-    "C-D25-1: inferInsightKind export + InferInsightKindOptions",
-    auto.includes("export function inferInsightKind") &&
+    "C-D25-1: inferInsightKind export + InferInsightKindOptions (D-D26: async)",
+    /export\s+(async\s+)?function\s+inferInsightKind/.test(auto) &&
       auto.includes("export interface InferInsightKindOptions"),
   );
-  assert(
-    "C-D25-1: ko 어휘 사전 3종 (counter / augment / newView) 5건씩",
-    /COUNTER_VOCAB_KO\s*=\s*\[[\s\S]{0,200}\]/.test(auto) &&
-      /AUGMENT_VOCAB_KO\s*=\s*\[[\s\S]{0,200}\]/.test(auto) &&
-      /NEWVIEW_VOCAB_KO\s*=\s*\[[\s\S]{0,200}\]/.test(auto),
+  // 어휘 사전은 D-D26 에서 ./auto-mark-vocab 로 분리 — auto-mark.ts 또는 vocab 둘 중 한 곳에 정의되면 PASS.
+  const vocab = await readSrc("src/modules/insights/auto-mark-vocab.ts").catch(
+    () => "",
   );
   assert(
-    "C-D25-1: en 어휘 사전 3종 (counter / augment / newView)",
-    auto.includes("COUNTER_VOCAB_EN") &&
-      auto.includes("AUGMENT_VOCAB_EN") &&
-      auto.includes("NEWVIEW_VOCAB_EN"),
+    "C-D25-1: ko 어휘 사전 3종 (counter / augment / newView) — D-D26: vocab 분리",
+    /COUNTER_VOCAB_KO\s*=\s*\[/.test(auto + vocab) &&
+      /AUGMENT_VOCAB_KO\s*=\s*\[/.test(auto + vocab) &&
+      /NEWVIEW_VOCAB_KO\s*=\s*\[/.test(auto + vocab),
+  );
+  assert(
+    "C-D25-1: en 어휘 사전 3종 (counter / augment / newView) — D-D26: vocab 분리",
+    (auto + vocab).includes("COUNTER_VOCAB_EN") &&
+      (auto + vocab).includes("AUGMENT_VOCAB_EN") &&
+      (auto + vocab).includes("NEWVIEW_VOCAB_EN"),
   );
   assert(
     "C-D25-1: 우선순위 newView > counter > augment 분기 (의미 강도 순)",
@@ -82,8 +87,8 @@ function tryExec(cmd) {
     ),
   );
   assert(
-    "C-D25-1: maybeAutoMark export + AI 한정 + system 가드 + existingMark skip",
-    auto.includes("export function maybeAutoMark") &&
+    "C-D25-1: maybeAutoMark export + AI 한정 + system 가드 + existingMark skip (D-D26: async)",
+    /export\s+(async\s+)?function\s+maybeAutoMark/.test(auto) &&
       auto.includes('participantKind !== "ai"') &&
       auto.includes('participantId === "system"') &&
       auto.includes("existingMark") &&
@@ -186,18 +191,22 @@ function tryExec(cmd) {
 // 3) C-D25-3 — picker-card hue dot + persona-catalog v1 + colorTokenToHue 매핑
 // ─────────────────────────────────────────────────────────────────────────────
 {
+  // D-D26 (C-D26-5) 진화: 매핑 정의를 theme.ts → theme-hue.ts 별도 모듈로 분리.
+  //   theme 또는 theme-hue 둘 중 한 곳에서 발견되면 PASS.
   const theme = await readSrc("src/modules/ui/theme.ts");
+  const themeHue = await readSrc("src/modules/ui/theme-hue.ts").catch(() => "");
+  const themeAll = theme + "\n" + themeHue;
   assert(
-    "C-D25-3: theme.ts PERSONA_COLOR_TOKEN_TO_HUE 매핑 (5 AI + 2 human = 7)",
-    theme.includes("PERSONA_COLOR_TOKEN_TO_HUE") &&
-      theme.includes('"robusta-color-participant-1": 20') &&
-      theme.includes('"robusta-color-participant-5": 280') &&
-      theme.includes('"robusta-color-participant-human-1"'),
+    "C-D25-3: PERSONA_COLOR_TOKEN_TO_HUE 매핑 (5 AI + 2 human = 7) — D-D26: theme-hue 분리",
+    themeAll.includes("PERSONA_COLOR_TOKEN_TO_HUE") &&
+      themeAll.includes('"robusta-color-participant-1": 20') &&
+      themeAll.includes('"robusta-color-participant-5": 280') &&
+      themeAll.includes('"robusta-color-participant-human-1"'),
   );
   assert(
-    "C-D25-3: theme.ts personaColorTokenToHue 함수 + satisfies Record<PersonaColorToken, number>",
-    theme.includes("export function personaColorTokenToHue") &&
-      theme.includes("satisfies Record<PersonaColorToken, number>"),
+    "C-D25-3: personaColorTokenToHue 함수 + satisfies Record<PersonaColorToken, number> — D-D26: theme-hue 분리",
+    themeAll.includes("export function personaColorTokenToHue") &&
+      themeAll.includes("satisfies Record<PersonaColorToken, number>"),
   );
 
   const picker = await readSrc(

@@ -40,8 +40,15 @@ import {
 // C-D25-3 (D6 07시 슬롯, 2026-05-02) — KQ_18.2 (b) picker-card 우상단 5베이스 hue dot.
 //   기존 colorToken (CSS) 시스템 보존, hue 라벨은 매핑 함수로 합성.
 import { PersonaCardColorDot } from "./persona-card-color-dot";
-import { personaColorTokenToHue } from "@/modules/ui/theme";
+// C-D26-5 (D6 11시 슬롯, 2026-05-02) — 168 회복 분리: theme.ts → theme-hue.ts.
+import { personaColorTokenToHue } from "@/modules/ui/theme-hue";
 import { t, type MessageKey } from "@/modules/i18n/messages";
+// C-D26-4 (D6 11시 슬롯, 2026-05-02) — picker default 탭 'catalog' + custom 탭 분리.
+import { PersonaCatalogCard } from "./persona-catalog-card";
+import {
+  PERSONA_CATALOG_V1,
+  type PersonaCatalogEntry,
+} from "./persona-catalog";
 
 /** D-14.2 참여자 제한 상수 — participants-panel과 동기화. */
 const PARTICIPANT_LIMIT_TOTAL = 4;
@@ -90,6 +97,10 @@ export function PersonaPickerModal({
   const pushToast = useToastStore((s) => s.push);
 
   const [kind, setKind] = useState<PersonaKind>("ai");
+  // C-D26-4 (D6 11시 슬롯, 2026-05-02) — picker default 'catalog' / 'custom' 탭 분리.
+  //   'catalog' (default) = PERSONA_CATALOG_V1 5종 catalog 카드 (Spec 004 진입점).
+  //   'custom' = 기존 AI/Human 토글 + preset 카드 + "직접 만들기" (호환 보존).
+  const [activeTab, setActiveTab] = useState<"catalog" | "custom">("catalog");
   const firstCardRef = useRef<HTMLButtonElement | null>(null);
   // D-14.2: limit 카드 클릭 시 토스트 1회만 노출. picker close 또는 kind 토글 시 reset.
   const toastShownRef = useRef<boolean>(false);
@@ -185,7 +196,59 @@ export function PersonaPickerModal({
           </button>
         </div>
 
-        {/* AI/인간 토글 */}
+        {/* C-D26-4 (D6 11시) — 'catalog' / 'custom' 탭. WAI-ARIA tablist. */}
+        <div
+          className="mb-3 flex gap-1 rounded border border-robusta-divider p-1"
+          role="tablist"
+          aria-label="Picker tabs"
+          data-test="picker-tab-bar"
+        >
+          {(["catalog", "custom"] as const).map((tab) => {
+            const active = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                data-test={`picker-tab-${tab}`}
+                onClick={() => setActiveTab(tab)}
+                className={`
+                  flex-1 rounded px-3 py-1.5 text-sm
+                  ${
+                    active
+                      ? "bg-robusta-accent text-black"
+                      : "text-robusta-ink hover:bg-robusta-accentSoft/40"
+                  }
+                `}
+              >
+                {tab === "catalog"
+                  ? t("persona.picker.tab.catalog")
+                  : t("persona.picker.tab.custom")}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* C-D26-4: catalog 탭 — 5종 PersonaCatalogCard */}
+        {activeTab === "catalog" && (
+          <div
+            className="grid grid-cols-1 gap-3 md:grid-cols-2"
+            data-test="picker-catalog-grid"
+          >
+            {PERSONA_CATALOG_V1.map((preset) => (
+              <PersonaCatalogCard
+                key={preset.id}
+                preset={preset}
+                onSelect={(p: PersonaCatalogEntry) => onPick(p.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* AI/인간 토글 — 'custom' 탭에서만 노출 (호환 보존). */}
+        {activeTab === "custom" && (
+        <>
         <div
           className="mb-4 flex gap-1 rounded border border-robusta-divider p-1"
           role="tablist"
@@ -330,6 +393,8 @@ export function PersonaPickerModal({
         >
           {t("persona.picker.customCta")}
         </button>
+        </>
+        )}
       </div>
     </div>
   );
