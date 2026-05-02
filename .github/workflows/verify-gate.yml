@@ -96,8 +96,15 @@ jobs:
       # C-D28-자-1 (D6 19시 자율 슬롯, 2026-05-02) — catalog 분리 일관성 자동 검증.
       #   verify-d27 §1 의 workspace + header-cluster 2개 가드를 src 전체로 자동 확장.
       #   Spec 005~011 신규 모듈 추가 시 catalog 의존이 메인 번들로 새는 회귀 0 보장.
+      #   C-D28-2 (D6 23시 슬롯, 2026-05-02) 강화: EXCLUDED_DIRS + LAZY 화이트리스트 누락 메시지.
       - name: catalog 분리 일관성 (메인 번들 catalog 의존 0)
         run: node scripts/check-catalog-isolation.mjs
+
+      # C-D28-1~5 (D6 23시 슬롯, 2026-05-02) — D-D28 5건 통합 회귀 (18 assertion).
+      #   db.ts v8 schedules+autoMarks / schedule-runner / auto-mark-sample-store / pickScenario.
+      #   168 HARD GATE 는 verify-d27 가 담당 — 본 게이트는 build skip 으로 cache 재사용.
+      - name: D-D28 통합 검증
+        run: node scripts/verify-d28.mjs
 
       # 별도 next build step — verify-d22 호환 게이트 (`npm run build` 문자열 회귀 가드).
       #   verify-d27 가 이미 build 했으므로 .next 캐시 재사용 — 시간 ↓.

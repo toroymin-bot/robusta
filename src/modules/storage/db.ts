@@ -4,6 +4,7 @@ import Dexie, { type Table } from "dexie";
 import type { Participant } from "@/modules/participants/participant-types";
 import type { Persona } from "@/modules/personas/persona-types";
 import type { InsightKind } from "@/modules/conversation/conversation-types";
+import type { AutoMarkSample } from "@/modules/insights/auto-mark-precision";
 
 export interface StoredApiKey {
   provider: string;
@@ -83,6 +84,63 @@ export interface InsightRow {
   createdAt: number;
 }
 
+/**
+ * C-D28-1 (D6 23시 슬롯, 2026-05-02) — Tori spec C-D28-1 (B-D28-2/F-D28-4).
+ *   Dexie v8 신규 테이블. Spec 004 스케줄 영구화의 root 단위.
+ *   PK = id (string). cron 문자열 invalid 시 store 단에서 거부 — 본 테이블은 raw 영속.
+ *   target_room / target_persona / prompt 는 Spec 004 본체에서 wiring.
+ *   last_run = null 은 한 번도 실행 안 됨, number 는 epoch ms.
+ */
+export interface ScheduleRow {
+  id: string;
+  name: string;
+  cron: string;
+  target_room: string;
+  target_persona: string;
+  prompt: string;
+  enabled: boolean;
+  last_run: number | null;
+  created_at: number;
+}
+
+/**
+ * C-D28-4 (D6 23시 슬롯, 2026-05-02) — Tori spec C-D28-4 (B-D28-1/F-D28-1).
+ *   Dexie v8 신규 테이블. auto-mark v1 sample 영구화 (zustand 메모리 → IndexedDB).
+ *   PK = id (auto-increment). LRU 1000 cap (store 단 add() 가 평가).
+ *   roomId 인덱스 — 룸별 sample 카운트 / [roomId+ts] 룸별 최신순 조회.
+ *   ts = 등록 epoch ms. inferred/actual 은 InsightKind 또는 null.
+ */
+export interface AutoMarkSampleRow {
+  id?: number; // auto-increment ('id++')
+  roomId: string;
+  ts: number;
+  inferred: InsightKind | null;
+  actual: InsightKind | null;
+  text: string;
+}
+
+/**
+ * C-D28-4: AutoMarkSample (메모리 1차) ↔ AutoMarkSampleRow (영속 1차) 변환 헬퍼.
+ *   호출자 (auto-mark-sample-store) 가 add 시 row 변환, hydrate 시 sample 복원.
+ */
+export function autoMarkSampleToRow(
+  s: AutoMarkSample,
+  roomId: string,
+  ts: number = Date.now(),
+): Omit<AutoMarkSampleRow, "id"> {
+  return {
+    roomId,
+    ts,
+    inferred: s.inferred,
+    actual: s.actual,
+    text: s.text,
+  };
+}
+
+export function autoMarkRowToSample(row: AutoMarkSampleRow): AutoMarkSample {
+  return { inferred: row.inferred, actual: row.actual, text: row.text };
+}
+
 export class RobustaDB extends Dexie {
   participants!: Table<Participant, string>;
   conversations!: Table<StoredConversation, string>;
@@ -96,6 +154,10 @@ export class RobustaDB extends Dexie {
   personas!: Table<Persona, string>;
   // C-D25-2 (D6 07시 슬롯, 2026-05-02) — 인사이트 영구화 (B-57/F-57).
   insights!: Table<InsightRow, string>;
+  // C-D28-1 (D6 23시 슬롯, 2026-05-02) — 스케줄 영구화 (Spec 004 root).
+  schedules!: Table<ScheduleRow, string>;
+  // C-D28-4 (D6 23시 슬롯, 2026-05-02) — auto-mark sample 영구화 (LRU 1000 cap).
+  autoMarks!: Table<AutoMarkSampleRow, number>;
 
   constructor() {
     super("robusta");
@@ -217,6 +279,25 @@ export class RobustaDB extends Dexie {
       apiKeyMeta: "pk, provider, lastUnauthorizedAt",
       personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
       insights: "id, roomId, sourceMessageId, [roomId+createdAt]", // 신규
+    });
+    // v8 — C-D28-1 + C-D28-4 (D6 23시 슬롯, 2026-05-02) — Tori spec.
+    //   schedules + autoMarks 두 테이블 동시 신설 (1회 upgrade — 사용자 환경 부담 최소화).
+    //   기존 v7 테이블 Dexie auto-carry — 0 손실.
+    //   schedules: PK id / 인덱스 enabled (활성 스케줄만 빠른 조회) / target_room / created_at / last_run
+    //   autoMarks: auto-increment id (id++) / 인덱스 roomId / ts / [roomId+ts] (룸별 최신순)
+    //   upgrade 함수 없음 — 신규 테이블만 추가, 기존 row 변경 0.
+    this.version(8).stores({
+      participants: "id, kind, name",
+      conversations: "id, updatedAt",
+      messages:
+        "id, conversationId, createdAt, status, streamingStartedAt",
+      apiKeys: "provider",
+      settings: "key",
+      apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+      personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
+      insights: "id, roomId, sourceMessageId, [roomId+createdAt]",
+      schedules: "id, enabled, target_room, created_at, last_run", // C-D28-1 신규
+      autoMarks: "++id, roomId, ts, [roomId+ts]", // C-D28-4 신규 (LRU 1000 cap은 store 단)
     });
   }
 }

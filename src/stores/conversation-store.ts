@@ -85,6 +85,19 @@ interface ConversationStore {
   activeConversationId: string;
   abortController: AbortController | null;
   /**
+   * C-D28-5 (D6 23시 슬롯, 2026-05-02) — Tori spec C-D28-5 (B-D28+/F-D28-2).
+   *   Welcome 카드 클릭 → pickScenario(scenarioId) 호출. 4 deps wiring 됨:
+   *     1) registerPersona — usePersonaStore.upsert (lazy import 로 메인 번들 보호)
+   *     2) setSeedPlaceholder — seedPlaceholder 상태 갱신
+   *     3) markVisited — visited-store
+   *     4) switchToWorkspace — welcomePhase 'workspace' 전환
+   *   page.tsx 가 welcomePhase 구독 → "welcome"/"workspace" 분기.
+   *   호출 2회는 idempotent (markVisited / personas.upsert 모두 멱등).
+   */
+  seedPlaceholder: string;
+  welcomePhase: "welcome" | "workspace";
+  pickScenario: (scenarioId: string) => Promise<void>;
+  /**
    * D-8.2 발언 모드 — default 'manual'. round-robin 시 자동 진행 가능.
    * 메모리만 (새로고침 시 'manual'로 초기화 — 명세 §11.2 의도된 동작).
    */
@@ -153,6 +166,10 @@ export const useConversationStore = create<ConversationStore>()(
   turnMode: "manual",
   // D-8.2: 초기 false (사용자가 첫 메시지 보내기 전).
   lockedAfterHuman: false,
+  // C-D28-5: 시나리오 사전 등록 후 입력 바 placeholder. 빈 값 = 기본 카피.
+  seedPlaceholder: "",
+  // C-D28-5: 첫 진입 페이즈. visited-store 와 별개 — pickScenario 호출 시 'workspace' 전환.
+  welcomePhase: "welcome",
 
   async loadFromDb() {
     const db = getDb();
@@ -283,6 +300,66 @@ export const useConversationStore = create<ConversationStore>()(
   // - [▶ 다음 발언] 클릭 또는 AI 발언 완료 후: false
   setLockedAfterHuman(locked) {
     set({ lockedAfterHuman: locked });
+  },
+
+  /**
+   * C-D28-5: pickScenario — 4 deps 내부 wiring.
+   *   1) registerPersona (usePersonaStore.upsert) — 카탈로그 lazy import
+   *   2) setSeedPlaceholder — 본 store 상태 갱신
+   *   3) markVisited — visited-store
+   *   4) switchToWorkspace — welcomePhase = 'workspace'
+   *
+   *   엣지 케이스:
+   *   - scenario_id 미존재 → console.warn + 무동작 (rollback 0).
+   *   - persona-store hydrate 미완료 → upsert 자체는 idempotent (Dexie put).
+   *   - 호출 2회 → idempotent (markVisited / upsert / phase 전환 모두 멱등).
+   *
+   *   lazy import: scenario-catalog / persona-catalog / scenario-pick / catalog-i18n / visited-store /
+   *               persona-store / persona-from-preset 모두 dynamic import — 메인 번들 영향 0
+   *               (catalog 분리 일관성 게이트 통과).
+   */
+  async pickScenario(scenarioId) {
+    try {
+      const [
+        { SCENARIO_CATALOG_V1 },
+        { pickScenario: pickScenarioFn },
+        { usePersonaStore },
+        { personaFromPreset },
+        { markVisited },
+      ] = await Promise.all([
+        import("@/modules/scenarios/scenario-catalog"),
+        import("@/modules/scenarios/scenario-pick"),
+        import("@/modules/personas/persona-store"),
+        import("@/modules/personas/persona-from-preset"),
+        import("@/modules/visit/visited-store"),
+      ]);
+      const scenario = SCENARIO_CATALOG_V1.find((s) => s.id === scenarioId);
+      if (!scenario) {
+        console.warn(
+          `[robusta] pickScenario: scenarioId='${scenarioId}' 카탈로그 미존재 — 무동작`,
+        );
+        return;
+      }
+      const upsert = usePersonaStore.getState().upsert;
+      pickScenarioFn(scenario, {
+        registerPersona(entry) {
+          // PersonaCatalogEntry → Persona 변환 + persona-store.upsert (멱등).
+          const persona = personaFromPreset(entry);
+          void upsert(persona);
+        },
+        setSeedPlaceholder: (text) => {
+          set({ seedPlaceholder: text });
+        },
+        markVisited: () => {
+          markVisited();
+        },
+        switchToWorkspace: () => {
+          set({ welcomePhase: "workspace" });
+        },
+      });
+    } catch (err) {
+      console.warn("[robusta] pickScenario failed", err);
+    }
   },
 
   // D-10.3: 메시지 재전송 — buildRetryPlan으로 결정 + streamMessage 재실행.

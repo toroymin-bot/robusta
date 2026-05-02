@@ -2,8 +2,9 @@
 /**
  * check-catalog-isolation.mjs
  *   - C-D28-자-1 (D6 19시 자율 슬롯, 2026-05-02) — 꼬미 자체 결정.
- *   - verify-d27 §1 의 catalog 정적 import 가드(workspace + header-cluster 2개)를
- *     모든 메인 번들 모듈로 자동 확장. Spec 005~011 신규 모듈 추가 시 회귀 0 보장.
+ *   - C-D28-2 (D6 23시 슬롯, 2026-05-02) — Tori spec C-D28-2 흡수.
+ *     · 신규 lazy 모듈 추가 시 LAZY 화이트리스트 누락 → 명시 메시지로 가드.
+ *     · 빌드/임시 디렉토리(node_modules / .next / __test__) 제외 명시.
  *
  * 검증 규칙:
  *   1) `@/modules/i18n/catalog-i18n` 정적 import → lazy 화이트리스트 외 0
@@ -72,9 +73,20 @@ const RE_IMPORT_CATALOG_META =
 // 파일 트리 순회 (의존성 0)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// C-D28-2: 빌드/임시 디렉토리 제외. src 루트만 스캔하므로 node_modules/.next 는 통상 무관하지만,
+//   향후 src/__test__ / src/__fixtures__ 등 임시 디렉토리가 추가될 가능성 명시 가드.
+const EXCLUDED_DIRS = new Set([
+  "node_modules",
+  ".next",
+  "__test__",
+  "__tests__",
+  "__fixtures__",
+]);
+
 async function* walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const e of entries) {
+    if (EXCLUDED_DIRS.has(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) {
       yield* walk(p);
@@ -180,4 +192,12 @@ for (const v of violations) {
     `  [${v.rule}] ${v.file}${v.line > 0 ? `:${v.line}` : ""}\n    ${v.detail}`,
   );
 }
+// C-D28-2: 신규 lazy 모듈 회복 가이드 — Spec 005~011 진입 시 새 모듈이 catalog 의존 시
+//   본 스크립트의 LAZY Set 에 등록 필수임을 명시.
+console.error(
+  "\n신규 lazy 모듈은 LAZY 화이트리스트에 추가 필요 — scripts/check-catalog-isolation.mjs 의 LAZY Set",
+);
+console.error(
+  "또는 dynamic import() 로 변환하여 메인 번들 분리. CI 가드: .github/workflows/verify-gate.yml",
+);
 process.exit(1);
