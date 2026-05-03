@@ -28,7 +28,9 @@
     "verify:d32": "node scripts/verify-d32.mjs",
     "verify:d33": "node scripts/verify-d33.mjs",
     "verify:d34": "node scripts/verify-d34.mjs",
+    "verify:d35": "node scripts/verify-d35.mjs",
     "verify:conservation-13": "node scripts/verify-conservation-13.mjs",
+    "check:mcp:budget": "node scripts/check-mcp-budget.mjs",
     "funnel:summary": "node scripts/funnel-summary.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",
     "check:catalog-isolation": "node scripts/check-catalog-isolation.mjs",
@@ -45,6 +47,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@playwright/test": "^1.48.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.7",

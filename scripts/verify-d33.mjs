@@ -232,11 +232,15 @@ async function exists(p) {
     (messages.match(/"mcp\.section\.phase2\.label"/g) ?? []).length >= 2,
   );
 
-  // 외부 dev-dep 추가 0 — @modelcontextprotocol/sdk 가 dependencies/devDependencies 에 없어야 함
+  // C-D33-4 (D-5 19시) → C-D35-1 (D-4 03시) 갱신:
+  //   D-5 까지 SDK 미도입 의무 → D-4 본격 도입 (Tori spec §C-D35-1).
+  //   본 게이트는 "도입 시점 = devDependencies 정확 1건" 으로 재정의 — 회귀 보호.
   const pkg = await readSrc("package.json");
+  const pkgJson = JSON.parse(pkg);
+  const sdkPin = pkgJson.devDependencies?.["@modelcontextprotocol/sdk"];
   assert(
-    "C-D33-4: @modelcontextprotocol/sdk 미도입 (Phase 2 D-4 까지 보류)",
-    !/"@modelcontextprotocol\/sdk"/.test(pkg),
+    "C-D33-4 → C-D35-1: @modelcontextprotocol/sdk devDeps 정확 1건 (D-4 도입)",
+    typeof sdkPin === "string" && sdkPin.length > 0,
   );
 }
 

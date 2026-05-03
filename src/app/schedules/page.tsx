@@ -28,6 +28,10 @@ import { t } from "@/modules/i18n/messages";
 // C-D33-2 (D-5 19시 슬롯, 2026-05-03) — Tori spec C-D33-2 (F-D33-2).
 //   /schedules 룰 카드 우측에 chip 마운트 — cron 미리보기 + 다음 발화 시각 tooltip.
 import { CronPreviewChip } from "@/modules/schedule/cron-preview-chip";
+// C-D35-3 (D-4 03시 슬롯, 2026-05-04) — Tori spec C-D35-3.
+//   form + BroadcastChannel 다른 탭 동기화.
+import { ScheduleAddForm } from "@/modules/schedules/schedule-add-form";
+import { subscribeScheduleSync } from "@/modules/schedules/schedule-broadcast";
 
 const CostCapWidget = dynamic(
   () =>
@@ -45,6 +49,20 @@ export default function SchedulesPage() {
   const [rules, setRules] = useState<ScheduleRule[] | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // C-D35-3: list reload — mount + form 등록 + 다른 탭 동기화 모두 사용.
+  async function reload(): Promise<void> {
+    try {
+      const loaded = await loadRules();
+      setRules(loaded);
+    } catch {
+      setRules([]);
+      useToastStore.getState().push({
+        tone: "error",
+        message: t("schedule.save.fail"),
+      });
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -59,22 +77,20 @@ export default function SchedulesPage() {
         });
       }
     })();
+    // C-D35-3: 다른 탭의 schedule 추가/삭제 신호 수신 시 list reload.
+    const unsubscribe = subscribeScheduleSync(() => {
+      void reload();
+    });
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 
   // 모달이 닫힐 때 다시 loadRules 호출 — 새로 추가된 룰 즉시 반영.
   function handleModalClose() {
     setModalOpen(false);
-    void (async () => {
-      try {
-        const loaded = await loadRules();
-        setRules(loaded);
-      } catch {
-        // 실패 시 기존 list 유지 — Toast 는 이미 modal 내부에서 처리.
-      }
-    })();
+    void reload();
   }
 
   return (
@@ -91,6 +107,9 @@ export default function SchedulesPage() {
         </h1>
         <CostCapWidget />
       </header>
+
+      {/* C-D35-3: 신규 schedule add form. 마운트 위치 = list 위 단일 page (modal 미사용 — D-35-자-3). */}
+      <ScheduleAddForm onAdded={() => void reload()} />
 
       <section className="flex-1">
         {rules === null ? (

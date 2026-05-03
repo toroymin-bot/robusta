@@ -95,9 +95,51 @@ export function generateRuleId(): string {
   return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/**
+ * persistCronPresetRow — C-D35-3 (D-4 03시 슬롯, 2026-05-04).
+ *   ScheduleRule 모델 외 cron(예: weekday/monthly/dow 패턴) 도 직접 schedules 테이블에 등록.
+ *   schedule-add-form 이 사용 — preset 5건은 ScheduleRule 표현 가능 범위를 초과하기 때문.
+ *
+ *   id 자동 발급(generateRuleId), enabled 기본 true.
+ */
+export interface CronPresetRowInput {
+  id?: string;
+  cron: string;
+  label: string;
+  participantId: string;
+  enabled?: boolean;
+}
+
+export async function persistCronPresetRow(
+  input: CronPresetRowInput,
+): Promise<string> {
+  if (typeof window === "undefined") {
+    throw new Error("persistCronPresetRow: client-only");
+  }
+  const { getDb } = await import("@/modules/storage/db");
+  const db = getDb();
+  const id = input.id ?? generateRuleId();
+  const trimmedLabel = input.label.trim();
+  const targetPersona = input.participantId.trim() || "default";
+  const now = Date.now();
+  await db.schedules.put({
+    id,
+    name: trimmedLabel || `${targetPersona} ${input.cron}`,
+    cron: input.cron,
+    target_room: "default",
+    target_persona: targetPersona,
+    prompt: "",
+    enabled: input.enabled ?? true,
+    last_run: null,
+    created_at: now,
+  });
+  return id;
+}
+
 export const __schedule_bridge_internal = {
   persistRule,
   loadRules,
   deleteRule,
   generateRuleId,
+  persistCronPresetRow,
 };

@@ -50,6 +50,10 @@ import { HeaderCluster } from "./header-cluster";
 //   보존 13 직접 수정: 1줄 마운트 (import + JSX) — useEffect/조건부 렌더 0건.
 //   verify-conservation-13 v2 (useEffect ≤ 8 / 조건부 ≤ 4 / lazy 분리) 영향 0.
 import { DDayLozenge } from "@/modules/header/d-day-lozenge";
+// C-D35-4 (D-4 03시 슬롯, 2026-05-04) — KQ_23 도메인 fallback banner 사전 wiring.
+//   5/5 18:00 KST 정각 자동 활성화. 호스트네임 robusta.ai4min.com 시 자동 미노출.
+//   보존 13 영향: 1줄 import + 1줄 마운트 (컴포넌트 자체에서 활성/도메인 분기).
+import { DomainFallbackBanner } from "@/modules/domain/domain-fallback-banner";
 // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 자동 발언 스케줄 모달 — 트리거 X, UI 골격 + IndexedDB 영구화만.
 //   React.lazy + 조건 mount로 분리 — 모달 코드는 클릭 시점에만 fetch (/page∪/layout 게이트 영향 최소).
 //   ~~next/dynamic~~ 도입했다가 helper 오버헤드로 게이트 0.4KB 초과 → React.lazy로 교체.
@@ -225,6 +229,8 @@ export function ConversationWorkspace() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-robusta-canvas text-robusta-ink">
+      {/* C-D35-4: 도메인 fallback banner — 컴포넌트 자체에서 시간/도메인 분기. */}
+      <DomainFallbackBanner />
       <ParticipantsPanel />
       <main className="flex flex-1 flex-col">
         <header className="flex h-12 items-center justify-between border-b border-robusta-divider px-6 backdrop-blur">

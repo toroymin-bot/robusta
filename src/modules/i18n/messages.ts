@@ -218,6 +218,27 @@ export const MESSAGES = {
     "qatest.checklist.d2copy": "카피 최종 (한/영 parity)",
     "qatest.checklist.d1": "Production 배포 점검 + D-Day 24h 운영 R&R 확정",
     "qatest.checklist.dday": "10:00 KST 라이브 + Hero LIVE 자동 전환 + Roy 1회 알림",
+    // C-D35-3 (D-4 03시 슬롯, 2026-05-04) — schedule add form preset 5 + form 4 키 (F-D35-3).
+    "schedule.preset.hourly": "매시 정각",
+    "schedule.preset.daily9": "매일 09:00",
+    "schedule.preset.weekday_mon9": "매주 월 09:00",
+    "schedule.preset.monthly_d1_9": "매월 1일 09:00",
+    "schedule.preset.friday18": "매주 금 18:00",
+    "schedule.add.preset": "주기 선택",
+    "schedule.add.label": "이름 (1~60자)",
+    "schedule.add.persona": "참여자 ID",
+    "schedule.add.enable": "지금 활성화",
+    "schedule.add.submit": "스케줄 추가",
+    // C-D35-4 (D-4 03시 슬롯, 2026-05-04) — KQ_23 도메인 fallback banner (D-35-자-4).
+    "domain.fallback.title": "🔧 임시 도메인 안내",
+    "domain.fallback.body": "현재 임시 주소로 운영 중입니다. 곧 robusta.ai4min.com 으로 이전 예정이며, 기능과 데이터에는 영향이 없습니다.",
+    "domain.fallback.cta": "확인",
+    // C-D35-5 (D-4 03시 슬롯, 2026-05-04) — BYOK 키 검증 자동 ping (D-35-자-5).
+    "apikeys.validate.checking": "검증 중...",
+    "apikeys.validate.valid": "✓ 유효한 키",
+    "apikeys.validate.invalid": "✗ 잘못된 키",
+    "apikeys.validate.network_error": "네트워크 오류 — 다시 시도",
+    "apikeys.validate.rate_limit": "요청 제한 — 잠시 후 다시 시도",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -404,6 +425,27 @@ export const MESSAGES = {
     "qatest.checklist.d2copy": "Copy finalize (ko/en parity)",
     "qatest.checklist.d1": "Production deploy check + D-Day 24h ops R&R locked",
     "qatest.checklist.dday": "10:00 KST live + Hero LIVE auto-switch + Roy 1 ping",
+    // C-D35-3 (D-4 03시 슬롯, 2026-05-04) — schedule add form (en parity).
+    "schedule.preset.hourly": "Hourly on the hour",
+    "schedule.preset.daily9": "Daily 09:00",
+    "schedule.preset.weekday_mon9": "Every Monday 09:00",
+    "schedule.preset.monthly_d1_9": "Monthly day 1 09:00",
+    "schedule.preset.friday18": "Every Friday 18:00",
+    "schedule.add.preset": "Frequency",
+    "schedule.add.label": "Name (1-60 chars)",
+    "schedule.add.persona": "Participant ID",
+    "schedule.add.enable": "Enable now",
+    "schedule.add.submit": "Add schedule",
+    // C-D35-4 (D-4 03시 슬롯, 2026-05-04) — domain fallback banner (en parity).
+    "domain.fallback.title": "🔧 Temporary Domain Notice",
+    "domain.fallback.body": "Currently on a temporary URL. Migration to robusta.ai4min.com is in progress; functionality and data are unaffected.",
+    "domain.fallback.cta": "OK",
+    // C-D35-5 (D-4 03시 슬롯, 2026-05-04) — BYOK validate ping (en parity).
+    "apikeys.validate.checking": "Checking...",
+    "apikeys.validate.valid": "✓ Valid key",
+    "apikeys.validate.invalid": "✗ Invalid key",
+    "apikeys.validate.network_error": "Network error — retry",
+    "apikeys.validate.rate_limit": "Rate limited — retry shortly",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

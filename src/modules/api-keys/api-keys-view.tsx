@@ -24,6 +24,8 @@ import {
 import { maskApiKey } from "./api-key-mask";
 // D-10.2: BYOK 키 ping 검증 — 저장 직전 1회 호출
 import { pingApiKey } from "./api-key-ping";
+// C-D35-5 (D-4 03시 슬롯, 2026-05-04) — 입력 중 800ms 디바운스 자동 검증.
+import { validateAnthropicKey, type ValidateResult } from "./key-validate";
 // D-12.2: 키 메타 — 만료 자동 감지 + recheck
 import {
   getKeyMeta,
@@ -77,6 +79,18 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
   const pushToast = useToastStore((s) => s.push);
   // 모달 열림 직후 maybeExpired 토스트는 1회만 (모달 재오픈 시 다시 노출 OK).
   const expiredToastShown = useRef(false);
+
+  // C-D35-5 — 디바운스 자동 검증 상태 + AbortController/timer ref.
+  type ValidateState =
+    | "idle"
+    | "checking"
+    | "valid"
+    | "invalid"
+    | "network"
+    | "rate_limit";
+  const [validateState, setValidateState] = useState<ValidateState>("idle");
+  const validateTimerRef = useRef<number | null>(null);
+  const validateAbortRef = useRef<AbortController | null>(null);
 
   // D-12.2: 모달 진입 시 저장된 키의 메타 조회 → 24h 이내 401 → ⚠ + 토스트.
   useEffect(() => {
@@ -213,6 +227,47 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
     if (pingState !== "idle" && pingState !== "verifying") {
       setPingState("idle");
     }
+    // C-D35-5: 디바운스 800ms 자동 검증.
+    //   기존 timer / abort 취소 후 새로 schedule. trim 길이 < 10 또는 sk-ant- 미시작 → 즉시 invalid.
+    if (validateTimerRef.current !== null) {
+      window.clearTimeout(validateTimerRef.current);
+      validateTimerRef.current = null;
+    }
+    if (validateAbortRef.current !== null) {
+      validateAbortRef.current.abort();
+      validateAbortRef.current = null;
+    }
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      setValidateState("idle");
+      return;
+    }
+    if (trimmed.length < 10 || !trimmed.startsWith("sk-ant-")) {
+      setValidateState("invalid");
+      return;
+    }
+    setValidateState("checking");
+    validateTimerRef.current = window.setTimeout(() => {
+      const controller = new AbortController();
+      validateAbortRef.current = controller;
+      void (async () => {
+        try {
+          const result: ValidateResult = await validateAnthropicKey(
+            trimmed,
+            controller.signal,
+          );
+          if (controller.signal.aborted) return;
+          if (result.ok) {
+            setValidateState("valid");
+          } else {
+            setValidateState(result.reason);
+          }
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          setValidateState("network");
+        }
+      })();
+    }, 800);
   }
 
   // D-11.3: 키 0건 노출 조건 — hydrated 완료 + stored 없음.
@@ -355,6 +410,31 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
             {error && (
               <p className="text-xs text-red-600" role="alert">
                 {error}
+              </p>
+            )}
+
+            {/* C-D35-5 — 디바운스 자동 검증 inline status badge. */}
+            {validateState !== "idle" && (
+              <p
+                data-test="byok-validate-status"
+                className={`text-xs ${
+                  validateState === "valid"
+                    ? "text-emerald-600"
+                    : validateState === "invalid"
+                      ? "text-red-600"
+                      : validateState === "rate_limit"
+                        ? "text-amber-600"
+                        : validateState === "network"
+                          ? "text-amber-600"
+                          : "text-robusta-inkDim"
+                }`}
+                role="status"
+              >
+                {validateState === "checking" && t("apikeys.validate.checking")}
+                {validateState === "valid" && t("apikeys.validate.valid")}
+                {validateState === "invalid" && t("apikeys.validate.invalid")}
+                {validateState === "network" && t("apikeys.validate.network_error")}
+                {validateState === "rate_limit" && t("apikeys.validate.rate_limit")}
               </p>
             )}
 
