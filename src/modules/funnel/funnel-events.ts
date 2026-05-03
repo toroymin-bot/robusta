@@ -38,6 +38,19 @@ export type FunnelEvent =
       type: "schedule_fired";
       scheduleId: string;
       timestamp: number;
+    }
+  // C-D36-3 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-3 (F-D36-3 / B-D35-5 4-funnel KPI).
+  //   visit: 첫 마운트 시 sessionStorage 가드 1회 (탭별 1건). PII 0 — 페이로드 type/timestamp 만.
+  | {
+      type: "visit";
+      timestamp: number;
+    }
+  // C-D36-3 — persona_used: 메시지 송신 시 personaId 변경 감지 1회 로그 (D-36-자-3).
+  //   페이로드 personaId 단일 — 어떤 페르소나가 가장 자주 사용되는지 분석 단서.
+  | {
+      type: "persona_used";
+      personaId: string;
+      timestamp: number;
     };
 
 // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — FunnelEvent 가 다중 member union 으로 확장됨에 따라

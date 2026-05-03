@@ -54,6 +54,13 @@ import { DDayLozenge } from "@/modules/header/d-day-lozenge";
 //   5/5 18:00 KST 정각 자동 활성화. 호스트네임 robusta.ai4min.com 시 자동 미노출.
 //   보존 13 영향: 1줄 import + 1줄 마운트 (컴포넌트 자체에서 활성/도메인 분기).
 import { DomainFallbackBanner } from "@/modules/domain/domain-fallback-banner";
+// C-D36-2 (D-4 07시 슬롯, 2026-05-04) — 다중 탭 conversation list 동기화 hook.
+//   useEffect 신규 추가 0 (hook 안 useEffect 는 별도 파일 use-conversation-sync-listener.ts).
+//   workspace useEffect 카운트 영향 0 — 보존 13 v3 게이트 정합.
+import { useConversationSyncListener } from "./use-conversation-sync-listener";
+// C-D36-3 (D-4 07시 슬롯, 2026-05-04) — persona_used funnel 추적 hook.
+//   useEffect 신규 추가 0 (hook 안 useEffect 는 별도 파일 persona-use-tracker.ts).
+import { usePersonaUseTracker } from "@/modules/personas/persona-use-tracker";
 // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 자동 발언 스케줄 모달 — 트리거 X, UI 골격 + IndexedDB 영구화만.
 //   React.lazy + 조건 mount로 분리 — 모달 코드는 클릭 시점에만 fetch (/page∪/layout 게이트 영향 최소).
 //   ~~next/dynamic~~ 도입했다가 helper 오버헤드로 게이트 0.4KB 초과 → React.lazy로 교체.
@@ -126,6 +133,18 @@ export function ConversationWorkspace() {
   // C-D17-15 (D6 03시) KQ_14: 3-state segment 활성. choice/setChoice 양쪽 prop 으로 HeaderCluster 에 전달.
   const themeChoice = useThemeStore((s) => s.choice);
   const setThemeChoice = useThemeStore((s) => s.setChoice);
+
+  // C-D36-2 (D-4 07시 슬롯, 2026-05-04) — 다중 탭 conversation list 동기화 1줄 hook call.
+  //   workspace 안 useEffect 카운트 영향 0 (hook 안 useEffect 별도 파일).
+  useConversationSyncListener();
+  // C-D36-3 (D-4 07시 슬롯, 2026-05-04) — persona_used funnel 추적 1줄 hook call.
+  //   selector: 마지막 메시지의 participantId (= 최근 활성 페르소나). 변경 시 hook 안 useEffect 가 1회 로그.
+  //   workspace 안 useEffect 카운트 영향 0.
+  const lastParticipantId = useConversationStore((s) => {
+    const msgs = s.messages[DEFAULT_CONVERSATION_ID] ?? [];
+    return msgs.at(-1)?.participantId ?? null;
+  });
+  usePersonaUseTracker(lastParticipantId);
 
   const [keysOpen, setKeysOpen] = useState(false);
   // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 스케줄 모달 open state.

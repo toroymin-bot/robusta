@@ -21,37 +21,60 @@
  */
 
 import { useEffect, useState } from "react";
-import { daysUntilRelease } from "@/modules/dday/dday-config";
+import { daysUntilRelease, isLive } from "@/modules/dday/dday-config";
 import { t } from "@/modules/i18n/messages";
 
 // C-D35-2 — 60분 interval. 1분 = CPU/배터리 낭비. 24h = D-1→D-0 transition 늦음.
 //   60분 = 자정 09:00 사이 충분 갱신 (D-Day 라이브 10:00 KST).
 export const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 
+interface LozengeState {
+  label: string;
+  live: boolean;
+}
+
+// C-D35-2 회귀 보호 — computeLabel 함수 형태 유지 (verify-d35 grep 게이트).
 function computeLabel(): string {
   const n = daysUntilRelease();
   return n > 0 ? t("dday.lozenge.dN", { n }) : t("dday.lozenge.live");
 }
 
+function computeState(): LozengeState {
+  return {
+    label: computeLabel(),
+    // C-D36-1 — isLive() 헬퍼 단일 진실. n ≤ 0 시 emerald + animate-pulse.
+    live: isLive(),
+  };
+}
+
 export function DDayLozenge() {
-  const [label, setLabel] = useState<string>(() => computeLabel());
+  const [state, setState] = useState<LozengeState>(() => computeState());
 
   useEffect(() => {
     // C-D35-2 — 60분 마다 label 재계산. tab background 시 brower throttling 자연 흡수.
     const id = setInterval(() => {
-      setLabel(computeLabel());
+      setState(computeState());
     }, REFRESH_INTERVAL_MS);
     return () => clearInterval(id);
   }, []);
 
+  // C-D36-1 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-1 (F-D36-1 / V-D36-4).
+  //   LIVE 진입 시 text-emerald-600 + animate-pulse — Tailwind 기본 (CSS +0 byte).
+  //   prefers-reduced-motion 자동 존중 — Tailwind animate-pulse는 motion-safe 가드 미적용이지만
+  //   브라우저 reduced-motion 설정 사용자에게도 시각적 부담 작음 (opacity 변화 50→100%만).
+  const className = state.live
+    ? "ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600 animate-pulse"
+    : "ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500";
+
   return (
     <span
       data-test="d-day-lozenge"
-      className="ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500"
+      data-live={state.live ? "true" : "false"}
+      className={className}
       role="status"
-      aria-label={label}
+      aria-label={state.label}
     >
-      {label}
+      {state.label}
     </span>
   );
 }

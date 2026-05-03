@@ -239,6 +239,24 @@ export const MESSAGES = {
     "apikeys.validate.invalid": "✗ 잘못된 키",
     "apikeys.validate.network_error": "네트워크 오류 — 다시 시도",
     "apikeys.validate.rate_limit": "요청 제한 — 잠시 후 다시 시도",
+    // C-D36-1 (D-4 07시 슬롯, 2026-05-04) — Hero LIVE indicator (D-36-자-1).
+    "hero.live.indicator": "지금 라이브",
+    // C-D36-4 (D-4 07시 슬롯, 2026-05-04) — cron-preview-chip dow 패턴 라벨 (D-36-자-4).
+    "schedule.preset.weekday_mon9_chip": "매주 월요일 09:00",
+    "schedule.preset.monthly_d1_9_chip": "매월 1일 09:00",
+    "schedule.preset.friday18_chip": "매주 금요일 18:00",
+    // C-D36-5 (D-4 07시 슬롯, 2026-05-04) — KQ_23 banner CTA + 도메인 학습 페이지 (D-36-자-5).
+    "domain.fallback.cta_more": "자세히 →",
+    "about_domain.title": "임시 도메인 안내",
+    "about_domain.intro": "Robusta 는 곧 robusta.ai4min.com 으로 정식 이전됩니다. 현재 임시 주소 운영의 배경과 데이터 안전 정책을 안내드립니다.",
+    "about_domain.why": "도메인 발급 / DNS 전파에는 시간이 필요합니다. 사용자 분께서 서비스를 즉시 체험하실 수 있도록 임시 URL 로 먼저 공개하고, 정식 주소 준비가 끝나는 대로 자동 이전됩니다.",
+    "about_domain.when": "5/8 (D-Day) 라이브 시점에 정식 도메인 robusta.ai4min.com 으로 자동 redirect 됩니다. 임시 URL 사용자는 별도 조치 없이 그대로 정식 주소로 안내됩니다.",
+    "about_domain.faq_q1": "Q1. 왜 임시 도메인인가요?",
+    "about_domain.faq_a1": "도메인 발급 / DNS 전파 시간 때문이며 robusta.ai4min.com 으로 곧 이전됩니다.",
+    "about_domain.faq_q2": "Q2. 데이터는 안전한가요?",
+    "about_domain.faq_a2": "BYOK 정책으로 본인 키는 브라우저 IndexedDB 에만 저장되며 서버 미경유. 도메인 변경과 무관합니다.",
+    "about_domain.faq_q3": "Q3. 이전 후 북마크는?",
+    "about_domain.faq_a3": "임시 URL 은 정식 도메인으로 자동 redirect 됩니다.",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -446,6 +464,24 @@ export const MESSAGES = {
     "apikeys.validate.invalid": "✗ Invalid key",
     "apikeys.validate.network_error": "Network error — retry",
     "apikeys.validate.rate_limit": "Rate limited — retry shortly",
+    // C-D36-1 (D-4 07시 슬롯, 2026-05-04) — Hero LIVE indicator (en parity).
+    "hero.live.indicator": "Now Live",
+    // C-D36-4 (D-4 07시 슬롯, 2026-05-04) — cron-preview-chip dow chip labels (en parity).
+    "schedule.preset.weekday_mon9_chip": "Every Monday 09:00",
+    "schedule.preset.monthly_d1_9_chip": "Monthly day 1 09:00",
+    "schedule.preset.friday18_chip": "Every Friday 18:00",
+    // C-D36-5 (D-4 07시 슬롯, 2026-05-04) — KQ_23 banner CTA + about-domain learn page (en parity).
+    "domain.fallback.cta_more": "Learn more →",
+    "about_domain.title": "About the Temporary Domain",
+    "about_domain.intro": "Robusta will soon migrate to robusta.ai4min.com. This page explains why we operate on a temporary URL and our data-safety policy.",
+    "about_domain.why": "Domain provisioning and DNS propagation take time. We launched on a temporary URL so users can try Robusta immediately; once the official domain is ready, traffic auto-migrates.",
+    "about_domain.when": "On 5/8 (D-Day) launch, traffic auto-redirects to the official domain robusta.ai4min.com. No action required for users on the temporary URL.",
+    "about_domain.faq_q1": "Q1. Why a temporary domain?",
+    "about_domain.faq_a1": "Domain provisioning and DNS propagation require time. Migration to robusta.ai4min.com is in progress.",
+    "about_domain.faq_q2": "Q2. Is my data safe?",
+    "about_domain.faq_a2": "BYOK policy keeps your keys in browser IndexedDB only — never sent to our server. Domain changes do not affect this.",
+    "about_domain.faq_q3": "Q3. What about my bookmark after migration?",
+    "about_domain.faq_a3": "The temporary URL auto-redirects to the official domain.",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

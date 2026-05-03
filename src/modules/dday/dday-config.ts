@@ -24,3 +24,18 @@ export function daysUntilRelease(now: Date = new Date()): number {
   const diffMs = release.getTime() - now.getTime();
   return Math.ceil(diffMs / 86_400_000);
 }
+
+/**
+ * isLive — RELEASE_ISO 도달/초과 시 true.
+ *   C-D36-1 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-1 (F-D36-1 / V-D36-4).
+ *   d-day-lozenge LIVE 분기 / Hero LIVE indicator / 향후 라이브 기간 분기 모두에서 단일 진실.
+ *
+ *   꼬미 자율 정정 (D-36-자-1): 명세는 RELEASE_ISO 변경 가능성 시사했으나
+ *     기존 ISO `2026-05-08T00:00:00+09:00` 무수정 의무 — verify-d34 / d35 회귀 보호.
+ *     5/8 자정 KST (00:00:00) 기준 LIVE 자동 전환 — D-D34-5 정합 유지.
+ *
+ *   daysUntilRelease() 결과 ≤ 0 시 LIVE — Math.ceil 정합. 단순 wrapper.
+ */
+export function isLive(now: Date = new Date()): boolean {
+  return daysUntilRelease(now) <= 0;
+}

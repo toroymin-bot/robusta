@@ -97,6 +97,38 @@ export function cronToHuman(cron: string): string | null {
     }
   }
 
+  // 패턴 5: M H * * DOW (매주 요일 H시 M분) — C-D36-4 신규.
+  //   D-D36 자율 결정 D-36-자-4: dow 패턴 5 preset 정합 — 월 09:00 / 금 18:00 등.
+  //   라벨 i18n: schedule.preset.weekday_mon9_chip / friday18_chip — 정확 매칭만 우선 처리,
+  //   그 외 dow 값은 `매주 N(1-5)` 일반 fallback (Phase 2 cron-parser 도입 시 확장).
+  if (
+    /^\d+$/.test(min) &&
+    /^\d+$/.test(hour) &&
+    dom === "*" &&
+    mon === "*" &&
+    /^\d+$/.test(dow)
+  ) {
+    const m = Number(min);
+    const h = Number(hour);
+    const d = Number(dow);
+    if (m >= 0 && m <= 59 && h >= 0 && h <= 23 && d >= 0 && d <= 6) {
+      // 5 preset 정합: '0 9 * * 1' (월 09:00) / '0 18 * * 5' (금 18:00).
+      if (m === 0 && h === 9 && d === 1) {
+        return t("schedule.preset.weekday_mon9_chip");
+      }
+      if (m === 0 && h === 18 && d === 5) {
+        return t("schedule.preset.friday18_chip");
+      }
+      // 그 외 dow — 일반 fallback (한글 요일 ko 톤 우선, en 분기는 Phase 2).
+      const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
+      return `매주 ${DOW_KO[d]} ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+  }
+
+  // 패턴 6: M H 1 * * (매월 1일 H시 M분, monthly_d1_9 정합) — 기존 패턴 4 의 d=1 특수 케이스 i18n 라벨.
+  //   이미 패턴 4 에서 fallback 라벨 처리됨 — 추가 정합은 호출자가 i18n 키로 구분 시 본 chip 본체 영향 0.
+  //   D-36-자-4: i18n 키 monthly_d1_9_chip 는 form dropdown 라벨로만 사용 (chip 본체는 fallback 활용).
+
   return null;
 }
 
@@ -110,7 +142,7 @@ export function nextFireMs(cron: string, now: number = Date.now()): number | nul
   if (human === null) return null;
   const parts = cron.trim().split(/\s+/);
   if (parts.length !== 5) return null;
-  const [minStr, hourStr, domStr] = parts;
+  const [minStr, hourStr, domStr, , dowStr] = parts;
 
   const startMin = Math.ceil(now / 60_000) * 60_000;
   // 60일 = 86400분. 충분히 큰 스캔 윈도우 — 본 chip 의 미리보기는 보통 24h 안에 첫 매치.
@@ -137,8 +169,25 @@ export function nextFireMs(cron: string, now: number = Date.now()): number | nul
     ) {
       return ts;
     }
-    // 패턴 3: M H * * *
-    if (domStr === "*") {
+    // 패턴 5: M H * * DOW (매주 요일) — C-D36-4 신규. dom='*', dow=숫자.
+    //   day === Number(dowStr) 추가 검증 — JS Date.getDay() 0=Sun..6=Sat (cron 호환).
+    if (
+      domStr === "*" &&
+      /^\d+$/.test(dowStr) &&
+      /^\d+$/.test(minStr) &&
+      /^\d+$/.test(hourStr)
+    ) {
+      if (
+        m === Number(minStr) &&
+        h === Number(hourStr) &&
+        d.getDay() === Number(dowStr)
+      ) {
+        return ts;
+      }
+      continue;
+    }
+    // 패턴 3: M H * * *  (매일) — dow='*' 명시 의무 (패턴 5 와 분기).
+    if (domStr === "*" && dowStr === "*") {
       if (m === Number(minStr) && h === Number(hourStr)) return ts;
       continue;
     }

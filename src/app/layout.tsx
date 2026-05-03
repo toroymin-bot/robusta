@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
+// C-D36-1 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-1 (F-D36-1).
+//   Hero LIVE indicator — D-Day(5/8) 자정 KST 정각 자동 노출. LIVE 미진입 시 null 렌더 (DOM 0).
+import { HeroLiveBanner } from "@/modules/header/hero-live-banner";
+// C-D36-3 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-3 (F-D36-3).
+//   visit funnel — 첫 마운트 sessionStorage 가드 1회 ping. PII 0.
+import { VisitTracker } from "@/modules/funnel/visit-tracker";
 
 /**
  * D-15.x (Day 4 19시 슬롯, 2026-04-29) C-D15-1: Open Graph + Twitter Card 메타 태그.
@@ -107,6 +113,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body>
+        {/* C-D36-1 — Hero LIVE indicator. RELEASE_ISO 도달 시점부터 자동 노출, 그 전엔 null. */}
+        <HeroLiveBanner />
+        {/* C-D36-3 — visit funnel ping. 첫 마운트 1회. UI 미렌더 (null). */}
+        <VisitTracker />
         {children}
         {/* C-D17-8 (Day 5 07시 슬롯, 2026-04-30) — 똘이 v1 §16.3 B-12 채택:
             Vercel Web Analytics 페이지뷰만 (custom track() 호출 0 — BYOK 키·메시지 본문 누출 가드).

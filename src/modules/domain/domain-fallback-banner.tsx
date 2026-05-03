@@ -19,6 +19,7 @@
  */
 
 import { useState, type ReactElement } from "react";
+import Link from "next/link";
 import { isFallbackActive, PRIMARY_DOMAIN } from "./domain-fallback-config";
 import { t } from "@/modules/i18n/messages";
 
@@ -59,6 +60,14 @@ export function DomainFallbackBanner(): ReactElement | null {
     >
       <span className="font-semibold">{t("domain.fallback.title")}</span>
       <span className="flex-1">{t("domain.fallback.body")}</span>
+      {/* C-D36-5 (D-4 07시 슬롯, 2026-05-04) — 자세히 CTA 링크 추가.
+          target="_self" — 같은 탭, sessionStorage dismiss 보존 의도. */}
+      <Link
+        href="/about-domain"
+        className="rounded border border-amber-400 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-900 hover:bg-amber-100"
+      >
+        {t("domain.fallback.cta_more")}
+      </Link>
       <button
         type="button"
         onClick={() => {
