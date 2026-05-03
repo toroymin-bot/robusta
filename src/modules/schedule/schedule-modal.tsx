@@ -20,7 +20,11 @@ import {
   type ScheduleFrequency,
   ALLOWED_EVERY_MINUTES,
   describeFrequency,
+  frequencyToCron,
 } from "./schedule-types";
+// C-D33-2 (D-5 19시 슬롯, 2026-05-03) — Tori spec C-D33-2 (F-D33-2).
+//   AddRuleForm 에서 사용자 입력 변경마다 chip 갱신 — cron 미리보기 + 다음 발화 시각 tooltip.
+import { CronPreviewChip } from "./cron-preview-chip";
 // C-D31-1 (D-5 11시 슬롯, 2026-05-03) — F-D31-1: store.addRule 직후 bridge.persistRule 동기화.
 //   schedule-store(settings 단일 JSON)와 bridge(Dexie schedules row) 두 영속 통로 일관성 확보 →
 //   schedule-runner 가 schedules 테이블만 폴링해도 모달 저장이 즉시 반영.
@@ -355,6 +359,24 @@ function AddRuleForm({ participantId, onAdd }: AddRuleFormProps) {
         </>
       )}
 
+      {/* C-D33-2 (D-5 19시 슬롯, 2026-05-03) — Tori spec C-D33-2 (F-D33-2 / D-D33-3).
+          현 form 값으로 즉시 cron 환산 + chip 표시. invalid frequency 는 chip 자체가 fallback. */}
+      <span
+        data-test={`schedule-add-cron-preview-${participantId}`}
+        className="ml-1 inline-flex items-center"
+      >
+        <CronPreviewChip
+          cron={(() => {
+            const freq = buildFrequency(kind, {
+              everyMinutes,
+              hourlyMinute,
+              dailyHour,
+              dailyMinute,
+            });
+            return freq ? frequencyToCron(freq) : "";
+          })()}
+        />
+      </span>
       <button
         type="submit"
         disabled={busy}

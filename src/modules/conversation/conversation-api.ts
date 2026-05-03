@@ -387,6 +387,18 @@ export async function* streamMessage(
 
     // 7) 그 외 4xx/5xx (재시도 한도 초과 포함) 또는 폴백 후 재실패 → 에러로 전파
     const reason = await describeErrorResponse(response);
+    // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — F-D33-1: 401 응답 시 funnelEvents 'byok_required' source='send_401' 영속.
+    //   호출자(view) 가 onRequestApiKeyModal 분기로 모달 open — 본 모듈은 이벤트 로깅만 담당.
+    //   funnel-events 는 동적 import — 본 hot path 의 메인 번들 영향 0 + Node SSR 안전 (logFunnelEvent 가 window 가드).
+    if (response.status === 401) {
+      void import("@/modules/funnel/funnel-events").then(({ logFunnelEvent }) => {
+        logFunnelEvent({
+          type: "byok_required",
+          source: "send_401",
+          timestamp: Date.now(),
+        });
+      });
+    }
     yield { kind: "error", reason, status: response.status };
     return;
   }

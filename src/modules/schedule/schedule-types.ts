@@ -43,6 +43,19 @@ export function describeFrequency(f: ScheduleFrequency): string {
   return `매일 ${hh}:${mm}`;
 }
 
+/**
+ * C-D33-2 (D-5 19시 슬롯, 2026-05-03) — Tori spec C-D33-2 (F-D33-2 / D-D33-3).
+ *   ScheduleFrequency → cron 5필드 문자열 변환 (CronPreviewChip 정합).
+ *   - every-minutes  → '슬래시N * * * *'
+ *   - hourly-at      → 'M * * * *'  (CronPreviewChip 의 cronToHuman 은 hour='*' 미지원 → invalid chip 표시)
+ *   - daily-at       → 'M H * * *'
+ */
+export function frequencyToCron(f: ScheduleFrequency): string {
+  if (f.kind === "every-minutes") return `*/${f.minutes} * * * *`;
+  if (f.kind === "hourly-at") return `${f.minute} * * * *`;
+  return `${f.minute} ${f.hour} * * *`;
+}
+
 /** ScheduleRule validation — 잘못된 입력은 리젝트(throw 대신 boolean). */
 export function isValidFrequency(f: ScheduleFrequency): boolean {
   if (f.kind === "every-minutes") {

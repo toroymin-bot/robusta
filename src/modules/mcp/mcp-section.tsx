@@ -27,11 +27,20 @@ export function MCPSection() {
       <p className="mt-1 text-xs text-robusta-inkDim">
         {t("mcp.section.placeholder")}
       </p>
+      {/* C-D33-4 (D-5 19시 슬롯, 2026-05-03) — Phase 2 D-4 진입 chip (F-D33-4).
+          disabled 유지 — 본격 wiring 은 D-4 (5/4) 똘이 명세 후 진입.
+          spec-005-mcp-phase2-wiring.md 참고. */}
+      <span
+        data-test="mcp-section-phase2-chip"
+        className="mt-3 inline-flex items-center rounded-full border border-robusta-divider bg-transparent px-2 py-0.5 text-[11px] text-robusta-inkDim"
+      >
+        {t("mcp.section.phase2.label")}
+      </span>
       <button
         type="button"
         disabled
         aria-disabled="true"
-        className="mt-3 cursor-not-allowed rounded border border-robusta-divider px-3 py-1 text-xs text-robusta-inkDim"
+        className="ml-2 mt-3 cursor-not-allowed rounded border border-robusta-divider px-3 py-1 text-xs text-robusta-inkDim"
       >
         {t("mcp.section.title")}
       </button>

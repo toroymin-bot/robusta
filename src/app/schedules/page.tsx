@@ -21,10 +21,13 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ScheduleRule } from "@/modules/schedule/schedule-types";
-import { describeFrequency } from "@/modules/schedule/schedule-types";
+import { describeFrequency, frequencyToCron } from "@/modules/schedule/schedule-types";
 import { loadRules } from "@/modules/schedules/schedule-store-bridge";
 import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
+// C-D33-2 (D-5 19시 슬롯, 2026-05-03) — Tori spec C-D33-2 (F-D33-2).
+//   /schedules 룰 카드 우측에 chip 마운트 — cron 미리보기 + 다음 발화 시각 tooltip.
+import { CronPreviewChip } from "@/modules/schedule/cron-preview-chip";
 
 const CostCapWidget = dynamic(
   () =>
@@ -137,8 +140,15 @@ export default function SchedulesPage() {
                   <span className="text-robusta-ink">
                     {describeFrequency(r.frequency)}
                   </span>
-                  <span className="text-xs text-robusta-inkDim">
-                    {r.enabled ? "✓" : "—"}
+                  {/* C-D33-2 (D-5 19시 슬롯) — chip 마운트. cron invalid 시 fallback chip 자체가 처리. */}
+                  <span
+                    data-test={`schedules-rule-cron-${r.id}`}
+                    className="flex items-center gap-2"
+                  >
+                    <CronPreviewChip cron={frequencyToCron(r.frequency)} />
+                    <span className="text-xs text-robusta-inkDim">
+                      {r.enabled ? "✓" : "—"}
+                    </span>
                   </span>
                 </div>
               </li>

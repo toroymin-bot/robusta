@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 // C-D24-4 (D6 03시 슬롯, 2026-05-02) — B-52 인사이트 라이브러리 진입점 + 사이드 시트.
 //   InsightLibrarySheet 는 dynamic import — 메인 번들 +0 의무 (168 kB 게이트 유지).
 //   C-D25-5 (D6 07시 슬롯, 2026-05-02) — F-59 168 회복: insight-store 정적 import 제거,
@@ -51,6 +51,16 @@ import { HeaderCluster } from "./header-cluster";
 //   ~~next/dynamic~~ 도입했다가 helper 오버헤드로 게이트 0.4KB 초과 → React.lazy로 교체.
 const ScheduleModal = lazy(() =>
   import("@/modules/schedule/schedule-modal").then((m) => ({ default: m.ScheduleModal })),
+);
+// C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal lazy 마운트 (F-D33-1).
+//   진입 시 anthropic 키 부재 자동 감지 → 모달 open. open 시점에만 chunk fetch → 메인 번들 +0.
+const KeyInputModal = lazy(() =>
+  import("@/modules/api-keys/key-input-modal").then((m) => ({ default: m.KeyInputModal })),
+);
+// C-D33-5 (D-5 19시 슬롯, 2026-05-03) — 빈 방 hint pill (F-D33-5 / B-D33-4 / D-D33-4).
+//   메시지 0건 시만 렌더. 1건 이상이면 즉시 unmount.
+const EmptyRoomHint = lazy(() =>
+  import("./empty-room-hint").then((m) => ({ default: m.EmptyRoomHint })),
 );
 // D-12.3 (Day 6): 부트 시 1회 등록. 이미 등록되어 있으면 noop.
 import { registerOnlineListener } from "@/modules/ui/online-listener";
@@ -112,6 +122,10 @@ export function ConversationWorkspace() {
   const [keysOpen, setKeysOpen] = useState(false);
   // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 스케줄 모달 open state.
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal open state. 진입점 hook + 401 fallback 양쪽이 set.
+  const [keyInputOpen, setKeyInputOpen] = useState(false);
+  // mount-once guard — apiKeysHydrated 가 true 가 된 후 정확히 1회만 entry 트리거 평가.
+  const entryHookCheckedRef = useRef(false);
   // C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 open state.
   const [insightLibraryOpen, setInsightLibraryOpen] = useState(false);
   // C-D25-5 (D6 07시 슬롯, 2026-05-02) — F-59 168 회복: insight count 비동기 dynamic 로드.
@@ -185,6 +199,26 @@ export function ConversationWorkspace() {
     registerOnlineListener();
   }, []);
 
+  // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal 진입점 hook (F-D33-1).
+  //   hydration 완료 후 anthropic 키 부재 시 1회 모달 open + funnelEvents 'byok_required' source='entry' 1건 영속.
+  //   useApiKeyStore.hasAnyVerifiedKey() 미존재 → keys.anthropic 검사 fallback (꼬미 자율 D-33-자-1).
+  //   funnel-events 는 dynamic import — 메인 번들 +0 의무.
+  useEffect(() => {
+    if (!apiKeysHydrated) return;
+    if (entryHookCheckedRef.current) return;
+    entryHookCheckedRef.current = true;
+    const hasAnthropic = !!useApiKeyStore.getState().keys.anthropic;
+    if (hasAnthropic) return;
+    setKeyInputOpen(true);
+    void import("@/modules/funnel/funnel-events").then(({ logFunnelEvent }) => {
+      logFunnelEvent({
+        type: "byok_required",
+        source: "entry",
+        timestamp: Date.now(),
+      });
+    });
+  }, [apiKeysHydrated]);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-robusta-canvas text-robusta-ink">
       <ParticipantsPanel />
@@ -251,6 +285,21 @@ export function ConversationWorkspace() {
           <ScheduleModal onClose={() => setScheduleOpen(false)} />
         </Suspense>
       )}
+      {/* C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal 진입점 hook 자동 open. 닫기 시 즉시 unmount. */}
+      {keyInputOpen && (
+        <Suspense fallback={null}>
+          <KeyInputModal
+            open={keyInputOpen}
+            provider="anthropic"
+            onClose={() => setKeyInputOpen(false)}
+            onSaved={() => setKeyInputOpen(false)}
+          />
+        </Suspense>
+      )}
+      {/* C-D33-5 (D-5 19시 슬롯, 2026-05-03) — 빈 방 hint pill — 메시지 0건일 때만 노출 (보존 13 직접 수정 — 본 슬롯 2번째). */}
+      <Suspense fallback={null}>
+        <EmptyRoomHint />
+      </Suspense>
       {/* C-D24-4 (D6 03시 슬롯, 2026-05-02) — 인사이트 라이브러리 사이드 시트 (dynamic, 클릭 시점 로드). */}
       {insightLibraryOpen && (
         <InsightLibrarySheet

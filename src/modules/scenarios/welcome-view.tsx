@@ -19,6 +19,9 @@ import { ScenarioCard } from "./scenario-card";
 import { SCENARIO_CATALOG_V1, type ScenarioPreset } from "./scenario-catalog";
 // C-D27-1 (D6 15시 슬롯, 2026-05-02) — catalog 키는 catalog-i18n.ts (lazy chunk).
 import { tc } from "@/modules/i18n/catalog-i18n";
+// C-D33-5 (D-5 19시 슬롯, 2026-05-03) — Hero sub-카피 (B-D33-4 / D-D33-5).
+//   Robusta 컨셉 사수 — "통찰 = 출력" 한 줄 강화.
+import { t } from "@/modules/i18n/messages";
 
 export interface WelcomeViewProps {
   onPick: (preset: ScenarioPreset) => void;
@@ -37,6 +40,13 @@ export function WelcomeView({ onPick }: WelcomeViewProps) {
         </h2>
         <p className="mt-2 text-sm text-robusta-inkDim">
           {tc("scenario.welcome.body")}
+        </p>
+        {/* C-D33-5 (D-5 19시 슬롯, 2026-05-03) — Hero sub. Robusta 컨셉 ("통찰 = 출력") 한 줄 강화. */}
+        <p
+          data-test="hero-sub"
+          className="mt-2 text-base text-robusta-inkDim"
+        >
+          {t("hero.sub")}
         </p>
       </header>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

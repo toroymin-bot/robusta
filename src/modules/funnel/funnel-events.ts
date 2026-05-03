@@ -23,11 +23,18 @@ export type FunnelEvent =
       insightCount: number;
       speakerId: string;
       timestamp: number;
+    }
+  // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal 진입점 hook 추적.
+  //   source: 'entry' = mount 시 anthropic 키 부재 / 'send_401' = streamMessage 응답 401.
+  | {
+      type: "byok_required";
+      source: "entry" | "send_401";
+      timestamp: number;
     };
 
-export interface FunnelEventRow extends FunnelEvent {
-  id?: number;
-}
+// C-D33-1 (D-5 19시 슬롯, 2026-05-03) — FunnelEvent 가 다중 member union 으로 확장됨에 따라
+//   interface extends 불가 → type alias 로 전환 (의미 동일, Dexie row 타입 그대로).
+export type FunnelEventRow = FunnelEvent & { id?: number };
 
 /**
  * dedupe 가드 — 동일 process(tab) 안에서 messageId 중복 insight_displayed 방지.

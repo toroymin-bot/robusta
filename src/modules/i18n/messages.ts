@@ -195,6 +195,14 @@ export const MESSAGES = {
     "cronpreview.next": "다음 실행",
     "cronpreview.invalid": "사용자 정의 (검증 필요)",
     "cronpreview.tz": "(Asia/Seoul)",
+    // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal 진입점 hook (F-D33-1).
+    "keymodal.trigger.entry": "API 키를 먼저 등록하세요",
+    "keymodal.trigger.401": "키 인증 실패 — 키를 다시 등록하세요",
+    // C-D33-4 (D-5 19시 슬롯, 2026-05-03) — Spec 005 MCP D-4 진입 chip (F-D33-4).
+    "mcp.section.phase2.label": "MCP — D-4 (5/4) 활성 예정",
+    // C-D33-5 (D-5 19시 슬롯, 2026-05-03) — Hero sub + 빈 방 hint pill (B-D33-4 + D-D33-5 / F-D33-5).
+    "hero.sub": "내가 못 본 시야 발견",
+    "room.empty.hint": "두 AI에게 같은 질문을 해보세요",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -358,6 +366,14 @@ export const MESSAGES = {
     "cronpreview.next": "Next run",
     "cronpreview.invalid": "Custom (verify)",
     "cronpreview.tz": "(Asia/Seoul)",
+    // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — KeyInputModal trigger (en parity).
+    "keymodal.trigger.entry": "Please register an API key first",
+    "keymodal.trigger.401": "Key authentication failed — please re-register",
+    // C-D33-4 (D-5 19시 슬롯, 2026-05-03) — MCP Phase 2 chip (en parity).
+    "mcp.section.phase2.label": "MCP — Activates on 5/4",
+    // C-D33-5 (D-5 19시 슬롯, 2026-05-03) — Hero sub + empty room hint (en parity).
+    "hero.sub": "Find the angles you missed",
+    "room.empty.hint": "Ask the same question to two AIs",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
