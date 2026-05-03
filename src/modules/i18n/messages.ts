@@ -182,6 +182,19 @@ export const MESSAGES = {
     "keyping.status.ok": "확인됨",
     "keyping.status.fail": "실패",
     "keyping.action.reping": "재확인",
+    // C-D32-3 (D-5 15시 슬롯, 2026-05-03) — Spec 005 MCP 골격 (F-D32-3).
+    "mcp.section.title": "MCP",
+    "mcp.section.placeholder": "MCP 통합 — Phase 2 예정",
+    // C-D32-4 (D-5 15시 슬롯, 2026-05-03) — BYOK KeyInputModal (F-D32-4).
+    "keymodal.title": "API 키 입력",
+    "keymodal.guide": "Anthropic Console에서 키 발급",
+    "keymodal.action.save": "저장 후 검증",
+    "keymodal.toggle.show": "보기",
+    "keymodal.toggle.hide": "숨기기",
+    // C-D32-5 (D-5 15시 슬롯, 2026-05-03) — CronPreviewChip (F-D32-5 / D-D32-4).
+    "cronpreview.next": "다음 실행",
+    "cronpreview.invalid": "사용자 정의 (검증 필요)",
+    "cronpreview.tz": "(Asia/Seoul)",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -332,6 +345,19 @@ export const MESSAGES = {
     "keyping.status.ok": "Verified",
     "keyping.status.fail": "Failed",
     "keyping.action.reping": "Re-check",
+    // C-D32-3 (D-5 15시 슬롯, 2026-05-03) — Spec 005 MCP scaffold (en parity).
+    "mcp.section.title": "MCP",
+    "mcp.section.placeholder": "MCP integration — Phase 2 (planned)",
+    // C-D32-4 (D-5 15시 슬롯, 2026-05-03) — BYOK KeyInputModal (en parity).
+    "keymodal.title": "Enter API key",
+    "keymodal.guide": "Get a key from Anthropic Console",
+    "keymodal.action.save": "Save & verify",
+    "keymodal.toggle.show": "Show",
+    "keymodal.toggle.hide": "Hide",
+    // C-D32-5 (D-5 15시 슬롯, 2026-05-03) — CronPreviewChip (en parity).
+    "cronpreview.next": "Next run",
+    "cronpreview.invalid": "Custom (verify)",
+    "cronpreview.tz": "(Asia/Seoul)",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

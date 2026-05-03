@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   hueToBubbleBorder,
@@ -11,6 +12,9 @@ import { StreamingCaret } from "./streaming-caret";
 // D-10.3 (Day 5, 2026-04-28): error/aborted 메시지에 [↻ 재전송] 버튼 노출.
 import { useConversationStore } from "@/stores/conversation-store";
 import { t } from "@/modules/i18n/messages";
+// C-D32-2 (D-5 15시 슬롯, 2026-05-03) — Insight 가시화 funnel metric.
+//   message.insights ≥ 1 마운트 시 1회 logFunnelEvent. dedupe 가드는 모듈 내부.
+import { logFunnelEvent } from "@/modules/funnel/funnel-events";
 
 // C-D24-3 (D6 03시 슬롯, 2026-05-02) — 통찰 강조 푸터 lazy 로드.
 //   메인 번들 +0 의무 (168 kB 게이트 유지). InsightFooter 는 클릭 시점에만 fetch.
@@ -78,6 +82,21 @@ export function MessageBubble({
   function handleRetry() {
     void useConversationStore.getState().retry(message.id);
   }
+
+  // C-D32-2: insights 1건 이상 + done 상태에 도달한 시점에 1회 logFunnelEvent.
+  //   dedupe 는 funnel-events 모듈 내부 Set 가드. 동일 messageId 재마운트 시에도 1회만 로깅.
+  const insightCount = message.insights?.length ?? 0;
+  const isDone = message.status === "done";
+  useEffect(() => {
+    if (!isDone || insightCount === 0) return;
+    logFunnelEvent({
+      type: "insight_displayed",
+      messageId: message.id,
+      insightCount,
+      speakerId: participant?.id ?? "unknown",
+      timestamp: Date.now(),
+    });
+  }, [isDone, insightCount, message.id, participant?.id]);
 
   return (
     <div className="px-4">

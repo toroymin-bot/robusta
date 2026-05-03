@@ -5,6 +5,7 @@ import type { Participant } from "@/modules/participants/participant-types";
 import type { Persona } from "@/modules/personas/persona-types";
 import type { InsightKind } from "@/modules/conversation/conversation-types";
 import type { AutoMarkSample } from "@/modules/insights/auto-mark-precision";
+import type { FunnelEventRow } from "@/modules/funnel/funnel-events";
 
 export interface StoredApiKey {
   provider: string;
@@ -173,6 +174,8 @@ export class RobustaDB extends Dexie {
   autoMarks!: Table<AutoMarkSampleRow, number>;
   // C-D29-1 (D-5 03시 슬롯, 2026-05-03) — schedule-runner 4중 가드 (3) 비용 cap 일일 누적.
   costAccum!: Table<CostAccumRow, string>;
+  // C-D32-2 (D-5 15시 슬롯, 2026-05-03) — Insight 가시화 funnel 이벤트 영속 (B-D31-5 (c)).
+  funnelEvents!: Table<FunnelEventRow, number>;
 
   constructor() {
     super("robusta");
@@ -331,6 +334,25 @@ export class RobustaDB extends Dexie {
       schedules: "id, enabled, target_room, created_at, last_run",
       autoMarks: "++id, roomId, ts, [roomId+ts]",
       costAccum: "date, updatedAt", // C-D29-1 신규
+    });
+    // v10 — C-D32-2 (D-5 15시 슬롯, 2026-05-03) — Tori spec C-D32-2 (F-D32-2).
+    //   funnelEvents 테이블 1건 신설 — Insight 가시화 metric (B-D31-5 (c) 정합).
+    //   PK = ++id (auto-increment). 인덱스 type, timestamp — 타입별 / 시각별 빠른 조회.
+    //   기존 v9 테이블 Dexie auto-carry — 0 손실. upgrade 함수 없음.
+    this.version(10).stores({
+      participants: "id, kind, name",
+      conversations: "id, updatedAt",
+      messages:
+        "id, conversationId, createdAt, status, streamingStartedAt",
+      apiKeys: "provider",
+      settings: "key",
+      apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+      personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
+      insights: "id, roomId, sourceMessageId, [roomId+createdAt]",
+      schedules: "id, enabled, target_room, created_at, last_run",
+      autoMarks: "++id, roomId, ts, [roomId+ts]",
+      costAccum: "date, updatedAt",
+      funnelEvents: "++id, type, timestamp", // C-D32-2 신규
     });
   }
 }
