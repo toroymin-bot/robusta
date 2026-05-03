@@ -235,6 +235,15 @@ export function ApiKeysView({ onClose }: ApiKeysViewProps) {
         <p className="mt-1 text-xs text-robusta-inkDim">
           BYOK · 키는 브라우저(IndexedDB)에만 저장되며 서버로 전송되지 않습니다.
         </p>
+        {/* C-D34-2 (D-5 23시 슬롯, 2026-05-03) — BYOK 메시지 정합 wiring (B-D34-4 (b) + F-D34-4 + D-D34-3).
+            /getting-started/byok 페이지와 동일 i18n 키 사용 — 정합성 자동 보장. */}
+        <p
+          data-test="byok-message-settings"
+          className="mt-2 text-sm text-robusta-ink"
+        >
+          <span className="font-semibold">{t("byok.message.title")}</span>
+          <span className="text-robusta-inkDim"> · {t("byok.message.body")}</span>
+        </p>
 
         {/* D-11.3 인라인 키 발급 가이드 — 키 0건일 때만 노출 */}
         {showGuide && (

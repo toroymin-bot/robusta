@@ -10,6 +10,9 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
+// C-D34-2 (D-5 23시 슬롯, 2026-05-03) — BYOK 메시지 정합 wiring (B-D34-4 (b) + F-D34-4 + D-D34-3).
+//   Settings 모달과 동일 i18n 키 사용 — 정합성 자동 보장.
+import { t } from "@/modules/i18n/messages";
 
 // D-D17-3 (Day 5 03시 슬롯, 2026-04-30) C-D17-3: og:image / twitter 메타 누락 정정.
 //   똘이 v1 §1.3 V-3 부수 검증 — /getting-started/byok는 og:image 자체 누락 + twitter:image도 없음.
@@ -55,6 +58,18 @@ export default function ByokGuidePage() {
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>
         Robusta 시작 — Anthropic API 키 발급 (BYOK)
       </h1>
+
+      {/* C-D34-2: BYOK 메시지 정합 — Settings 모달과 동일 i18n 키. */}
+      <p
+        data-test="byok-message-onboarding"
+        style={{
+          marginBottom: 16,
+          fontSize: 14,
+          color: "#3a3a3a",
+        }}
+      >
+        <strong>{t("byok.message.title")}</strong> · {t("byok.message.body")}
+      </p>
 
       <p style={{ marginBottom: 24 }}>
         Robusta는 사용자 본인의 API 키로 동작합니다 (BYOK). 1분이면 됩니다.

@@ -27,6 +27,7 @@
     "verify:d31": "node scripts/verify-d31.mjs",
     "verify:d32": "node scripts/verify-d32.mjs",
     "verify:d33": "node scripts/verify-d33.mjs",
+    "verify:d34": "node scripts/verify-d34.mjs",
     "verify:conservation-13": "node scripts/verify-conservation-13.mjs",
     "funnel:summary": "node scripts/funnel-summary.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",

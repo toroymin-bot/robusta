@@ -46,6 +46,10 @@ import { AutoLoopHeader } from "./auto-loop-header";
 // C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12: 모바일 햄버거 메뉴 분기.
 //   ~~기존 인라인 4도구 div~~ → HeaderCluster (데스크탑 인라인 + 모바일 풀스크린 오버레이).
 import { HeaderCluster } from "./header-cluster";
+// C-D34-1 (D-5 23시 슬롯, 2026-05-03) — D-Day(5/8) 카운트다운 lozenge.
+//   보존 13 직접 수정: 1줄 마운트 (import + JSX) — useEffect/조건부 렌더 0건.
+//   verify-conservation-13 v2 (useEffect ≤ 8 / 조건부 ≤ 4 / lazy 분리) 영향 0.
+import { DDayLozenge } from "@/modules/header/d-day-lozenge";
 // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 자동 발언 스케줄 모달 — 트리거 X, UI 골격 + IndexedDB 영구화만.
 //   React.lazy + 조건 mount로 분리 — 모달 코드는 클릭 시점에만 fetch (/page∪/layout 게이트 영향 최소).
 //   ~~next/dynamic~~ 도입했다가 helper 오버헤드로 게이트 0.4KB 초과 → React.lazy로 교체.
@@ -224,7 +228,11 @@ export function ConversationWorkspace() {
       <ParticipantsPanel />
       <main className="flex flex-1 flex-col">
         <header className="flex h-12 items-center justify-between border-b border-robusta-divider px-6 backdrop-blur">
-          <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
+          <div className="flex items-center">
+            <h1 className="text-base font-semibold tracking-tight">Robusta</h1>
+            {/* C-D34-1: D-Day(5/8) 카운트다운 — neutral lozenge, no animation. */}
+            <DDayLozenge />
+          </div>
           {/* C-D17-13 (Day 5 15시 슬롯, 2026-04-30) F-12+D-12 / Roy id-19 직접 대응:
               ~~기존 인라인 4도구 div (mode-label, turn-mode-label, theme-toggle, ⚙ Keys)~~
               → HeaderCluster: 데스크탑 ≥ md 인라인 동일 / 모바일 < md 햄버거 + 풀스크린 오버레이.

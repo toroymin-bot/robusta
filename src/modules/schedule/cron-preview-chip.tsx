@@ -25,6 +25,12 @@ export interface CronPreviewChipProps {
 /**
  * cron 5필드 → human-readable.
  *   리턴 null 이면 invalid (호출자가 fallback chip 표시).
+ *
+ * C-D34-4 (D-5 23시 슬롯, 2026-05-03) — 패턴 확장 (D-33-자-3 권고 흡수):
+ *   - 'M * * * *' (hourly-at) — frequencyToCron(hourly-at) 결과 표현 의무.
+ *     기존 invalid fallback 회피 (사용자 신뢰 강화).
+ *   - 라벨 i18n (cron.label.hourly_at + cron.label.every_n_min) — ko/en parity.
+ *   - 기존 패턴(slash-N · M H * * * · M H D * *) 라벨 무수정 — verify-d33 회귀 보호.
  */
 export function cronToHuman(cron: string): string | null {
   const trimmed = cron.trim();
@@ -33,7 +39,7 @@ export function cronToHuman(cron: string): string | null {
   if (parts.length !== 5) return null;
   const [min, hour, dom, mon, dow] = parts;
 
-  // 패턴 1: */N * * * * (N분마다)
+  // 패턴 1: */N * * * * (N분마다) — 기존 라벨 유지 (verify-d33 회귀).
   const everyN = /^\*\/(\d+)$/.exec(min);
   if (
     everyN &&
@@ -46,7 +52,21 @@ export function cronToHuman(cron: string): string | null {
     if (n >= 1 && n <= 59) return `${n}분마다`;
   }
 
-  // 패턴 2: M H * * * (매일 H시 M분)
+  // 패턴 2: M * * * * (매시 NN분, hourly-at) — C-D34-4 신규.
+  //   frequencyToCron({kind:'hourly-at', minute:M}) 결과 'M * * * *' 직접 매칭.
+  //   매일 패턴(M H * * *) 보다 선행 — H='*' 분기.
+  if (
+    /^\d+$/.test(min) &&
+    hour === "*" &&
+    dom === "*" &&
+    mon === "*" &&
+    dow === "*"
+  ) {
+    const m = Number(min);
+    if (m >= 0 && m <= 59) return t("cron.label.hourly_at", { m });
+  }
+
+  // 패턴 3: M H * * * (매일 H시 M분) — 기존 라벨 유지.
   if (
     /^\d+$/.test(min) &&
     /^\d+$/.test(hour) &&
@@ -61,7 +81,7 @@ export function cronToHuman(cron: string): string | null {
     }
   }
 
-  // 패턴 3: M H D * * (매월 D일 H시 M분)
+  // 패턴 4: M H D * * (매월 D일 H시 M분) — 기존 라벨 유지.
   if (
     /^\d+$/.test(min) &&
     /^\d+$/.test(hour) &&
@@ -96,8 +116,8 @@ export function nextFireMs(cron: string, now: number = Date.now()): number | nul
   // 60일 = 86400분. 충분히 큰 스캔 윈도우 — 본 chip 의 미리보기는 보통 24h 안에 첫 매치.
   const maxIters = 86_400;
   for (let i = 0; i < maxIters; i++) {
-    const t = startMin + i * 60_000;
-    const d = new Date(t);
+    const ts = startMin + i * 60_000;
+    const d = new Date(ts);
     const m = d.getMinutes();
     const h = d.getHours();
     const dom = d.getDate();
@@ -105,21 +125,30 @@ export function nextFireMs(cron: string, now: number = Date.now()): number | nul
     const everyN = /^\*\/(\d+)$/.exec(minStr);
     if (everyN && hourStr === "*") {
       const n = Number(everyN[1]);
-      if (m % n === 0) return t;
+      if (m % n === 0) return ts;
       continue;
     }
-    // 패턴 2: M H * * *
+    // 패턴 2: M * * * * (hourly-at) — C-D34-4 신규. h 무관, 분만 매칭.
+    if (
+      hourStr === "*" &&
+      domStr === "*" &&
+      /^\d+$/.test(minStr) &&
+      m === Number(minStr)
+    ) {
+      return ts;
+    }
+    // 패턴 3: M H * * *
     if (domStr === "*") {
-      if (m === Number(minStr) && h === Number(hourStr)) return t;
+      if (m === Number(minStr) && h === Number(hourStr)) return ts;
       continue;
     }
-    // 패턴 3: M H D * *
+    // 패턴 4: M H D * *
     if (
       m === Number(minStr) &&
       h === Number(hourStr) &&
       dom === Number(domStr)
     ) {
-      return t;
+      return ts;
     }
   }
   return null;

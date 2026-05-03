@@ -85,6 +85,40 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
       }));
       set({ personas: fallback, hydrated: true });
     }
+
+    // C-D34-3 (D-5 23시 슬롯, 2026-05-03) — BroadcastChannel persona 동기화 (F-D33-4 (c) + F-D34-3).
+    //   다른 탭의 페르소나 변경을 fetch + setState. version 비교 로컬 < 수신 시만 갱신 (echo loop 방지).
+    //   self sender id 메시지는 persona-broadcast 내부에서 자동 무시. dynamic import 로 메인 번들 +0.
+    void import("@/modules/personas/persona-broadcast").then(
+      ({ subscribePersonaSync }) => {
+        subscribePersonaSync((msg) => {
+          if (msg.type !== "persona-changed") return;
+          void (async () => {
+            try {
+              const db = getDb();
+              const fresh = await db.personas.get(msg.personaId);
+              const current = get().personas;
+              if (!fresh) {
+                // 삭제 동기화 — 로컬에서 제거.
+                set({ personas: current.filter((p) => p.id !== msg.personaId) });
+                return;
+              }
+              const local = current.find((p) => p.id === msg.personaId);
+              if (local && local.updatedAt >= msg.version) return; // 로컬 신선 — 무시
+              const idx = current.findIndex((p) => p.id === msg.personaId);
+              const arr = [...current];
+              if (idx === -1) arr.push(fresh);
+              else arr[idx] = fresh;
+              set({ personas: arr });
+            } catch {
+              /* silent — Dexie 차단 환경 안전망. */
+            }
+          })();
+        });
+      },
+    ).catch(() => {
+      /* silent — dynamic import 실패는 미지원 브라우저 환경 안전망. */
+    });
   },
 
   listPresets(kind) {
@@ -141,6 +175,10 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
     if (idx === -1) arr.push(next);
     else arr[idx] = next;
     set({ personas: arr });
+    // C-D34-3: BroadcastChannel publish — 다른 탭에 즉시 알림. dynamic import (메인 번들 +0).
+    void import("@/modules/personas/persona-broadcast").then(
+      ({ publishPersonaChange }) => publishPersonaChange(id, next.updatedAt),
+    ).catch(() => {});
     return next;
   },
 
@@ -157,6 +195,10 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
       console.warn("[robusta] persona remove db delete failed", err);
     }
     set({ personas: current.filter((p) => p.id !== id) });
+    // C-D34-3: BroadcastChannel publish — fresh row 부재 = 삭제 시그널.
+    void import("@/modules/personas/persona-broadcast").then(
+      ({ publishPersonaChange }) => publishPersonaChange(id, Date.now()),
+    ).catch(() => {});
   },
 
   async cloneFromPreset(presetId) {
@@ -182,6 +224,10 @@ export const usePersonaStore = create<PersonaStore>((set, get) => ({
       console.warn("[robusta] persona clone db put failed", err);
     }
     set({ personas: [...current, cloned] });
+    // C-D34-3: BroadcastChannel publish — clone 도 신규 페르소나라 알림.
+    void import("@/modules/personas/persona-broadcast").then(
+      ({ publishPersonaChange }) => publishPersonaChange(cloned.id, cloned.updatedAt),
+    ).catch(() => {});
     return cloned;
   },
 }));

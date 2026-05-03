@@ -30,6 +30,14 @@ export type FunnelEvent =
       type: "byok_required";
       source: "entry" | "send_401";
       timestamp: number;
+    }
+  // C-D34-5 (D-5 23시 슬롯, 2026-05-03) — schedule 발동 추적 (F-D34-5).
+  //   schedule-runner 가 cron 매칭 + 4중 가드 통과 후 fire() 호출 시점에 1건 로깅.
+  //   scheduleId 로 후속 분석 (어떤 스케줄이 가장 자주 발동) — Phase 2 funnel UI.
+  | {
+      type: "schedule_fired";
+      scheduleId: string;
+      timestamp: number;
     };
 
 // C-D33-1 (D-5 19시 슬롯, 2026-05-03) — FunnelEvent 가 다중 member union 으로 확장됨에 따라

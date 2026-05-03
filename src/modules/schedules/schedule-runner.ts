@@ -318,6 +318,16 @@ export function startScheduleRunner(
             console.warn("[robusta] schedule-runner: addAccum failed", err);
           }
         });
+      // C-D34-5 (D-5 23시 슬롯, 2026-05-03) — funnelEvents 'schedule_fired' 로깅 (F-D34-5).
+      //   cron 매칭 + 4중 가드 통과 후 fire() 호출 시점에 1건 영속.
+      //   dynamic import — 메인 번들 +0 의무. 실패는 silent (BYOK 정합 외부 텔레메트리 0).
+      void import("@/modules/funnel/funnel-events").then(({ logFunnelEvent }) => {
+        logFunnelEvent({
+          type: "schedule_fired",
+          scheduleId: r.id,
+          timestamp: t,
+        });
+      }).catch(() => {});
       void opts.fire(r).catch((err) => {
         console.warn("[robusta] schedule fire failed", r.id, err);
       });

@@ -203,6 +203,21 @@ export const MESSAGES = {
     // C-D33-5 (D-5 19시 슬롯, 2026-05-03) — Hero sub + 빈 방 hint pill (B-D33-4 + D-D33-5 / F-D33-5).
     "hero.sub": "내가 못 본 시야 발견",
     "room.empty.hint": "두 AI에게 같은 질문을 해보세요",
+    // C-D34-1 (D-5 23시 슬롯, 2026-05-03) — D-Day lozenge (B-D33-1 (b) + D-D34-1 + D-D34-5).
+    "dday.lozenge.dN": "D-{n}",
+    "dday.lozenge.live": "LIVE",
+    // C-D34-2 (D-5 23시 슬롯, 2026-05-03) — BYOK 메시지 정합 (B-D34-4 (b) + F-D34-4 + D-D34-3).
+    "byok.message.title": "100% BYOK",
+    "byok.message.body": "본인 키 · Robusta 서버 미경유 · 0원",
+    // C-D34-4 (D-5 23시 슬롯, 2026-05-03) — cron-preview-chip 패턴 확장 (F-D34-2 + D-D34-2).
+    "cron.label.hourly_at": "매시 {m}분",
+    "cron.label.every_n_min": "매 {n}분마다",
+    // C-D34-5 (D-5 23시 슬롯, 2026-05-03) — launch checklist 5 항목 (B-D34-3 + D-D34-4).
+    "qatest.checklist.d3": "KQ_23 fallback 발동 검증 (도메인 미연결 시 preview URL 자동 라이브)",
+    "qatest.checklist.d2demo": "BYOK 시연 (Roy 30분) + 자체 시뮬레이션 3건",
+    "qatest.checklist.d2copy": "카피 최종 (한/영 parity)",
+    "qatest.checklist.d1": "Production 배포 점검 + D-Day 24h 운영 R&R 확정",
+    "qatest.checklist.dday": "10:00 KST 라이브 + Hero LIVE 자동 전환 + Roy 1회 알림",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -374,6 +389,21 @@ export const MESSAGES = {
     // C-D33-5 (D-5 19시 슬롯, 2026-05-03) — Hero sub + empty room hint (en parity).
     "hero.sub": "Find the angles you missed",
     "room.empty.hint": "Ask the same question to two AIs",
+    // C-D34-1 (D-5 23시 슬롯, 2026-05-03) — D-Day lozenge (en parity).
+    "dday.lozenge.dN": "D-{n}",
+    "dday.lozenge.live": "LIVE",
+    // C-D34-2 (D-5 23시 슬롯, 2026-05-03) — BYOK message (en parity).
+    "byok.message.title": "100% BYOK",
+    "byok.message.body": "Your key · Never via Robusta servers · Free",
+    // C-D34-4 (D-5 23시 슬롯, 2026-05-03) — cron-preview-chip 패턴 확장 (en parity).
+    "cron.label.hourly_at": "Hourly at {m} min",
+    "cron.label.every_n_min": "Every {n} min",
+    // C-D34-5 (D-5 23시 슬롯, 2026-05-03) — launch checklist 5 items (en parity).
+    "qatest.checklist.d3": "Verify KQ_23 fallback firing (preview URL auto-live if domain unconnected)",
+    "qatest.checklist.d2demo": "BYOK demo (Roy 30 min) + self-simulation 3 cases",
+    "qatest.checklist.d2copy": "Copy finalize (ko/en parity)",
+    "qatest.checklist.d1": "Production deploy check + D-Day 24h ops R&R locked",
+    "qatest.checklist.dday": "10:00 KST live + Hero LIVE auto-switch + Roy 1 ping",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

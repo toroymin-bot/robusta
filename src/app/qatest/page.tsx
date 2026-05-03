@@ -21,6 +21,9 @@
 "use client";
 
 import { useState } from "react";
+// C-D34-5 (D-5 23시 슬롯, 2026-05-03) — D-Day launch checklist 섹션 (B-D34-3 + D-D34-4 (c)).
+//   /qatest 페이지 본체는 D-Day(5/8) 라이브 시 통째로 제거 — 본 섹션도 함께 폐기.
+import { DDayChecklist } from "@/modules/qatest/d-day-checklist";
 
 const TRIAL_KEY = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY ?? "";
 
@@ -196,6 +199,9 @@ export default function QaTestPage() {
           현재는 ping만으로 trial 키 wiring·CORS·격리 검증.
         </p>
       </section>
+
+      {/* C-D34-5 (D-5 23시 슬롯, 2026-05-03) — D-Day launch checklist 섹션. */}
+      <DDayChecklist />
     </main>
   );
 }
