@@ -170,6 +170,18 @@ export const MESSAGES = {
     "cost.cap.reset": "자정 {time} KST 리셋",
     "cost.cap.tooltip": "비용 한도 {pct}% 사용",
     "cost.cap.warn": "비용 한도 {pct}% 도달 — 자정 리셋까지 잠시 대기 권장",
+    // C-D31-1 (D-5 11시 슬롯, 2026-05-03) — 스케줄 modal save toast (F-D31-1).
+    "schedule.save.ok": "스케줄 저장됨",
+    "schedule.save.fail": "스케줄 저장 실패. 다시 시도하세요.",
+    // C-D31-4 (D-5 11시 슬롯, 2026-05-03) — /schedules 페이지 라우트 (F-D31-2 / D-D31-1).
+    "schedules.page.title": "스케줄",
+    "schedules.empty.headline": "AI들과의 자율 대화를 예약하세요",
+    "schedules.cta.new": "+ 새 스케줄",
+    // C-D31-5 (D-5 11시 슬롯, 2026-05-03) — KeyPingWidget (F-D31-5).
+    "keyping.label": "BYOK 키 상태",
+    "keyping.status.ok": "확인됨",
+    "keyping.status.fail": "실패",
+    "keyping.action.reping": "재확인",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -308,6 +320,18 @@ export const MESSAGES = {
     "cost.cap.tooltip": "Cost cap {pct}% used",
     "cost.cap.warn":
       "Cost cap {pct}% reached — consider waiting until reset",
+    // C-D31-1 (D-5 11시 슬롯, 2026-05-03) — Schedule modal save toast (en parity).
+    "schedule.save.ok": "Schedule saved",
+    "schedule.save.fail": "Failed to save schedule. Please retry.",
+    // C-D31-4 (D-5 11시 슬롯, 2026-05-03) — /schedules page route (en parity).
+    "schedules.page.title": "Schedules",
+    "schedules.empty.headline": "Schedule autonomous AI conversations",
+    "schedules.cta.new": "+ New schedule",
+    // C-D31-5 (D-5 11시 슬롯, 2026-05-03) — KeyPingWidget (en parity).
+    "keyping.label": "BYOK key status",
+    "keyping.status.ok": "Verified",
+    "keyping.status.fail": "Failed",
+    "keyping.action.reping": "Re-check",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

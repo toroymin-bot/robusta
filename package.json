@@ -24,6 +24,7 @@
     "verify:d29": "node scripts/verify-d29.mjs",
     "verify:hue-sync": "node scripts/verify-hue-sync.mjs",
     "verify:d30": "node scripts/verify-d30.mjs",
+    "verify:d31": "node scripts/verify-d31.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",
     "check:catalog-isolation": "node scripts/check-catalog-isolation.mjs",
     "build:fonts": "node scripts/build-fonts.mjs",

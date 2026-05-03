@@ -21,6 +21,13 @@ import {
   ALLOWED_EVERY_MINUTES,
   describeFrequency,
 } from "./schedule-types";
+// C-D31-1 (D-5 11시 슬롯, 2026-05-03) — F-D31-1: store.addRule 직후 bridge.persistRule 동기화.
+//   schedule-store(settings 단일 JSON)와 bridge(Dexie schedules row) 두 영속 통로 일관성 확보 →
+//   schedule-runner 가 schedules 테이블만 폴링해도 모달 저장이 즉시 반영.
+//   OCP — schedule-store / bridge / runner 모두 무수정. modal 의 onAdd 핸들러만 wrap.
+import { persistRule } from "@/modules/schedules/schedule-store-bridge";
+import { useToastStore } from "@/modules/ui/toast";
+import { t } from "@/modules/i18n/messages";
 
 interface ScheduleModalProps {
   onClose: () => void;
@@ -178,7 +185,36 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
                     <AddRuleForm
                       participantId={p.id}
                       onAdd={async (freq) => {
-                        await addRule({ participantId: p.id, frequency: freq });
+                        // C-D31-1: 신규 룰을 race-safe 하게 골라내기 위해 add 전 id 스냅샷.
+                        //   addRule 내부에서 zustand set + persist 가 await 으로 끝난 뒤 실행되므로
+                        //   diff 로 새 rule 1건 식별 가능 (single-tab 단일 사용자 가정).
+                        const beforeIds = new Set(
+                          useScheduleStore.getState().rules.map((r) => r.id),
+                        );
+                        const ok = await addRule({
+                          participantId: p.id,
+                          frequency: freq,
+                        });
+                        if (!ok) return;
+                        const after = useScheduleStore.getState().rules;
+                        const newRule = after.find((r) => !beforeIds.has(r.id));
+                        if (!newRule) return;
+                        const pushToast = useToastStore.getState().push;
+                        try {
+                          await persistRule(newRule);
+                          pushToast({
+                            tone: "info",
+                            message: t("schedule.save.ok"),
+                          });
+                        } catch {
+                          // bridge 실패 시 store 의 settings 단일 JSON 영속화는 살아있음 →
+                          //   다음 부트에서도 모달은 보이지만, runner 폴링은 누락 가능.
+                          //   사용자에게 명시적으로 알려 재시도 유도.
+                          pushToast({
+                            tone: "error",
+                            message: t("schedule.save.fail"),
+                          });
+                        }
                       }}
                     />
                   </li>

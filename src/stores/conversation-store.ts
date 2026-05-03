@@ -25,7 +25,10 @@ import {
 import { DEFAULT_PARTICIPANTS } from "@/modules/participants/participant-seed";
 // D-10.3: 재전송 지원 — 순수 plan 함수 + streamMessage + 의존 stores.
 import { buildRetryPlan } from "@/modules/conversation/retry-plan";
-import { streamMessage } from "@/modules/conversation/conversation-api";
+import {
+  streamMessage,
+  parseMessageInsights,
+} from "@/modules/conversation/conversation-api";
 import { useParticipantStore } from "@/stores/participant-store";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { useToastStore } from "@/modules/ui/toast";
@@ -532,11 +535,20 @@ export const useConversationStore = create<ConversationStore>()(
       existingMark: undefined,
       locale: "ko",
     });
+    // C-D31-2 (D-5 11시 슬롯, 2026-05-03) — F-D31-3: Spec 003 폴리시 wiring.
+    //   AI 발언자(retry 는 plan 단계에서 speaker-not-ai 거부 → 여기 도달 시 AI 확정) 한정.
+    //   parseMessageInsights 는 throw 없음 (insight-parser.ts 내부 안전망) — 빈/마크업 부재 본문은
+    //   원본 그대로 반환하므로 idempotent. cleanText 로 본문 마크업 제거 + insights 부착.
+    //   ※ 보존 10 conversation-store.ts 직접 수정 첫 사례 — Spec 003 본체 활성 정당화.
+    const parsedRetry = parseMessageInsights(accumulated, plan.speaker.id);
     await state.updateMessage(plan.placeholder.id, {
       status: "done",
-      content: accumulated,
+      content: parsedRetry.cleanText,
       ...(usagePatch ? { usage: usagePatch } : {}),
       ...(autoMark ? { insight: autoMark } : {}),
+      ...(parsedRetry.insights.length > 0
+        ? { insights: parsedRetry.insights }
+        : {}),
     });
   },
 
@@ -858,11 +870,18 @@ async function runAutoTurn(
     existingMark: undefined,
     locale: "ko",
   });
+  // C-D31-2 (D-5 11시 슬롯, 2026-05-03) — F-D31-3: AutoLoop 한 턴 종료 시점 동일 wiring.
+  //   speaker 는 함수 진입 시 AI 검증 (system 가드는 maybeAutoMark 내부 + AutoLoop 자체 정책).
+  //   parseMessageInsights 안전망 (throw 0) — content 빈 string / 마크업 없음 모두 idempotent.
+  const parsedAuto = parseMessageInsights(accumulated, speaker.id);
   await state.updateMessage(placeholderId, {
     status: "done",
-    content: accumulated,
+    content: parsedAuto.cleanText,
     ...(usagePatch ? { usage: usagePatch } : {}),
     ...(autoMark ? { insight: autoMark } : {}),
+    ...(parsedAuto.insights.length > 0
+      ? { insights: parsedAuto.insights }
+      : {}),
   });
 }
 
