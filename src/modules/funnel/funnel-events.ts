@@ -34,9 +34,13 @@ export type FunnelEvent =
   // C-D34-5 (D-5 23시 슬롯, 2026-05-03) — schedule 발동 추적 (F-D34-5).
   //   schedule-runner 가 cron 매칭 + 4중 가드 통과 후 fire() 호출 시점에 1건 로깅.
   //   scheduleId 로 후속 분석 (어떤 스케줄이 가장 자주 발동) — Phase 2 funnel UI.
+  // C-D39-1 (D-4 23시 슬롯, 2026-05-04) — manual run source 옵셔널 확장.
+  //   source 미주입(기존 cron) = undefined / 'manual_now' / 'manual_5min'. PII 0 유지.
+  //   기존 schedule-runner 호출자(C-D34-5) 무수정 — 옵셔널이라 backward-compatible.
   | {
       type: "schedule_fired";
       scheduleId: string;
+      source?: "manual_now" | "manual_5min";
       timestamp: number;
     }
   // C-D36-3 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-3 (F-D36-3 / B-D35-5 4-funnel KPI).

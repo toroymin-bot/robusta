@@ -257,6 +257,9 @@ export const MESSAGES = {
     "about_domain.faq_a2": "BYOK 정책으로 본인 키는 브라우저 IndexedDB 에만 저장되며 서버 미경유. 도메인 변경과 무관합니다.",
     "about_domain.faq_q3": "Q3. 이전 후 북마크는?",
     "about_domain.faq_a3": "임시 URL 은 정식 도메인으로 자동 redirect 됩니다.",
+    // C-D39-2 (D-4 23시 슬롯, 2026-05-04) — BYOK 두려움 해소 lozenge (V-D39-2 (a) + D-D39-1 (a)).
+    //   key-input-modal 의 input element 직전 마운트, 1줄 회색 보조 메시지.
+    "byok.assurance.lozenge": "키는 본인 브라우저에만 저장됩니다. 서버로 전송되지 않습니다.",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -482,6 +485,8 @@ export const MESSAGES = {
     "about_domain.faq_a2": "BYOK policy keeps your keys in browser IndexedDB only — never sent to our server. Domain changes do not affect this.",
     "about_domain.faq_q3": "Q3. What about my bookmark after migration?",
     "about_domain.faq_a3": "The temporary URL auto-redirects to the official domain.",
+    // C-D39-2 (D-4 23시 슬롯, 2026-05-04) — BYOK assurance lozenge (en parity).
+    "byok.assurance.lozenge": "Your key stays on your browser. Never sent to our servers.",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

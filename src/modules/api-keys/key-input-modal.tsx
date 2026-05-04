@@ -117,7 +117,13 @@ export function KeyInputModal({
           {provider}
         </p>
 
-        <div className="mt-4 flex items-center gap-2">
+        {/* C-D39-2 (D-4 23시 슬롯, 2026-05-04) — BYOK 두려움 해소 lozenge (V-D39-2 (a) + D-D39-1 (a)).
+            input element 바로 위 1줄 회색 보조 메시지 — 잡음 0, i18n parity ko/en. */}
+        <p className="mt-3 text-xs text-stone-500 dark:text-stone-400" data-test="byok-assurance-lozenge">
+          {t("byok.assurance.lozenge")}
+        </p>
+
+        <div className="mt-1 flex items-center gap-2">
           <input
             ref={inputRef}
             type={showKey ? "text" : "password"}

@@ -32,6 +32,9 @@ import { CronPreviewChip } from "./cron-preview-chip";
 import { persistRule } from "@/modules/schedules/schedule-store-bridge";
 import { useToastStore } from "@/modules/ui/toast";
 import { t } from "@/modules/i18n/messages";
+// C-D39-1 (D-4 23시 슬롯, 2026-05-04) — manual run "지금" + "5분 후 큐" (V-D39-1 (c)).
+//   각 rule li 안 toggle/삭제 옆에 추가. 자율 정정 D-39-자-1: schedule-card.tsx 미존재 → 본 모달이 SoT.
+import { ManualRunButton } from "./manual-run-button";
 
 interface ScheduleModalProps {
   onClose: () => void;
@@ -163,6 +166,8 @@ export function ScheduleModal({ onClose }: ScheduleModalProps) {
                               {describeFrequency(r.frequency)}
                             </span>
                             <span className="flex items-center gap-2">
+                              {/* C-D39-1 (D-4 23시 슬롯, 2026-05-04) — manual run 즉시 + 5분 큐. */}
+                              <ManualRunButton scheduleId={r.id} />
                               <button
                                 type="button"
                                 onClick={() => void toggleRule(r.id)}
