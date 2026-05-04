@@ -9,7 +9,7 @@
  *   2) check:i18n         — i18n parity ko/en
  *   3) check:mcp:budget   — Spec 005 MCP chunkSize ≤ 18 kB (호출자 부재 시 skip-pass)
  *   4) verify:conservation-13 — 보존 13 v3 (conversation-store.ts SHA 무변동)
- *   5) verify:d27 ~ verify:d36 — 사이클별 회귀 게이트 10건
+ *   5) verify:d27 ~ verify:d37 — 사이클별 회귀 게이트 11건 (C-D37-5: 15 게이트)
  *
  * 종료 코드:
  *   - 모두 PASS → exit 0
@@ -40,6 +40,7 @@ const gates = [
   { id: "verify:d34", cmd: "node", args: ["scripts/verify-d34.mjs"] },
   { id: "verify:d35", cmd: "node", args: ["scripts/verify-d35.mjs"] },
   { id: "verify:d36", cmd: "node", args: ["scripts/verify-d36.mjs"] },
+  { id: "verify:d37", cmd: "node", args: ["scripts/verify-d37.mjs"] },
 ];
 
 function runGate(gate) {

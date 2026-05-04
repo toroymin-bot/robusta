@@ -134,6 +134,20 @@ export interface CostAccumRow {
 }
 
 /**
+ * C-D37-2 (D-4 15시 슬롯, 2026-05-04) — Tori spec C-D37-2 (V-D37-1).
+ *   Dexie v11 신규 테이블. persona_used funnel 페이로드 확장의 영속 누적.
+ *   PK = personaId (string). 페르소나당 1행 — 사용 시 read-modify-write.
+ *   PII 0 정책: personaId 외 messageCount/firstUsedAt/lastUsedAt 숫자만. 메시지 본문 / 이름 / 프롬프트 미저장.
+ *   다중 탭 race 안전: bumpPersonaStat 트랜잭션 (rw, personaStats) 으로 read-modify-write 원자.
+ */
+export interface PersonaStatRow {
+  personaId: string;
+  messageCount: number;
+  firstUsedAt: number;
+  lastUsedAt: number;
+}
+
+/**
  * C-D28-4: AutoMarkSample (메모리 1차) ↔ AutoMarkSampleRow (영속 1차) 변환 헬퍼.
  *   호출자 (auto-mark-sample-store) 가 add 시 row 변환, hydrate 시 sample 복원.
  */
@@ -176,6 +190,8 @@ export class RobustaDB extends Dexie {
   costAccum!: Table<CostAccumRow, string>;
   // C-D32-2 (D-5 15시 슬롯, 2026-05-03) — Insight 가시화 funnel 이벤트 영속 (B-D31-5 (c)).
   funnelEvents!: Table<FunnelEventRow, number>;
+  // C-D37-2 (D-4 15시 슬롯, 2026-05-04) — persona_used 페이로드 확장 영속 (V-D37-1).
+  personaStats!: Table<PersonaStatRow, string>;
 
   constructor() {
     super("robusta");
@@ -353,6 +369,27 @@ export class RobustaDB extends Dexie {
       autoMarks: "++id, roomId, ts, [roomId+ts]",
       costAccum: "date, updatedAt",
       funnelEvents: "++id, type, timestamp", // C-D32-2 신규
+    });
+    // v11 — C-D37-2 (D-4 15시 슬롯, 2026-05-04) — Tori spec C-D37-2 (V-D37-1).
+    //   personaStats 테이블 1건 신설 — persona_used funnel 페이로드 확장 영속.
+    //   PK = personaId (string). 페르소나당 1행 — bumpPersonaStat 트랜잭션 read-modify-write.
+    //   PII 0 정책: personaId 외 숫자(messageCount/firstUsedAt/lastUsedAt) 만.
+    //   기존 v10 테이블 Dexie auto-carry — 0 손실. upgrade 함수 없음.
+    this.version(11).stores({
+      participants: "id, kind, name",
+      conversations: "id, updatedAt",
+      messages:
+        "id, conversationId, createdAt, status, streamingStartedAt",
+      apiKeys: "provider",
+      settings: "key",
+      apiKeyMeta: "pk, provider, lastUnauthorizedAt",
+      personas: "&id, kind, isPreset, createdAt, [kind+isPreset]",
+      insights: "id, roomId, sourceMessageId, [roomId+createdAt]",
+      schedules: "id, enabled, target_room, created_at, last_run",
+      autoMarks: "++id, roomId, ts, [roomId+ts]",
+      costAccum: "date, updatedAt",
+      funnelEvents: "++id, type, timestamp",
+      personaStats: "personaId, lastUsedAt", // C-D37-2 신규
     });
   }
 }

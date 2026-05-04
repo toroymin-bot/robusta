@@ -15,6 +15,9 @@ import { t } from "@/modules/i18n/messages";
 // C-D32-2 (D-5 15시 슬롯, 2026-05-03) — Insight 가시화 funnel metric.
 //   message.insights ≥ 1 마운트 시 1회 logFunnelEvent. dedupe 가드는 모듈 내부.
 import { logFunnelEvent } from "@/modules/funnel/funnel-events";
+// C-D37-3 (D-4 15시 슬롯, 2026-05-04) — Tori spec C-D37-3 (V-D37-2).
+//   AI 발화 + done 상태에서만 마크다운 미니 파서 적용. 외부 dep 0 (168 103 kB 보호).
+import { renderMd } from "./md-mini";
 
 // C-D24-3 (D6 03시 슬롯, 2026-05-02) — 통찰 강조 푸터 lazy 로드.
 //   메인 번들 +0 의무 (168 kB 게이트 유지). InsightFooter 는 클릭 시점에만 fetch.
@@ -144,7 +147,12 @@ export function MessageBubble({
             </div>
           ) : (
             <span className="whitespace-pre-wrap break-words">
-              {message.content}
+              {/* C-D37-3 (D-4 15시): AI + done 상태일 때만 markdown 파서 적용.
+                  사용자 발화 / streaming 중간 / streaming 자체는 평문 (cursor 정합 + 파서 부분 토큰 안전).
+                  XSS 방지: renderMd 는 dangerouslySetInnerHTML 미사용 — React 자체 escape 신뢰. */}
+              {isAi && !isStreaming && message.status === "done"
+                ? renderMd(message.content)
+                : message.content}
               {isStreaming && <StreamingCaret />}
             </span>
           )}

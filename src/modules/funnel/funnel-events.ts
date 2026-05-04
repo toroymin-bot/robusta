@@ -47,9 +47,15 @@ export type FunnelEvent =
     }
   // C-D36-3 — persona_used: 메시지 송신 시 personaId 변경 감지 1회 로그 (D-36-자-3).
   //   페이로드 personaId 단일 — 어떤 페르소나가 가장 자주 사용되는지 분석 단서.
+  // C-D37-2 (D-4 15시 슬롯, 2026-05-04) — Tori spec C-D37-2 (V-D37-1).
+  //   페이로드 확장: messageCount / firstUsedAt / lastUsedAt 추가. PII 0 유지 (personaId/숫자만).
+  //   호출자가 bumpPersonaStat 결과로 페이로드 채움 — 자체 IndexedDB persona-stats 누적.
   | {
       type: "persona_used";
       personaId: string;
+      messageCount: number;
+      firstUsedAt: number;
+      lastUsedAt: number;
       timestamp: number;
     };
 
