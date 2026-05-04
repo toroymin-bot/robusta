@@ -31,6 +31,8 @@
     "verify:d35": "node scripts/verify-d35.mjs",
     "verify:d36": "node scripts/verify-d36.mjs",
     "verify:d37": "node scripts/verify-d37.mjs",
+    "verify:d38": "node scripts/verify-d38.mjs",
+    "sim:hero-live": "node scripts/sim-hero-live-transition.mjs",
     "verify:conservation-13": "node scripts/verify-conservation-13.mjs",
     "verify:all": "node scripts/verify-all.mjs",
     "check:mcp:budget": "node scripts/check-mcp-budget.mjs",

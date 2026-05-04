@@ -41,6 +41,8 @@ const gates = [
   { id: "verify:d35", cmd: "node", args: ["scripts/verify-d35.mjs"] },
   { id: "verify:d36", cmd: "node", args: ["scripts/verify-d36.mjs"] },
   { id: "verify:d37", cmd: "node", args: ["scripts/verify-d37.mjs"] },
+  { id: "verify:d38", cmd: "node", args: ["scripts/verify-d38.mjs"] },
+  { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
 ];
 
 function runGate(gate) {

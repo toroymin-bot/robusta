@@ -19,6 +19,9 @@ import { tc, type CatalogKey } from "@/modules/i18n/catalog-i18n";
 // C-D37-4 (D-4 15시 슬롯, 2026-05-04) — Tori spec C-D37-4 (D-D37-1).
 //   결정적 personaId → 10-hue palette token. 카드 좌측 4px stripe 시각 차별화.
 import { personaHue } from "./persona-hue";
+// C-D38-4 (D-4 19시 슬롯, 2026-05-04) — Tori spec C-D38-4 (V-D38-3 (a) + D-D38-5 (a)).
+//   messageCount lozenge — 자율 정정 D-38-자-4: 우하단 (bottom-1 right-1) — 우상단 dot 충돌 회피.
+import { PersonaStatLozenge } from "./persona-stat-lozenge";
 import type { PersonaCatalogEntry } from "./persona-catalog";
 import type { PersonaColorToken } from "./persona-types";
 
@@ -68,6 +71,8 @@ export function PersonaCatalogCard({
       <span className="mt-1 block text-xs italic text-robusta-inkDim line-clamp-2">
         &quot;{tc(preset.seedHintKey as CatalogKey)}&quot;
       </span>
+      {/* C-D38-4: 우하단 messageCount lozenge — count 0 / undefined 시 자동 미노출 (null 반환). */}
+      <PersonaStatLozenge personaId={preset.id} />
     </button>
   );
 }

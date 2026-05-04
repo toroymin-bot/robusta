@@ -39,3 +39,25 @@ export function daysUntilRelease(now: Date = new Date()): number {
 export function isLive(now: Date = new Date()): boolean {
   return daysUntilRelease(now) <= 0;
 }
+
+/**
+ * formatDDay — D-Day 카운트다운 라벨 단일 진실.
+ *   C-D38-5 (D-4 19시 슬롯, 2026-05-04) — Tori spec C-D38-5 (V-D38-5 (c) + D-D38-2 (e)).
+ *
+ *   자율 정정 D-38-자-2: 명세 src/modules/landing/hero-day-counter.tsx 파일 미존재.
+ *     실제 D-Day 계산 SoT = src/modules/dday/dday-config.ts. 본 함수를 SoT 그룹에 추가.
+ *     scripts/sim-hero-live-transition.mjs 가 본 함수 시그니처 `(now: Date) => string` 정합 검증.
+ *
+ *   자율 정정 D-38-자-5: 시뮬 케이스를 RELEASE_ISO 정합 시점 (5/7 23:59:59 / 5/8 00:00:00 / 5/8 00:00:01).
+ *     명세 의도(D-N → LIVE 자동 전환)는 RELEASE_ISO 시점 기준 동일 검증.
+ *     RELEASE_ISO 무수정 의무(D-36-자-1) 정합.
+ *
+ *   엣지:
+ *     (1) 양수 n → "D-{n}" 표기.
+ *     (2) n ≤ 0 → "LIVE" (D-Day 이후 / 정각 동시).
+ *     (3) timezone — Date 객체가 timezone 처리 책임 (ISO +09:00 입력 시 UTC 정합).
+ */
+export function formatDDay(now: Date = new Date()): string {
+  const n = daysUntilRelease(now);
+  return n > 0 ? `D-${n}` : "LIVE";
+}

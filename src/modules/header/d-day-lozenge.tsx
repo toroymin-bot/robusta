@@ -62,9 +62,13 @@ export function DDayLozenge() {
   //   LIVE 진입 시 text-emerald-600 + animate-pulse — Tailwind 기본 (CSS +0 byte).
   //   prefers-reduced-motion 자동 존중 — Tailwind animate-pulse는 motion-safe 가드 미적용이지만
   //   브라우저 reduced-motion 설정 사용자에게도 시각적 부담 작음 (opacity 변화 50→100%만).
+  // C-D38-5 (D-4 19시 슬롯, 2026-05-04) — Tori spec C-D38-5 / D-D38-2 (e) 색 변경 + fade.
+  //   자율 정정 D-38-자-3: 기존 emerald-600 / neutral-500 토큰 보존 (verify-d34/d36 회귀 우선).
+  //   transition-colors duration-600 추가만 — D-N → LIVE 색 fade 0.6s 자연 전환.
+  //   shared 영향 0 (Tailwind 기본 유틸리티).
   const className = state.live
-    ? "ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600 animate-pulse"
-    : "ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500";
+    ? "ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600 animate-pulse transition-colors duration-600"
+    : "ml-2 inline-flex flex-shrink-0 select-none items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500 transition-colors duration-600";
 
   return (
     <span
