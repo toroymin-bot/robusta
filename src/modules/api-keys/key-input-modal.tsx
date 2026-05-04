@@ -107,11 +107,13 @@ export function KeyInputModal({
       }}
     >
       <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-[#1f1f1f]">
+        {/* C-D40-1 (D-3 03시 슬롯, 2026-05-05) — i18n 키 4쌍 신규 적용 (V-D40-1).
+            기존 "keymodal.*" 키 OCP 보존 (다른 호출자 참고용) + 본 모달은 신규 키 사용. */}
         <h2
           id="keymodal-title"
           className="text-base font-semibold text-robusta-ink"
         >
-          {t("keymodal.title")}
+          {t("byok.modal.title")}
         </h2>
         <p className="mt-1 text-xs text-robusta-inkDim">
           {provider}
@@ -130,9 +132,9 @@ export function KeyInputModal({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             disabled={pending}
-            aria-label={t("keymodal.title")}
+            aria-label={t("byok.modal.title")}
             className="flex-1 rounded border border-robusta-divider bg-transparent px-2 py-1.5 font-mono text-sm text-robusta-ink"
-            placeholder="sk-ant-..."
+            placeholder={t("byok.modal.input.placeholder")}
             onKeyDown={(e) => {
               if (e.key === "Enter" && canSave) {
                 e.preventDefault();
@@ -151,13 +153,16 @@ export function KeyInputModal({
           </button>
         </div>
 
+        {/* C-D40-1 (D-3) — 외부 링크 카피 v1 (B-D40-5 (c)) + 디자인 토큰 정확 일치.
+            rel="noopener noreferrer" 보안 강화 (target=_blank tab-napping 회피). */}
         <a
           href={ANTHROPIC_CONSOLE_URL}
           target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-block text-xs text-robusta-accent underline"
+          rel="noopener noreferrer"
+          data-test="byok-modal-help-link"
+          className="mt-2 inline-block text-xs text-emerald-700 dark:text-emerald-400 hover:underline"
         >
-          {t("keymodal.guide")}
+          {t("byok.modal.help.link.label")}
         </a>
 
         {error && (
@@ -184,7 +189,7 @@ export function KeyInputModal({
             disabled={!canSave}
             className="rounded bg-robusta-accent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
           >
-            {pending ? t("byok.modal.verifying") : t("keymodal.action.save")}
+            {pending ? t("byok.modal.verifying") : t("byok.modal.save.button")}
           </button>
         </div>
       </div>

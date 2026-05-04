@@ -260,6 +260,13 @@ export const MESSAGES = {
     // C-D39-2 (D-4 23시 슬롯, 2026-05-04) — BYOK 두려움 해소 lozenge (V-D39-2 (a) + D-D39-1 (a)).
     //   key-input-modal 의 input element 직전 마운트, 1줄 회색 보조 메시지.
     "byok.assurance.lozenge": "키는 본인 브라우저에만 저장됩니다. 서버로 전송되지 않습니다.",
+    // C-D40-1 (D-3 03시 슬롯, 2026-05-05) — BYOK 모달 한국어 카피 v1 (V-D40-1 + B-D40-5 (c)).
+    //   기존 "keymodal.*" 키 OCP 보존 + 신규 4쌍은 명세 정확 일치 카피로 등록.
+    //   help.link.label = Anthropic Console 외부 링크 라벨 (마찰 ↓ 의도).
+    "byok.modal.title": "Claude 키 입력",
+    "byok.modal.input.placeholder": "sk-ant-...",
+    "byok.modal.save.button": "저장",
+    "byok.modal.help.link.label": "키가 없으세요? 발급받기 →",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -487,6 +494,11 @@ export const MESSAGES = {
     "about_domain.faq_a3": "The temporary URL auto-redirects to the official domain.",
     // C-D39-2 (D-4 23시 슬롯, 2026-05-04) — BYOK assurance lozenge (en parity).
     "byok.assurance.lozenge": "Your key stays on your browser. Never sent to our servers.",
+    // C-D40-1 (D-3 03시 슬롯, 2026-05-05) — BYOK modal en parity v1.
+    "byok.modal.title": "Enter your Claude key",
+    "byok.modal.input.placeholder": "sk-ant-...",
+    "byok.modal.save.button": "Save",
+    "byok.modal.help.link.label": "Don't have a key? Get one →",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

@@ -7,6 +7,10 @@ import { HeroLiveBanner } from "@/modules/header/hero-live-banner";
 // C-D36-3 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-3 (F-D36-3).
 //   visit funnel — 첫 마운트 sessionStorage 가드 1회 ping. PII 0.
 import { VisitTracker } from "@/modules/funnel/visit-tracker";
+// C-D40-2 (D-3 03시 슬롯, 2026-05-05) — Tori spec C-D40-2 (V-D40-2 + D-D40-1).
+//   다크모드 토글 우상단 fixed — 'system'/'light'/'dark' 3-way cycle.
+//   자율 정정 D-40-자-1/2: ui 모듈 + useThemeStore SoT (보존 13 v3 무손상).
+import { DarkModeToggle } from "@/modules/ui/dark-mode-toggle";
 
 /**
  * D-15.x (Day 4 19시 슬롯, 2026-04-29) C-D15-1: Open Graph + Twitter Card 메타 태그.
@@ -117,6 +121,8 @@ export default function RootLayout({
         <HeroLiveBanner />
         {/* C-D36-3 — visit funnel ping. 첫 마운트 1회. UI 미렌더 (null). */}
         <VisitTracker />
+        {/* C-D40-2 — 다크모드 토글 우상단 fixed (3-way cycle). */}
+        <DarkModeToggle />
         {children}
         {/* C-D17-8 (Day 5 07시 슬롯, 2026-04-30) — 똘이 v1 §16.3 B-12 채택:
             Vercel Web Analytics 페이지뷰만 (custom track() 호출 0 — BYOK 키·메시지 본문 누출 가드).

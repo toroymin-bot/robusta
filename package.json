@@ -33,6 +33,7 @@
     "verify:d37": "node scripts/verify-d37.mjs",
     "verify:d38": "node scripts/verify-d38.mjs",
     "verify:d39": "node scripts/verify-d39.mjs",
+    "verify:d40": "node scripts/verify-d40.mjs",
     "dry-run:dday-staging": "node scripts/dry-run-dday-staging.mjs",
     "sim:hero-live": "node scripts/sim-hero-live-transition.mjs",
     "verify:conservation-13": "node scripts/verify-conservation-13.mjs",

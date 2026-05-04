@@ -71,10 +71,11 @@ export function ManualRunButton({ scheduleId }: ManualRunButtonProps) {
     setState("idle");
   }
 
-  function runNow() {
+  // C-D40-3 (D-3 03시 슬롯, 2026-05-05) — manualFire async 정합 await 처리.
+  async function runNow() {
     setOpen(false);
     setState("running");
-    const result = manualFire(scheduleId, "manual_now");
+    const result = await manualFire(scheduleId, "manual_now");
     handleResult(result, "now");
   }
 
@@ -98,6 +99,7 @@ export function ManualRunButton({ scheduleId }: ManualRunButtonProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        // void runNow 호출 시 menuitem 안에서 처리 — 본 trigger 는 menu open 만.
         aria-label="수동 실행 메뉴"
         aria-expanded={open}
         data-test={`schedule-manual-run-trigger-${scheduleId}`}
@@ -114,7 +116,7 @@ export function ManualRunButton({ scheduleId }: ManualRunButtonProps) {
           <button
             type="button"
             role="menuitem"
-            onClick={runNow}
+            onClick={() => void runNow()}
             data-test={`schedule-manual-run-now-${scheduleId}`}
             className="px-3 py-1 text-xs text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-left"
           >
