@@ -31,6 +31,7 @@
     "verify:d35": "node scripts/verify-d35.mjs",
     "verify:d36": "node scripts/verify-d36.mjs",
     "verify:conservation-13": "node scripts/verify-conservation-13.mjs",
+    "verify:all": "node scripts/verify-all.mjs",
     "check:mcp:budget": "node scripts/check-mcp-budget.mjs",
     "funnel:summary": "node scripts/funnel-summary.mjs",
     "check:concept-copy": "node scripts/check-concept-copy.mjs",
