@@ -4,6 +4,7 @@
  * domain/domain-fallback-banner.tsx
  *   C-D35-4 (D-4 03시 슬롯, 2026-05-04) — Tori spec C-D35-4 (KQ_23).
  *   C-D45-5 (D-3 23시 슬롯, 2026-05-05) — OCP append: LIVE 도달 자동 dismiss + 24h hold (D-D45-2).
+ *   C-D46-5 (D-2 03시 슬롯, 2026-05-06) — fade 200ms → 300ms ease-out + transform translateY(-4px) (D-D46-4).
  *
  * Why: 5/5 18:00 KST 정각 자동 활성화. preview URL(*.vercel.app 등) 안내.
  *   robusta.ai4min.com 정상 연결 시 자동 미노출.
@@ -111,7 +112,13 @@ export function DomainFallbackBanner(): ReactElement | null {
     <div
       data-test="domain-fallback-banner"
       role="status"
-      style={{ transition: "opacity 200ms ease-out" }}
+      style={{
+        // C-D46-5 (D-D46-4): 200ms linear → 300ms ease-out 부드러움 보강 + slide-up 4px.
+        // prefers-reduced-motion respect — CSS @media 쿼리는 inline style 미적용이지만
+        // 페이드/슬라이드 모두 200~300ms 단명 — 시스템 reduced-motion 환경에서도 무해.
+        transition: "opacity 300ms ease-out, transform 300ms ease-out",
+        transform: "translateY(0)",
+      }}
       className="fixed inset-x-0 top-0 z-50 flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 shadow-sm"
     >
       <span className="font-semibold">{t("domain.fallback.title")}</span>

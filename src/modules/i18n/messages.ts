@@ -342,6 +342,12 @@ export const MESSAGES = {
       "제출: 5/7 22:00 KST / 5/7 09:00 ET",
     // C-D45-2 (D-3 23시 슬롯, 2026-05-05) — /launch/kpi LIVE watch 모드 라벨 (D-D45-3 / B-D45-3).
     "launch.kpi.live.watch.label": "라이브 watch (5초 갱신)",
+    // C-D46-1 (D-2 03시 슬롯, 2026-05-06) — settings 시연 모드 버튼 (B-D46-1 / F-D46-1 / D-D46-1∼2).
+    "settings.demo.button.label": "🎭 시연 모드 시작",
+    "settings.demo.button.hint": "1클릭 — 4 페르소나 준비됨",
+    // C-D46-4 (D-2 03시 슬롯, 2026-05-06) — settings D+1 회고 다운로드 버튼 (B-D46-3 / F-D46-4 / D-D46-5).
+    "settings.report.d1.button.label": "D+1 회고 다운로드",
+    "settings.report.d1.button.hint": "자동 생성 — 24h KPI 요약",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -645,6 +651,12 @@ export const MESSAGES = {
       "Submitted: 5/7 22:00 KST / 5/7 09:00 ET",
     // C-D45-2 (D-3 23h slot, 2026-05-05) — /launch/kpi LIVE watch mode label (D-D45-3 / B-D45-3).
     "launch.kpi.live.watch.label": "LIVE watch (5s refresh)",
+    // C-D46-1 (D-2 03h slot, 2026-05-06) — settings demo-mode button (B-D46-1 / F-D46-1 / D-D46-1~2).
+    "settings.demo.button.label": "🎭 Start Demo Mode",
+    "settings.demo.button.hint": "One-click — 4 personas ready",
+    // C-D46-4 (D-2 03h slot, 2026-05-06) — settings D+1 retro download button (B-D46-3 / F-D46-4 / D-D46-5).
+    "settings.report.d1.button.label": "Download D+1 Report",
+    "settings.report.d1.button.hint": "Auto-generated 24h KPI summary",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

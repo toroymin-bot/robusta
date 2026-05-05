@@ -10,11 +10,13 @@
  * 정책:
  *   - 5턴 미만 → isExportable=false (빈 회의록 방지).
  *   - UTF-8 명시 (한국어/영문 mixed 인코딩 정합) — Blob type "text/markdown;charset=utf-8".
+ *   - C-D46-3 (D-2 03시, 2026-05-06): BOM UTF-8 prefix '﻿' (= 0xEF 0xBB 0xBF 3바이트) —
+ *     윈도우 메모장 mixed 인코딩 깨짐 방지. toMarkdown() 출력 첫 문자 '﻿' 의무.
  *   - filename 영문만 ("meeting-{ISO}.md") — cross-platform safe.
  *   - URL.revokeObjectURL 의무 (메모리 누수 방지).
  *   - markdown injection 신뢰 — BYOK 자가 사용 모델, 사용자 입력 신뢰.
  *
- * 외부 dev-deps +0. 보존 13 v3 무손상.
+ * 외부 dev-deps +0. 보존 13 v3 무손상 (meeting-record.ts 미포함, OCP 가능).
  */
 
 import type { Message } from "./conversation-types";
@@ -102,7 +104,8 @@ export function toMarkdown(
     })
     .join("\n\n");
 
-  return `# ${titlePrefix} — ${dateLabel}
+  // C-D46-3 — BOM UTF-8 prefix '﻿' (= 0xEF 0xBB 0xBF, 3바이트). 윈도우 메모장 mixed 인코딩 정합.
+  return `﻿# ${titlePrefix} — ${dateLabel}
 
 > ${subtitle}
 

@@ -49,6 +49,11 @@ const gates = [
   { id: "verify:d43", cmd: "node", args: ["scripts/verify-d43.mjs"] },
   { id: "verify:d44", cmd: "node", args: ["scripts/verify-d44.mjs"] },
   { id: "verify:d45", cmd: "node", args: ["scripts/verify-d45.mjs"] },
+  // C-D46-2/3/5 (D-2 03시, 2026-05-06) — verify:all 26→29 자동 흡수.
+  // sim:kq23-dismiss는 verify:d46 안에서 호출 (별도 sim:* 카테고리, verify:all 직접 미흡수).
+  { id: "verify:shownh-copy", cmd: "node", args: ["scripts/verify-shownh-copy.mjs"] },
+  { id: "verify:md-download-bom", cmd: "node", args: ["scripts/verify-md-download-bom.mjs"] },
+  { id: "verify:d46", cmd: "node", args: ["scripts/verify-d46.mjs"] },
   { id: "verify:byok-ping", cmd: "node", args: ["scripts/verify-byok-ping.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
