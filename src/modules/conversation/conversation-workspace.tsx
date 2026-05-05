@@ -61,6 +61,11 @@ import { useConversationSyncListener } from "./use-conversation-sync-listener";
 // C-D36-3 (D-4 07시 슬롯, 2026-05-04) — persona_used funnel 추적 hook.
 //   useEffect 신규 추가 0 (hook 안 useEffect 는 별도 파일 persona-use-tracker.ts).
 import { usePersonaUseTracker } from "@/modules/personas/persona-use-tracker";
+// C-D43-1 (D-3 15시 슬롯, 2026-05-05) — keyword chip prefill wiring (D-42-자-3 후속, F-D43-1).
+//   workspace useEffect 카운트 영향 0 (hook 안 useEffect 는 별도 파일 use-chip-prefill.ts).
+//   자율 정정 D-43-자-1: chatInputRef 인자 미주입 — 기존 [data-test='message-input'] querySelector
+//   패턴 (conversation-view.tsx line 511) 정합 → 보존 13 v3 신성 모듈 ref 신규 추가 0.
+import { useChipPrefill } from "./use-chip-prefill";
 // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 자동 발언 스케줄 모달 — 트리거 X, UI 골격 + IndexedDB 영구화만.
 //   React.lazy + 조건 mount로 분리 — 모달 코드는 클릭 시점에만 fetch (/page∪/layout 게이트 영향 최소).
 //   ~~next/dynamic~~ 도입했다가 helper 오버헤드로 게이트 0.4KB 초과 → React.lazy로 교체.
@@ -145,6 +150,9 @@ export function ConversationWorkspace() {
     return msgs.at(-1)?.participantId ?? null;
   });
   usePersonaUseTracker(lastParticipantId);
+  // C-D43-1 (D-3 15시 슬롯, 2026-05-05) — chip prefill 1줄 hook call.
+  //   workspace useEffect 카운트 영향 0 (hook 안 useEffect 는 별도 파일).
+  useChipPrefill();
 
   const [keysOpen, setKeysOpen] = useState(false);
   // C-D17-16 (Day 5 23시 슬롯, 2026-04-30) F-15: 스케줄 모달 open state.

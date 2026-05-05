@@ -278,6 +278,47 @@ export const MESSAGES = {
     "keyword.chip.code": "코드 리뷰",
     "keyword.chip.writing": "글쓰기 피드백",
     "keyword.chip.free": "직접 입력",
+    // C-D43-1 (D-3 15시 슬롯, 2026-05-05) — chip prefill 카피 5종 (F-D43-1, D-42-자-3 후속).
+    "keyword.chip.startup.prefill":
+      "내 스타트업 가설을 검증하고 싶어. 핵심 가설부터 같이 짜자.",
+    "keyword.chip.travel.prefill":
+      "여행 계획을 짜야 해. 어디부터 시작할지 같이 정리하자.",
+    "keyword.chip.code.prefill":
+      "내 코드를 리뷰받고 싶어. 어떤 관점으로 봐야 할지부터 정해줘.",
+    "keyword.chip.writing.prefill":
+      "내 글에 피드백을 받고 싶어. 어떤 기준으로 볼지 먼저 정하자.",
+    "keyword.chip.free.prefill": "",
+    // C-D43-2 (D-3 15시 슬롯, 2026-05-05) — 회의록 .md 다운로드 카피 6종 (F-D43-2 / B-D43-5 / V-D43-4).
+    "meeting.record.cta": "📥 회의록 받기",
+    "meeting.record.cta.disabled": "5턴 후 활성",
+    "meeting.record.title": "Robusta 회의록",
+    "meeting.record.subtitle":
+      "출력은 메시지가 아니라 통찰. 다자(多者) 브레인스토밍 기록.",
+    "meeting.record.section.participants": "참여자",
+    "meeting.record.section.dialog": "대화",
+    // C-D43-3 (D-3 15시 슬롯, 2026-05-05) — Show HN 카피 v1 12종 (B-D43-1 / V-D43-1).
+    //   Show HN 운영 백업 — 영문이 본체이나 ko parity 의무.
+    "showhn.headline":
+      "Robusta — AI들의 라운드테이블, BYOK·다자(多者) 대화로 통찰 뽑기",
+    "showhn.body.p1":
+      "Robusta는 다자(多者) AI 라운드테이블입니다. Blend가 한 번에 한 AI를 고르는 거라면, Robusta는 여러 AI와 같이 브레인스토밍하고 그들 사이의 마찰에서 통찰을 길어 올립니다.",
+    "showhn.body.p2":
+      "BYOK by design. API 키는 사용자 브라우저에만 — IndexedDB 암호화, 서버 미저장. 추론에서 우리는 0원 받습니다.",
+    "showhn.body.p3":
+      "컨셉: 인간이 진행자, AI가 참여자. 이름으로 호명하고, 페르소나·역할 부여하고, 의견 충돌 유도. 출력은 답이 아니라 — 못 본 시야입니다.",
+    "showhn.body.p4":
+      "Blend (오픈소스, 같은 저자) 와 같은 BYOK + Tailwind/React 인프라 위에 — 단, 대화 모델은 1:1이 아니라 N:N. 5개 프로바이더 (Claude, Gemini, ChatGPT, Grok, DeepSeek) 지원.",
+    "showhn.body.p5":
+      "robusta.ai4min.com 에서 라이브. 랜딩 페이지의 키워드 칩 클릭 → 5턴 + 무료 회의록(.md). 피드백 환영합니다.",
+    // C-D43-4 (D-3 15시 슬롯, 2026-05-05) — /launch 24h 모니터 카피 8종 (F-D43-5 / B-D43-3).
+    "launch.title": "Robusta — 24h 모니터",
+    "launch.section.acquisition": "유입 (Acquisition)",
+    "launch.section.activation": "활성화 (Activation)",
+    "launch.section.aha": "Aha 모멘트",
+    "launch.section.share": "공유 (Share)",
+    "launch.manual.hn.rank": "HN 랭킹",
+    "launch.manual.hn.comments": "HN 댓글 수",
+    "launch.predday.placeholder": "D-Day 이후 라이브 데이터 표시",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -519,6 +560,46 @@ export const MESSAGES = {
     "keyword.chip.code": "Code review",
     "keyword.chip.writing": "Writing feedback",
     "keyword.chip.free": "Free input",
+    // C-D43-1 (D-3 15시 슬롯, 2026-05-05) — chip prefill copy 5 (en parity).
+    "keyword.chip.startup.prefill":
+      "I want to test my startup hypothesis. Let's start with the core assumption together.",
+    "keyword.chip.travel.prefill":
+      "I need to plan a trip. Let's figure out where to start together.",
+    "keyword.chip.code.prefill":
+      "I want my code reviewed. Tell me what angles to look at first.",
+    "keyword.chip.writing.prefill":
+      "I want feedback on my writing. Let's set the criteria first.",
+    "keyword.chip.free.prefill": "",
+    // C-D43-2 (D-3 15시 슬롯, 2026-05-05) — meeting record .md copy 6 (en parity).
+    "meeting.record.cta": "📥 Save meeting record",
+    "meeting.record.cta.disabled": "Available after 5 turns",
+    "meeting.record.title": "Robusta Meeting Record",
+    "meeting.record.subtitle":
+      "The output isn't a message — it's the insight. A multi-party brainstorm log.",
+    "meeting.record.section.participants": "Participants",
+    "meeting.record.section.dialog": "Dialogue",
+    // C-D43-3 (D-3 15시 슬롯, 2026-05-05) — Show HN copy v1 12 (en is canonical for HN submit).
+    "showhn.headline":
+      "Show HN: Robusta — Brainstorm with multiple AIs at once (BYOK, browser-only)",
+    "showhn.body.p1":
+      "Robusta is a multi-AI roundtable. Where Blend lets you pick one AI at a time, Robusta lets you brainstorm with several at once and harvest the friction between them as insight.",
+    "showhn.body.p2":
+      "BYOK by design. Your API keys live in your browser only — IndexedDB-encrypted, never on our servers. We profit zero from your inference.",
+    "showhn.body.p3":
+      "Concept: humans facilitate, AIs participate. Call on them by name, set personas and roles, let them disagree. The output isn't the answer — it's the angle you missed.",
+    "showhn.body.p4":
+      "Built on the same BYOK + Tailwind/React infra as Blend (open-source, same author), but the conversation model is many-to-many, not one-to-one. Five providers (Claude, Gemini, ChatGPT, Grok, DeepSeek) supported.",
+    "showhn.body.p5":
+      "Live at robusta.ai4min.com. Try the keyword chips on the landing page — 5 turns and a free meeting record (.md) follow. Feedback welcome.",
+    // C-D43-4 (D-3 15시 슬롯, 2026-05-05) — /launch 24h monitor copy 8 (en parity).
+    "launch.title": "Robusta — 24h Monitor",
+    "launch.section.acquisition": "Acquisition",
+    "launch.section.activation": "Activation",
+    "launch.section.aha": "Aha Moment",
+    "launch.section.share": "Share",
+    "launch.manual.hn.rank": "HN Rank",
+    "launch.manual.hn.comments": "HN Comments",
+    "launch.predday.placeholder": "Live data shown after D-Day",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

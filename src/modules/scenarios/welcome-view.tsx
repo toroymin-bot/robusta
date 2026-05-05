@@ -32,6 +32,9 @@ import { Intro3Step } from "@/modules/landing/intro-3-step";
 import HeroTitleSlot from "@/modules/ui/hero-title-slot";
 // C-D42-2 (D-3 11시 슬롯, 2026-05-05) — Tori spec C-D42-2 (F-D42-5 빈 페이지 공포 해소 5칩).
 import KeywordChips, { type ChipId } from "@/modules/ui/keyword-chips";
+// C-D43-2 (D-3 15시 슬롯, 2026-05-05) — Tori spec C-D43-2 (F-D43-2 / B-D43-5 / V-D43-4).
+//   Hero 보조 CTA — 회의록 .md 다운로드. 5턴 미만 시 disabled.
+import MeetingRecordButton from "@/modules/ui/meeting-record-button";
 // C-D42-1 / C-D42-4 — Hero v4 + LIVE 펄스 자동 전환 시점 결정 (RELEASE_ISO SoT).
 import { isLive } from "@/modules/dday/dday-config";
 
@@ -86,6 +89,10 @@ export function WelcomeView({ onPick }: WelcomeViewProps) {
         {/* C-D42-2 (D-3 11시 슬롯, 2026-05-05) — keyword chips 5종. 클릭 시 sessionStorage 사전 채움 (workspace D+1 wiring). */}
         <div className="mt-4 flex justify-center">
           <KeywordChips onSelect={handleChipSelect} />
+        </div>
+        {/* C-D43-2 (D-3 15시 슬롯, 2026-05-05) — Hero 보조 CTA: 회의록 .md 다운로드 (5턴 후 활성). */}
+        <div className="mt-3 flex justify-center">
+          <MeetingRecordButton />
         </div>
       </header>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

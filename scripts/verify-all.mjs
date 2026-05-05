@@ -46,6 +46,7 @@ const gates = [
   { id: "verify:d40", cmd: "node", args: ["scripts/verify-d40.mjs"] },
   { id: "verify:d40-auto", cmd: "node", args: ["scripts/verify-d40-auto.mjs"] },
   { id: "verify:d42", cmd: "node", args: ["scripts/verify-d42.mjs"] },
+  { id: "verify:d43", cmd: "node", args: ["scripts/verify-d43.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
