@@ -319,6 +319,23 @@ export const MESSAGES = {
     "launch.manual.hn.rank": "HN 랭킹",
     "launch.manual.hn.comments": "HN 댓글 수",
     "launch.predday.placeholder": "D-Day 이후 라이브 데이터 표시",
+    // C-D44-2 (D-3 19시 슬롯, 2026-05-05) — Show HN v2 i18n 5종 (B-D44-1 / D-D44-5).
+    //   영문 헤드라인 6단어 잡스 압축. 본문 3줄 정확. CTA 1.
+    "launch.shownh.headline.v2": "AI들과 한꺼번에 브레인스토밍.",
+    "launch.shownh.body.v2.line1": "하나의 답이 아니다 — 여러 관점이다.",
+    "launch.shownh.body.v2.line2":
+      "Claude, Gemini, ChatGPT, Grok, DeepSeek을 한 방에.",
+    "launch.shownh.body.v2.line3":
+      "당신이 진행자. 그들이 논쟁. 못 본 시야가 열린다.",
+    "launch.shownh.cta.v2": "방 열기 →",
+    // C-D44-3 (D-3 19시 슬롯, 2026-05-05) — funnel KPI dashboard 카피 5종 (F-D44-3 / B-D44-5).
+    "launch.kpi.title": "Robusta — 24h KPI",
+    "launch.kpi.subtitle": "최근 24시간 funnelEvents 누적",
+    "launch.kpi.empty": "데이터 없음",
+    "launch.kpi.total": "총 이벤트",
+    "launch.kpi.window": "윈도우",
+    // C-D44-4 (D-3 19시 슬롯, 2026-05-05) — Hero LIVE 자동 전환 (D-D44-1).
+    "hero.live.transition.aria": "출시 라이브 전환",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -600,6 +617,22 @@ export const MESSAGES = {
     "launch.manual.hn.rank": "HN Rank",
     "launch.manual.hn.comments": "HN Comments",
     "launch.predday.placeholder": "Live data shown after D-Day",
+    // C-D44-2 (D-3 19h slot, 2026-05-05) — Show HN v2 copy 5 (en canonical, 6-word headline).
+    "launch.shownh.headline.v2": "Brainstorm with multiple AIs at once.",
+    "launch.shownh.body.v2.line1": "Not one answer — many perspectives.",
+    "launch.shownh.body.v2.line2":
+      "Bring Claude, Gemini, ChatGPT, Grok, DeepSeek into one room.",
+    "launch.shownh.body.v2.line3":
+      "You facilitate. They debate. You see what you missed.",
+    "launch.shownh.cta.v2": "Open the room →",
+    // C-D44-3 (D-3 19h slot, 2026-05-05) — funnel KPI dashboard copy 5 (en parity).
+    "launch.kpi.title": "Robusta — 24h KPI",
+    "launch.kpi.subtitle": "funnelEvents over the last 24 hours",
+    "launch.kpi.empty": "No data yet",
+    "launch.kpi.total": "Total events",
+    "launch.kpi.window": "Window",
+    // C-D44-4 (D-3 19h slot, 2026-05-05) — Hero LIVE auto-transition.
+    "hero.live.transition.aria": "Launch live transition",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
