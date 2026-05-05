@@ -76,6 +76,15 @@ export function ShowHNCard(props: ShowHNCardProps): JSX.Element {
       >
         {t("launch.shownh.cta.v2", undefined, lang)}
       </button>
+      {/* C-D45-1 (D-3 23시 슬롯, 2026-05-05) — submit 시각 caption (D-D45-4 / B-D45-1).
+          토큰: --text-muted (text-robusta-inkDim 정합), 12px (mobile 11px 분기 → md:text-xs 패턴 정합).
+          OCP — 기존 props/구조 무수정, 카드 하단 영역만 추가. */}
+      <p
+        data-test="shownh-submitted-caption"
+        className="mt-4 text-[11px] leading-tight text-robusta-inkDim md:text-xs"
+      >
+        {t("launch.shownh.submitted.caption", undefined, lang)}
+      </p>
     </article>
   );
 }

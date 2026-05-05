@@ -336,6 +336,12 @@ export const MESSAGES = {
     "launch.kpi.window": "윈도우",
     // C-D44-4 (D-3 19시 슬롯, 2026-05-05) — Hero LIVE 자동 전환 (D-D44-1).
     "hero.live.transition.aria": "출시 라이브 전환",
+    // C-D45-1 (D-3 23시 슬롯, 2026-05-05) — Show HN submit 시각 caption (D-D45-4 / B-D45-1).
+    //   submit 시각 정책 락: 5/7 22:00 KST = 5/7 09:00 ET (HN 목요일 골든타임).
+    "launch.shownh.submitted.caption":
+      "제출: 5/7 22:00 KST / 5/7 09:00 ET",
+    // C-D45-2 (D-3 23시 슬롯, 2026-05-05) — /launch/kpi LIVE watch 모드 라벨 (D-D45-3 / B-D45-3).
+    "launch.kpi.live.watch.label": "라이브 watch (5초 갱신)",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -633,6 +639,12 @@ export const MESSAGES = {
     "launch.kpi.window": "Window",
     // C-D44-4 (D-3 19h slot, 2026-05-05) — Hero LIVE auto-transition.
     "hero.live.transition.aria": "Launch live transition",
+    // C-D45-1 (D-3 23h slot, 2026-05-05) — Show HN submit-time caption (D-D45-4 / B-D45-1).
+    //   submit policy lock: 5/7 22:00 KST = 5/7 09:00 ET (HN Thursday golden window).
+    "launch.shownh.submitted.caption":
+      "Submitted: 5/7 22:00 KST / 5/7 09:00 ET",
+    // C-D45-2 (D-3 23h slot, 2026-05-05) — /launch/kpi LIVE watch mode label (D-D45-3 / B-D45-3).
+    "launch.kpi.live.watch.label": "LIVE watch (5s refresh)",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

@@ -38,6 +38,8 @@
     "verify:d42": "node scripts/verify-d42.mjs",
     "verify:d43": "node scripts/verify-d43.mjs",
     "verify:d44": "node scripts/verify-d44.mjs",
+    "verify:d45": "node scripts/verify-d45.mjs",
+    "verify:byok-ping": "node scripts/verify-byok-ping.mjs",
     "dry-run:dday-staging": "node scripts/dry-run-dday-staging.mjs",
     "sim:hero-live": "node scripts/sim-hero-live-transition.mjs",
     "verify:conservation-13": "node scripts/verify-conservation-13.mjs",
