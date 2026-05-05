@@ -267,6 +267,17 @@ export const MESSAGES = {
     "byok.modal.input.placeholder": "sk-ant-...",
     "byok.modal.save.button": "저장",
     "byok.modal.help.link.label": "키가 없으세요? 발급받기 →",
+    // C-D42-1 (D-3 11시 슬롯, 2026-05-05) — Hero 카피 v4 라운드테이블 포지셔닝 (B-D42-1 직결).
+    //   기존 "hero.sub" (D-5) OCP 보존. v4 키는 hero-title-slot.tsx 신규 슬롯 전용.
+    //   ko 헤드라인 17자 (≤24자 의무) + en 25자 (≤30자 의무) — Hero 1줄 보장.
+    "hero.title.v4": "AI들의 라운드테이블에 앉으세요.",
+    "hero.sub.v4": "한 번에 여러 AI와 같이 브레인스토밍 — Blend가 1대1이라면, Robusta는 다자(多者)입니다.",
+    // C-D42-2 (D-3 11시 슬롯, 2026-05-05) — keyword chips 5종 (F-D42-5 빈 페이지 공포 해소).
+    "keyword.chip.startup": "스타트업 가설 검증",
+    "keyword.chip.travel": "여행 계획 짜기",
+    "keyword.chip.code": "코드 리뷰",
+    "keyword.chip.writing": "글쓰기 피드백",
+    "keyword.chip.free": "직접 입력",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -499,6 +510,15 @@ export const MESSAGES = {
     "byok.modal.input.placeholder": "sk-ant-...",
     "byok.modal.save.button": "Save",
     "byok.modal.help.link.label": "Don't have a key? Get one →",
+    // C-D42-1 (D-3 11시 슬롯, 2026-05-05) — Hero copy v4 roundtable positioning (en parity).
+    "hero.title.v4": "Sit at the AI Roundtable.",
+    "hero.sub.v4": "Brainstorm with multiple AIs at once — where Blend is 1-to-1, Robusta is many-to-many.",
+    // C-D42-2 (D-3 11시 슬롯, 2026-05-05) — keyword chips 5 (en parity).
+    "keyword.chip.startup": "Startup hypothesis check",
+    "keyword.chip.travel": "Trip planning",
+    "keyword.chip.code": "Code review",
+    "keyword.chip.writing": "Writing feedback",
+    "keyword.chip.free": "Free input",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

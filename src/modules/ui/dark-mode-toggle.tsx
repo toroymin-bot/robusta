@@ -8,6 +8,12 @@
  *     · focus-visible:ring-2 키보드 포커스 가시화 (WCAG 2.4.7 정합 / header-cluster #192 패턴 일관).
  *     · aria-live="polite" sr-only status — 토글 시 변경 알림 (스크린리더 사용자).
  *     · 회귀 위험 0 — verify-d40 게이트 (data-test/export 시그니처/디자인 토큰 10종) 모두 보존.
+ *   - C-D42-3 (D-3 11시 슬롯, 2026-05-05) — Tori spec C-D42-3 (V-D42-3 아이콘 시각 즉시 인지).
+ *     · 자율 정정 D-42-자-2: lucide-react 미설치 — svg inline 3아이콘 (Sun/Moon/Monitor) 자체 구현.
+ *       외부 dev-deps +0 의무 우선. lucide id 명명 보존 (`icon-sun`/`icon-moon`/`icon-monitor`) — 게이트 grep 정합.
+ *     · hydrated=false 시 16x16 placeholder div (Hydration mismatch 회피).
+ *     · D-41-자-1 a11y 4보강 (ariaLabelOf / aria-label / focus-visible / sr-only) 무수정 보존.
+ *     · D-D40-1 디자인 토큰 10종 무수정 보존 (verify-d40 (5/9) 회귀 PASS 의무).
  *
  * Why: 우상단 fixed 토글 버튼 — 'system'/'light'/'dark' 3-way cycle.
  *   D-3 본격 다크모드 토글 본체 — D-2/D-1 a11y 권장 사전 진행 (자율 슬롯).
@@ -72,6 +78,70 @@ function ariaLabelOf(choice: ThemeChoice): string {
   }
 }
 
+/**
+ * C-D42-3 (자율 정정 D-42-자-2): lucide-react 미설치 → svg inline 3종 자체 구현.
+ *   16x16 currentColor — 다크/라이트 토큰 자동 대응. id 정합 grep 게이트:
+ *     icon-sun (light) / icon-moon (dark) / icon-monitor (system).
+ *   Heroicons-style 단순 stroke. aria-hidden — 라벨은 button 본체가 담당.
+ */
+function IconForChoice({ choice }: { choice: ThemeChoice }): JSX.Element {
+  switch (choice) {
+    case "light":
+      return (
+        <svg
+          id="icon-sun"
+          aria-hidden
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+      );
+    case "dark":
+      return (
+        <svg
+          id="icon-moon"
+          aria-hidden
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      );
+    case "system":
+      return (
+        <svg
+          id="icon-monitor"
+          aria-hidden
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <path d="M8 21h8M12 17v4" />
+        </svg>
+      );
+  }
+}
+
 export function DarkModeToggle(): JSX.Element {
   const choice = useThemeStore((s) => s.choice);
   const hydrated = useThemeStore((s) => s.hydrated);
@@ -106,7 +176,16 @@ export function DarkModeToggle(): JSX.Element {
         aria-label={ariaLabel}
         className="bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 px-2 py-1 text-xs rounded border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500 dark:focus-visible:ring-stone-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-stone-900"
       >
-        {hydrated ? labelOf(choice) : "—"}
+        {/* C-D42-3 (자율 정정 D-42-자-2): hydrated=false 시 16x16 placeholder div (Hydration mismatch 회피).
+             hydrated=true 시 svg 아이콘 + 시각 라벨 inline-flex. */}
+        {hydrated ? (
+          <span className="inline-flex items-center gap-1">
+            <IconForChoice choice={choice} />
+            {labelOf(choice)}
+          </span>
+        ) : (
+          <span data-test="dark-mode-toggle-placeholder" className="inline-block w-4 h-4" />
+        )}
       </button>
       {/* 자율 D-41-자-1: sr-only live region — 토글 시 스크린리더에 현재 상태 안내. */}
       <span className="sr-only" role="status" aria-live="polite" data-test="dark-mode-toggle-status">
