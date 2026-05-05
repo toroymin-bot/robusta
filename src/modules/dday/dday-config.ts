@@ -16,6 +16,19 @@
 export const RELEASE_ISO = "2026-05-08T00:00:00+09:00" as const;
 
 /**
+ * BYOK_DEMO_ISO — Roy BYOK 시연 시각 단일 진실 (B-D46-1 + B-D47-1 정책 락).
+ *   C-D47-3 (D-2 07시 슬롯, 2026-05-06) — Tori spec C-D47-3 (D-D47-3 BYOK countdown).
+ *
+ *   자율 정정 D-47-자-1: 명세는 inline string `'2026-05-06T16:00:00+09:00'` 사용 또는
+ *     별도 SoT 모듈 분리 자율 결정 권한 부여 (§9 (c)). RELEASE_ISO 패턴 정합 +
+ *     보존 13 미포함 OCP append 가능 → 본 dday-config.ts에 SoT 추가.
+ *
+ *   5/6 16:00 KST = 5/6 03:00 ET = 5/6 07:00 UTC (Task §4 5/8 D-Day 시각 정책 일관성 표 정합).
+ *   ByokCountdownLozenge 가 본 SoT 직접 import (D-44-자-1 RELEASE_ISO 정합 패턴).
+ */
+export const BYOK_DEMO_ISO = "2026-05-06T16:00:00+09:00" as const;
+
+/**
  * release 까지 남은 일수. now 미주입 시 Date.now() 기준.
  *   양수: D-N 표기. 0 이하: 라이브(LIVE) 표기.
  */

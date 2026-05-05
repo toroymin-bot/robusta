@@ -5,6 +5,8 @@
  *   C-D35-4 (D-4 03시 슬롯, 2026-05-04) — Tori spec C-D35-4 (KQ_23).
  *   C-D45-5 (D-3 23시 슬롯, 2026-05-05) — OCP append: LIVE 도달 자동 dismiss + 24h hold (D-D45-2).
  *   C-D46-5 (D-2 03시 슬롯, 2026-05-06) — fade 200ms → 300ms ease-out + transform translateY(-4px) (D-D46-4).
+ *   C-D47-4 (D-2 07시 슬롯, 2026-05-06) — OCP append: 도메인 자동 감지 5분 polling + permanent dismiss (B-D47-4).
+ *   C-D47-5 (D-2 07시 슬롯, 2026-05-06) — OCP append: prefers-reduced-motion 분기 0ms instant (D-D47-4).
  *
  * Why: 5/5 18:00 KST 정각 자동 활성화. preview URL(*.vercel.app 등) 안내.
  *   robusta.ai4min.com 정상 연결 시 자동 미노출.
@@ -36,6 +38,10 @@ const DISMISS_KEY = "robusta:domain_banner_dismissed";
 /** C-D45-5 (D-D45-2) — LIVE 도달 자동 dismiss 키 + 24h hold 윈도우. */
 const LIVE_DISMISS_KEY = "kq23.live.dismissed.at";
 const LIVE_DISMISS_HOLD_MS = 24 * 60 * 60 * 1000;
+/** C-D47-4 (B-D47-4) — 도메인 자동 감지 5분 polling + permanent dismiss 키. */
+const DOMAIN_DETECT_KEY = "kq23.domain.detected.at";
+const DOMAIN_POLL_INTERVAL_MS = 5 * 60 * 1000;
+const DOMAIN_PROBE_PATH = "/_next/static/chunks/webpack.js";
 
 function readDismissed(): boolean {
   if (typeof window === "undefined") return false;
@@ -78,12 +84,49 @@ function writeLiveDismissed(): void {
   }
 }
 
+/**
+ * C-D47-4 (B-D47-4) — 도메인 자동 감지: 5분 polling fetch HEAD.
+ *   200 응답 → KQ_23 banner permanent dismiss (localStorage set + polling auto-stop).
+ *   Roy Vercel 도메인 추가 후 5분 내 자동 close (Roy 부담 0).
+ */
+function isDomainDetected(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(DOMAIN_DETECT_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function writeDomainDetected(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DOMAIN_DETECT_KEY, String(Date.now()));
+  } catch {
+    /* silent */
+  }
+}
+
 export function DomainFallbackBanner(): ReactElement | null {
   // hooks rules — 조건부 호출 금지. 모든 분기는 hook 호출 후.
   const [dismissed, setDismissed] = useState<boolean>(() => readDismissed());
   const [liveDismissed, setLiveDismissed] = useState<boolean>(() =>
     isLiveDismissedRecently(),
   );
+  const [domainDetected, setDomainDetected] = useState<boolean>(() =>
+    isDomainDetected(),
+  );
+  // C-D47-5 (D-D47-4) — prefers-reduced-motion 분기. matchMedia 동기화.
+  const [reducedMotion, setReducedMotion] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // C-D45-5 (D-D45-2) — RELEASE_ISO 도달 시 자동 dismiss + localStorage set.
   //   클라이언트 마운트 시 isLive() 검사. 매 분 재검사 (탭 장기 노출 케이스).
@@ -101,12 +144,43 @@ export function DomainFallbackBanner(): ReactElement | null {
     return () => window.clearInterval(id);
   }, [liveDismissed]);
 
+  // C-D47-4 (B-D47-4) — 도메인 자동 감지 5분 polling.
+  //   fetch HEAD primary 도메인 → 200 응답 시 permanent dismiss + auto-stop.
+  //   이미 dismiss 시 polling 미시작 (CPU 절약).
+  //   네트워크 오류 시 silent skip + 다음 5분 재시도.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (domainDetected) return;
+    let cancelled = false;
+    async function probe() {
+      try {
+        const url = `https://${PRIMARY_DOMAIN}${DOMAIN_PROBE_PATH}`;
+        const res = await fetch(url, { method: "HEAD", mode: "no-cors" });
+        // no-cors 모드에서는 res.status === 0 (opaque) — 단순히 fetch 성공만 검증.
+        if (cancelled) return;
+        if (res.status === 200 || res.type === "opaque") {
+          writeDomainDetected();
+          setDomainDetected(true);
+        }
+      } catch {
+        /* offline / DNS resolve fail — silent skip + 다음 5분 재시도. */
+      }
+    }
+    probe();
+    const id = window.setInterval(probe, DOMAIN_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [domainDetected]);
+
   // SSR 가드 — window 미참조 분기.
   if (typeof window === "undefined") return null;
   if (!isFallbackActive()) return null;
   if (window.location.hostname === PRIMARY_DOMAIN) return null;
   if (dismissed) return null;
   if (liveDismissed) return null; // C-D45-5 — LIVE 도달 자동 dismiss + 24h hold.
+  if (domainDetected) return null; // C-D47-4 — 도메인 자동 감지 permanent dismiss.
 
   return (
     <div
@@ -114,10 +188,12 @@ export function DomainFallbackBanner(): ReactElement | null {
       role="status"
       style={{
         // C-D46-5 (D-D46-4): 200ms linear → 300ms ease-out 부드러움 보강 + slide-up 4px.
-        // prefers-reduced-motion respect — CSS @media 쿼리는 inline style 미적용이지만
-        // 페이드/슬라이드 모두 200~300ms 단명 — 시스템 reduced-motion 환경에서도 무해.
-        transition: "opacity 300ms ease-out, transform 300ms ease-out",
-        transform: "translateY(0)",
+        // C-D47-5 (D-D47-4): prefers-reduced-motion → 0ms instant + transform none.
+        //   matchMedia 동기화로 inline style @media 미적용 한계 해결.
+        transition: reducedMotion
+          ? "opacity 0ms, transform 0ms"
+          : "opacity 300ms ease-out, transform 300ms ease-out",
+        transform: reducedMotion ? "none" : "translateY(0)",
       }}
       className="fixed inset-x-0 top-0 z-50 flex items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 shadow-sm"
     >

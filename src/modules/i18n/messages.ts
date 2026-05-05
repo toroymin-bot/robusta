@@ -348,6 +348,14 @@ export const MESSAGES = {
     // C-D46-4 (D-2 03시 슬롯, 2026-05-06) — settings D+1 회고 다운로드 버튼 (B-D46-3 / F-D46-4 / D-D46-5).
     "settings.report.d1.button.label": "D+1 회고 다운로드",
     "settings.report.d1.button.hint": "자동 생성 — 24h KPI 요약",
+    // C-D47-2 (D-2 07시 슬롯, 2026-05-06) — Show HN 점수 입력 UI (B-D47-2 / F-D47-2).
+    "settings.report.d1.score.label": "Show HN 점수",
+    "settings.report.d1.score.placeholder": "예: +13 -2 또는 87",
+    // C-D47-3 (D-2 07시 슬롯, 2026-05-06) — settings sticky 헤더 + LOCKED + BYOK countdown (D-D47-1∼3).
+    "settings.header.title": "Robusta · 설정",
+    "settings.copy.locked.label": "🔒 v3 LOCKED",
+    "settings.byok.countdown.t5": "🎬 시연 5분 전",
+    "settings.byok.countdown.now": "🎬 시연 진행 중",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -657,6 +665,14 @@ export const MESSAGES = {
     // C-D46-4 (D-2 03h slot, 2026-05-06) — settings D+1 retro download button (B-D46-3 / F-D46-4 / D-D46-5).
     "settings.report.d1.button.label": "Download D+1 Report",
     "settings.report.d1.button.hint": "Auto-generated 24h KPI summary",
+    // C-D47-2 (D-2 07h slot, 2026-05-06) — Show HN score input UI (B-D47-2 / F-D47-2).
+    "settings.report.d1.score.label": "Show HN Score",
+    "settings.report.d1.score.placeholder": "e.g. +13 -2 or 87",
+    // C-D47-3 (D-2 07h slot, 2026-05-06) — settings sticky header + LOCKED + BYOK countdown (D-D47-1~3).
+    "settings.header.title": "Robusta · Settings",
+    "settings.copy.locked.label": "🔒 v3 LOCKED",
+    "settings.byok.countdown.t5": "🎬 Demo in 5 min",
+    "settings.byok.countdown.now": "🎬 Demo NOW",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

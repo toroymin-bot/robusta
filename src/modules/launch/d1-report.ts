@@ -133,9 +133,27 @@ export function generateD1ReportMd(
 }
 
 /**
+ * C-D47-2 — Show HN 점수 localStorage 자동 픽업 (read-only).
+ *   shownh-score-input.tsx 가 사용자 입력을 'launch.shownh.score' 키로 영속.
+ *   downloadD1Report 호출자 인자 미주입 시 자동 fallback (Roy 1클릭 다운로드 의무).
+ *   빈 string 또는 미존재 시 undefined → generateD1ReportMd 'TBD' fallback.
+ */
+function readShownhScoreFromStorage(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const v = window.localStorage.getItem("launch.shownh.score");
+    return v && v.trim() !== "" ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * D+1 회고 다운로드 트리거.
  *   getFunnel24hWithSpike 호출 (read-only) → generateD1ReportMd → Blob 다운로드.
  *   파일명: robusta-d1-report-${YYYY-MM-DD}.md (UTC 기준).
+ *
+ *   C-D47-2 — shownhScore 인자 미주입 시 localStorage 'launch.shownh.score' 자동 픽업.
  */
 export async function downloadD1Report(
   locale: Locale = "ko",
@@ -145,8 +163,10 @@ export async function downloadD1Report(
   try {
     const kpi = await getFunnel24hWithSpike();
     const generatedAt = new Date();
+    const finalScore =
+      shownhScore !== undefined ? shownhScore : readShownhScoreFromStorage();
     const md = generateD1ReportMd(
-      { generatedAt, kpi, shownhScore },
+      { generatedAt, kpi, shownhScore: finalScore },
       locale,
     );
     const fileDate = generatedAt.toISOString().slice(0, 10);
