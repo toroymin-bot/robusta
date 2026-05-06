@@ -372,6 +372,11 @@ export const MESSAGES = {
     "settings.report.d1.byok.started": "시작",
     "settings.report.d1.byok.pinged": "ping",
     "settings.report.d1.byok.completed": "완료",
+    // C-D51-1 (D-2 23시 슬롯, 2026-05-06) — release readiness snapshot (F-D51-2 wiring).
+    "release.snapshot.dday": "D-Day",
+    "release.snapshot.regression": "회귀",
+    "release.snapshot.vercel": "Vercel",
+    "release.snapshot.readiness": "준비도",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -705,6 +710,11 @@ export const MESSAGES = {
     "settings.report.d1.byok.started": "Started",
     "settings.report.d1.byok.pinged": "Pinged",
     "settings.report.d1.byok.completed": "Completed",
+    // C-D51-1 (D-2 23h slot, 2026-05-06) — release readiness snapshot (F-D51-2 wiring).
+    "release.snapshot.dday": "D-Day",
+    "release.snapshot.regression": "Regression",
+    "release.snapshot.vercel": "Vercel",
+    "release.snapshot.readiness": "Readiness",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

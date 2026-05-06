@@ -68,6 +68,10 @@ const gates = [
   // sim:byok-window-boundary는 verify:d50-auto 내부 호출 (별도 흡수 미필요).
   // BYOK 시연(16:00 KST) 종료 후 T+3h09m 시점 — 윈도우 경계 회귀 가드만 추가, 코드 0 수정.
   { id: "verify:d50-auto", cmd: "node", args: ["scripts/verify-d50-auto.mjs"] },
+  // C-D51-1∼5 (D-2 23시, 2026-05-06) — verify:all 33→34 자동 흡수 (verify:d51).
+  // verify:release-snapshot / verify:d51-hero-dimming / sim:release-snapshot은 verify:d51 내부 호출.
+  // B-D51-4 release freeze 5/7 23시 진입 직전 마지막 사이클 — 168 정식 26 사이클 도전.
+  { id: "verify:d51", cmd: "node", args: ["scripts/verify-d51.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
