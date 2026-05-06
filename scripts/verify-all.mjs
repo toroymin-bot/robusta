@@ -77,6 +77,13 @@ const gates = [
   //   sim:post-auth-recover는 verify:d52 내부 호출 (별도 흡수 미필요).
   // 168 정식 HARD GATE 27 사이클 도전 — D-1 19시간 카운트다운 안정성 사수.
   { id: "verify:d52", cmd: "node", args: ["scripts/verify-d52.mjs"] },
+  // C-D53-1∼5 (D-1 07시, 2026-05-07) — verify:all 35→36 자동 흡수 (verify:d53).
+  // verify:d53-cron / sim:hero-aria-live-region / sim:kq23-banner-expiry / verify:d53-motion-reduce
+  //   는 verify:d53 내부 호출 (별도 흡수 미필요).
+  // 168 정식 HARD GATE 28 사이클 도전 — release freeze 5/7 23시 진입 약 16h 전.
+  // src/ 변경 최소 — hero-aria-live-region.tsx + kq23-banner-expiry.ts 헬퍼 2건만.
+  //   나머지 4 명세 .github/workflows/ + scripts/ + i18n (release freeze 정합 최우선).
+  { id: "verify:d53", cmd: "node", args: ["scripts/verify-d53.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];

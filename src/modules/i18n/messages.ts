@@ -343,6 +343,10 @@ export const MESSAGES = {
     // C-D52-3 (D-1 03시 슬롯, 2026-05-07) — Show HN final lock 카피 (B-D52-4 / D-1 정책 락).
     //   5/7 22:00 KST submit 시각 락 — 그 이후 카피 변경 0 의무 (Release Freeze 전조).
     "launch.shownh.locked": "🔒 Show HN 카피 확정 — 변경 잠김",
+    // C-D53-2 (D-1 07시 슬롯, 2026-05-07) — Hero LIVE 첫 1h ARIA aria-live="polite" 라이브 리전 (F-D53-1 / F-D52-2 본체).
+    //   screen reader 사용자에게 라이브 전환을 1회만 알림 (live-1h phase 동안). 별도 컴포넌트 OCP append.
+    "launch.shownh.aria.live.now":
+      "Robusta가 라이브 상태입니다. 5월 8일 자정 한국 표준시에 출시되었습니다.",
     // C-D45-2 (D-3 23시 슬롯, 2026-05-05) — /launch/kpi LIVE watch 모드 라벨 (D-D45-3 / B-D45-3).
     "launch.kpi.live.watch.label": "라이브 watch (5초 갱신)",
     // C-D46-1 (D-2 03시 슬롯, 2026-05-06) — settings 시연 모드 버튼 (B-D46-1 / F-D46-1 / D-D46-1∼2).
@@ -683,6 +687,9 @@ export const MESSAGES = {
       "Submitted: 5/7 22:00 KST / 5/7 09:00 ET",
     // C-D52-3 (D-1 03h slot, 2026-05-07) — Show HN final lock copy (B-D52-4 / D-1 policy lock).
     "launch.shownh.locked": "🔒 Show HN copy locked — changes frozen",
+    // C-D53-2 (D-1 07h slot, 2026-05-07) — Hero LIVE first 1h ARIA aria-live="polite" live region (F-D53-1).
+    "launch.shownh.aria.live.now":
+      "Robusta is now live. Launched on May 8 KST.",
     // C-D45-2 (D-3 23h slot, 2026-05-05) — /launch/kpi LIVE watch mode label (D-D45-3 / B-D45-3).
     "launch.kpi.live.watch.label": "LIVE watch (5s refresh)",
     // C-D46-1 (D-2 03h slot, 2026-05-06) — settings demo-mode button (B-D46-1 / F-D46-1 / D-D46-1~2).

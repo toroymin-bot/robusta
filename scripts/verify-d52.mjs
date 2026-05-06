@@ -88,11 +88,13 @@ async function main() {
     }
   }
 
-  // 3) verify:shownh-copy 9/9 (C-D52-3 강화).
+  // 3) verify:shownh-copy 9/9 또는 10/10 (C-D52-3 강화 또는 C-D53-3 추가 강화).
+  //   자율 정정 D-53-자-4: C-D53-3 verify:shownh-copy 9→10 게이트 OCP append → 정규식
+  //     /(9|10)\/\1 PASS/ 로 확장 (D-D52 회귀 보호 + D-D53 강화 동시 흡수).
   {
     const r = await runChild("node", ["scripts/verify-shownh-copy.mjs"]);
-    if (r.code === 0 && /9\/9 PASS/.test(r.stdout)) {
-      pass("3. verify:shownh-copy 9/9 PASS (C-D52-3 강화)");
+    if (r.code === 0 && /(9|10)\/(9|10) PASS/.test(r.stdout)) {
+      pass("3. verify:shownh-copy 9/9 또는 10/10 PASS (C-D52-3 / C-D53-3 강화)");
     } else {
       fail("3. verify:shownh-copy", `code=${r.code}`);
     }

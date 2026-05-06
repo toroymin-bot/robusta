@@ -1,0 +1,47 @@
+# C-D53-1 (D-1 07시 슬롯, 2026-05-07) — Tori spec C-D53-1 (B-D53-2 본체 / D-52-자-3 본체 처리).
+#
+# Why: D-1 진입 후 hourly auto release snapshot — readiness + version + git sha + KPI 카운트.
+#   사람 의존도 0. 똘이 / 꼬미 슬롯 외 시간대에도 readiness 확인 가능.
+#   D-52-자-3 누적 결정 큐 본체 처리 — Vercel hobby tier hourly 미지원 (daily-only 한도) 사실 확정,
+#   GH Actions 채택 근거: (a) repo 이미 GH 호스팅, (b) .github/workflows/ 추가 = src/ 변경 0,
+#   (c) Vercel deploy artifact 영향 0 (release freeze 5/7 23:00 KST 정합).
+#
+# 정책:
+#   - 의존성 0 추가 (npm ci + node 스크립트만).
+#   - secrets 0 leak — RELEASE_ISO 는 plain env (날짜 정보, 비밀 아님).
+#   - permissions: contents: read (최소 권한).
+#   - timeout 5분 (snapshot 빠른 산출).
+#   - workflow_dispatch 수동 트리거 허용 (D-Day 직전 즉시 검증용).
+
+name: Release Snapshot Cron
+
+on:
+  schedule:
+    - cron: "0 * * * *" # hourly UTC
+  workflow_dispatch: # 수동 트리거 허용
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      - name: Run hourly release snapshot
+        run: node scripts/run-release-snapshot-cron.mjs
+        env:
+          RELEASE_ISO: "2026-05-08T00:00:00+09:00"
+          TZ: "Asia/Seoul"
