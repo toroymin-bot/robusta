@@ -61,6 +61,9 @@ const gates = [
   // C-D48-1∼5 (D-2 11시, 2026-05-06) — verify:all 30→31 자동 흡수 (verify:d48).
   // sim:byok-demo-extended / verify:byok-demo-card는 verify:d48 안에서 호출 (별도 흡수 미필요).
   { id: "verify:d48", cmd: "node", args: ["scripts/verify-d48.mjs"] },
+  // 자율 D-49-자-1 (D-2 15시, 2026-05-06) — verify:all 31→32 자동 흡수 (verify:d49).
+  // verify:byok-demo-card 5→7 게이트 확장 — verify:d49 내부 호출, 별도 흡수 미필요.
+  { id: "verify:d49", cmd: "node", args: ["scripts/verify-d49.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];

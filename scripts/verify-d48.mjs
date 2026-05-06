@@ -18,7 +18,7 @@
  *  10) C-D48-3 demo-mode-button.tsx (started/pinged/failed) + byok-countdown-lozenge.tsx (completed) wiring grep
  *  11) C-D48-3 보존 13 api-key-ping.ts 0 수정 grep (read-only 정합)
  *  12) C-D48-4 d1-report.ts byok_demo 섹션 + i18n 4키 ko+en parity (8쌍) + 분모 0 보호 grep
- *  13) F-D48-5 verify-byok-demo-card.mjs 5/5 PASS — child process 호출
+ *  13) F-D48-5 verify-byok-demo-card.mjs 7/7 PASS — child process 호출 (자율 D-49-자-1: 5→7 게이트 확장)
  *  14) 보존 13 v3 무손상 (verify:conservation-13 6/6 PASS — child process)
  *  15) 어휘 룰 — check:vocab 0건 — child process 호출
  *  16) 외부 dev-deps +0 — package.json devDeps 카운트 = 11
@@ -303,10 +303,10 @@ async function main() {
     );
   }
 
-  // 13) verify-byok-demo-card.mjs 5/5.
+  // 13) verify-byok-demo-card.mjs 7/7 (자율 D-49-자-1 — 5→7 게이트 확장 후 정합).
   const r13 = await runChild("node", ["scripts/verify-byok-demo-card.mjs"]);
-  if (r13.code === 0 && /5\/5 PASS/.test(r13.stdout)) {
-    pass("13. verify:byok-demo-card 5/5 PASS");
+  if (r13.code === 0 && /7\/7 PASS/.test(r13.stdout)) {
+    pass("13. verify:byok-demo-card 7/7 PASS");
   } else {
     fail(
       "13. verify:byok-demo-card",

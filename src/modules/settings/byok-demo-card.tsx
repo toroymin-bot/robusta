@@ -26,6 +26,7 @@
 import { useEffect, useState } from "react";
 import { BYOK_DEMO_ISO } from "@/modules/dday/dday-config";
 import { t, type Locale } from "@/modules/i18n/messages";
+import { logFunnelEvent } from "@/modules/launch/funnel-events";
 
 const STORAGE_KEY = "byok.demo.card.steps";
 const TOTAL_STEPS = 6;
@@ -91,7 +92,17 @@ export function ByokDemoCard({ locale = "ko" }: ByokDemoCardProps) {
     });
   }
 
+  // 자율 D-49-자-1 — 리셋: 6단계 모두 false 로 초기화 + funnel 1건 기록.
+  //   Why: 시연 ±2h 윈도우 동안 이전 시연 ✓ 잔존 → 산만 (재시연 마찰 0 의무).
+  function reset() {
+    const fresh = Array(TOTAL_STEPS).fill(false) as boolean[];
+    writeSteps(fresh);
+    setSteps(fresh);
+    void logFunnelEvent("byok_demo_card_reset");
+  }
+
   const completed = steps.filter(Boolean).length;
+  const progressPercent = Math.round((completed / TOTAL_STEPS) * 100);
   const stepKeys = [
     "settings.byok.demo.card.step.1",
     "settings.byok.demo.card.step.2",
@@ -114,9 +125,40 @@ export function ByokDemoCard({ locale = "ko" }: ByokDemoCardProps) {
         motion-reduce:transition-none transition-opacity duration-300
       "
     >
-      <div className="text-[11px] sm:text-xs text-robusta-inkDim mb-2">
-        {t("settings.byok.demo.card.label", undefined, locale)} ({completed}/
-        {TOTAL_STEPS})
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="text-[11px] sm:text-xs text-robusta-inkDim">
+          {t("settings.byok.demo.card.label", undefined, locale)} ({completed}/
+          {TOTAL_STEPS})
+        </div>
+        <button
+          type="button"
+          onClick={reset}
+          aria-label={t("settings.byok.demo.card.reset.label", undefined, locale)}
+          className="
+            text-[10px] sm:text-[11px] underline text-robusta-inkDim
+            hover:text-robusta-ink
+            focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+            rounded px-1
+            transition-colors motion-reduce:transition-none
+          "
+        >
+          {t("settings.byok.demo.card.reset.label", undefined, locale)}
+        </button>
+      </div>
+      {/* 자율 D-49-자-1 — 시각적 progress bar. role=progressbar + aria-value{now,min,max,text}. */}
+      <div
+        role="progressbar"
+        aria-valuenow={completed}
+        aria-valuemin={0}
+        aria-valuemax={TOTAL_STEPS}
+        aria-valuetext={`${completed}/${TOTAL_STEPS}`}
+        aria-label={t("settings.byok.demo.card.progress.label", undefined, locale)}
+        className="h-1 w-full bg-[var(--border)] rounded-full overflow-hidden mb-2.5"
+      >
+        <div
+          className="h-full bg-[var(--accent)] transition-all duration-300 motion-reduce:transition-none"
+          style={{ width: `${progressPercent}%` }}
+        />
       </div>
       <ol className="flex flex-col gap-1.5">
         {stepKeys.map((key, i) => (

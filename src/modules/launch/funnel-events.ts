@@ -43,6 +43,10 @@ export const FUNNEL_EVENTS = [
   "byok_demo_pinged",
   "byok_demo_completed",
   "byok_demo_failed",
+  // 자율 D-49-자-1 (D-2 15시 슬롯, 2026-05-06) — byok-demo-card 리셋 1 event.
+  //   Why: 시연 ±2h 윈도우 동안 이전 시연 6/6 ✓ 잔존 → 산만. reset 버튼 호출 카운트.
+  //   How to apply: byok-demo-card.tsx reset 버튼 onClick 시 1건 기록. 재시연 빈도 측정.
+  "byok_demo_card_reset",
 ] as const;
 
 export type LaunchFunnelEvent = (typeof FUNNEL_EVENTS)[number];

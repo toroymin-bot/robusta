@@ -364,6 +364,9 @@ export const MESSAGES = {
     "settings.byok.demo.card.step.4": "④ BYOK 키 입력",
     "settings.byok.demo.card.step.5": "⑤ ping",
     "settings.byok.demo.card.step.6": "⑥ 데모 대화 1턴",
+    // 자율 D-49-자-1 (D-2 15시 슬롯, 2026-05-06) — 진행률 + 리셋 버튼 (재시연 마찰 0).
+    "settings.byok.demo.card.progress.label": "시연 진행률",
+    "settings.byok.demo.card.reset.label": "리셋",
     // C-D48-4 (D-2 11시 슬롯, 2026-05-06) — D+1 보고서 BYOK 시연 funnel 섹션 (B-D48-4 / F-D48-4).
     "settings.report.d1.byok.title": "BYOK 시연 funnel",
     "settings.report.d1.byok.started": "시작",
@@ -694,6 +697,9 @@ export const MESSAGES = {
     "settings.byok.demo.card.step.4": "④ Enter BYOK key",
     "settings.byok.demo.card.step.5": "⑤ Ping API",
     "settings.byok.demo.card.step.6": "⑥ Demo conversation 1 turn",
+    // 자율 D-49-자-1 (D-2 15h slot, 2026-05-06) — Progress + reset (zero friction for re-demo).
+    "settings.byok.demo.card.progress.label": "Demo progress",
+    "settings.byok.demo.card.reset.label": "Reset",
     // C-D48-4 (D-2 11h slot, 2026-05-06) — D+1 report BYOK demo funnel section (B-D48-4 / F-D48-4).
     "settings.report.d1.byok.title": "BYOK Demo Funnel",
     "settings.report.d1.byok.started": "Started",

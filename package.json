@@ -42,6 +42,7 @@
     "verify:d46": "node scripts/verify-d46.mjs",
     "verify:d47": "node scripts/verify-d47.mjs",
     "verify:d48": "node scripts/verify-d48.mjs",
+    "verify:d49": "node scripts/verify-d49.mjs",
     "verify:byok-ping": "node scripts/verify-byok-ping.mjs",
     "verify:byok-demo-card": "node scripts/verify-byok-demo-card.mjs",
     "verify:shownh-copy": "node scripts/verify-shownh-copy.mjs",

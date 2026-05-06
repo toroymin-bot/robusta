@@ -11,12 +11,14 @@
  *     실제 시각 분기 컴포넌트 동작은 sim-byok-demo-extended 게이트 7에서 grep 검증.
  *     본 게이트는 카드 구조 (ARIA / localStorage / step 6종) 정합 5 게이트.
  *
- * 5 gates:
+ * 5 gates (D-D48 기준) → 7 gates (자율 D-49-자-1, D-2 15시 슬롯, 2026-05-06):
  *   1) ByokDemoCard export grep 1건 + default export
  *   2) localStorage 'byok.demo.card.steps' key get/set 정합 (2건)
  *   3) ARIA — role="region" + aria-label + aria-pressed 3종 grep
  *   4) step 6종 i18n 키 (settings.byok.demo.card.step.1∼6) grep
  *   5) tabIndex={0} + 1분 tick (TICK_MS = 60_000) + clearInterval cleanup
+ *   6) progress bar — role="progressbar" + aria-valuenow + aria-valuemin={0} + aria-valuemax={TOTAL_STEPS} + aria-valuetext + width:`${...%}` 인라인 스타일
+ *   7) reset 버튼 — settings.byok.demo.card.reset.label i18n 키 grep + onClick={reset} + logFunnelEvent("byok_demo_card_reset")
  */
 
 import { readFile } from "node:fs/promises";
@@ -35,7 +37,7 @@ function fail(label, msg) {
 }
 
 async function main() {
-  console.log("verify:byok-demo-card — 시연 카드 5 게이트");
+  console.log("verify:byok-demo-card — 시연 카드 7 게이트");
 
   const card = await readFile(
     resolve(root, "src/modules/settings/byok-demo-card.tsx"),
@@ -113,8 +115,48 @@ async function main() {
     );
   }
 
+  // 6) 자율 D-49-자-1 — progress bar 시각화.
+  const hasProgressbar = /role="progressbar"/.test(card);
+  const hasValueNow = /aria-valuenow=\{completed\}/.test(card);
+  const hasValueMin = /aria-valuemin=\{0\}/.test(card);
+  const hasValueMax = /aria-valuemax=\{TOTAL_STEPS\}/.test(card);
+  const hasValueText = /aria-valuetext=/.test(card);
+  const hasWidthStyle = /width:\s*`\$\{progressPercent\}%`/.test(card);
+  if (
+    hasProgressbar &&
+    hasValueNow &&
+    hasValueMin &&
+    hasValueMax &&
+    hasValueText &&
+    hasWidthStyle
+  ) {
+    pass(
+      "6. progress bar — role=progressbar + aria-value{now,min,max,text} + width 인라인",
+    );
+  } else {
+    fail(
+      "6. progress bar",
+      `progressbar=${hasProgressbar} now=${hasValueNow} min=${hasValueMin} max=${hasValueMax} text=${hasValueText} width=${hasWidthStyle}`,
+    );
+  }
+
+  // 7) 자율 D-49-자-1 — reset 버튼 + funnel event.
+  const hasResetKey = /"settings\.byok\.demo\.card\.reset\.label"/.test(card);
+  const hasResetOnClick = /onClick=\{reset\}/.test(card);
+  const hasResetFunnel = /logFunnelEvent\(\s*"byok_demo_card_reset"\s*\)/.test(card);
+  if (hasResetKey && hasResetOnClick && hasResetFunnel) {
+    pass(
+      "7. reset 버튼 — i18n key + onClick={reset} + logFunnelEvent(\"byok_demo_card_reset\")",
+    );
+  } else {
+    fail(
+      "7. reset 버튼",
+      `key=${hasResetKey} onClick=${hasResetOnClick} funnel=${hasResetFunnel}`,
+    );
+  }
+
   if (failed === 0) {
-    console.log("verify:byok-demo-card — 5/5 PASS");
+    console.log("verify:byok-demo-card — 7/7 PASS");
   } else {
     console.error(`verify:byok-demo-card — FAIL (${failed} 게이트)`);
   }
