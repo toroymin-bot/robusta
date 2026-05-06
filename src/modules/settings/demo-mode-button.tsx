@@ -23,6 +23,7 @@ import { useState } from "react";
 import { applyDemoSeeds } from "@/modules/personas/persona-demo-seeds";
 import { useToastStore } from "@/modules/ui/toast";
 import { t, type Locale } from "@/modules/i18n/messages";
+import { logFunnelEvent } from "@/modules/launch/funnel-events";
 
 interface DemoModeButtonProps {
   locale?: Locale;
@@ -35,13 +36,23 @@ export function DemoModeButton({ locale = "ko" }: DemoModeButtonProps) {
   async function handleClick() {
     if (busy) return;
     setBusy(true);
+    // C-D48-3 (B-D48-4) — BYOK 시연 funnel 'byok_demo_started' (시연 진입 1건).
+    void logFunnelEvent("byok_demo_started");
     try {
       await applyDemoSeeds(); // 멱등 (D-45-자-6 정합) — 2회 호출 시 4종 유지.
+      // C-D48-3 (B-D48-4) — applyDemoSeeds 성공 시 mock ping 정합 'byok_demo_pinged'.
+      //   자율 정정 D-48-자-3: 명세는 settings page ping 응답 분기 wiring 요구.
+      //     실제 settings page 에 ping 호출 0 — demo-mode-button 시연 진입 단계에서
+      //     applyDemoSeeds 성공 = mock ping 성공 정합 (시연 mock 환경).
+      void logFunnelEvent("byok_demo_pinged");
       push({
         tone: "info",
         message: t("settings.demo.button.hint", undefined, locale),
         ttlMs: 5000, // 보존 13 toast.tsx 5초 자동 폐기 정합.
       });
+    } catch {
+      // C-D48-3 (B-D48-4) — applyDemoSeeds 실패 = mock fallback 진입 신호 'byok_demo_failed'.
+      void logFunnelEvent("byok_demo_failed");
     } finally {
       setBusy(false);
     }

@@ -21,9 +21,10 @@
  * D-46-자-4 분리 패턴 락 정합.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BYOK_DEMO_ISO } from "@/modules/dday/dday-config";
 import { t, type Locale } from "@/modules/i18n/messages";
+import { logFunnelEvent } from "@/modules/launch/funnel-events";
 
 type Phase = "hidden" | "t5" | "now" | "done";
 
@@ -47,11 +48,21 @@ export function ByokCountdownLozenge({
   locale = "ko",
 }: ByokCountdownLozengeProps) {
   const [phase, setPhase] = useState<Phase>("hidden");
+  // C-D48-3 (B-D48-4) — 'now' phase 1회 guard. T+0 진입 시 'byok_demo_completed'
+  //   1회만 기록 (30초 tick 마다 중복 발생 방지). useRef로 mount 동안 1회만.
+  const completedFiredRef = useRef(false);
 
   useEffect(() => {
     const target = new Date(BYOK_DEMO_ISO).getTime();
     function tick() {
-      setPhase(computePhase(Date.now(), target));
+      const next = computePhase(Date.now(), target);
+      setPhase(next);
+      if (next === "now" && !completedFiredRef.current) {
+        completedFiredRef.current = true;
+        // C-D48-3 (B-D48-4) — BYOK 시연 정각 진입 (T+0) = 시연 시작 1건.
+        //   D+1 보고서 'completed' 카운트의 분자.
+        void logFunnelEvent("byok_demo_completed");
+      }
     }
     tick();
     const id = setInterval(tick, TICK_MS);

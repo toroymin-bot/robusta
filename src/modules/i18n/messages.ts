@@ -356,6 +356,19 @@ export const MESSAGES = {
     "settings.copy.locked.label": "🔒 v3 LOCKED",
     "settings.byok.countdown.t5": "🎬 시연 5분 전",
     "settings.byok.countdown.now": "🎬 시연 진행 중",
+    // C-D48-2 (D-2 11시 슬롯, 2026-05-06) — BYOK 시연 시나리오 카드 6단계 (B-D48-2 / F-D48-2 / D-D48-1∼5).
+    "settings.byok.demo.card.label": "BYOK 시연 시나리오",
+    "settings.byok.demo.card.step.1": "① 설정 진입",
+    "settings.byok.demo.card.step.2": "② 시연 모드 버튼",
+    "settings.byok.demo.card.step.3": "③ 4 페르소나 자동 검증",
+    "settings.byok.demo.card.step.4": "④ BYOK 키 입력",
+    "settings.byok.demo.card.step.5": "⑤ ping",
+    "settings.byok.demo.card.step.6": "⑥ 데모 대화 1턴",
+    // C-D48-4 (D-2 11시 슬롯, 2026-05-06) — D+1 보고서 BYOK 시연 funnel 섹션 (B-D48-4 / F-D48-4).
+    "settings.report.d1.byok.title": "BYOK 시연 funnel",
+    "settings.report.d1.byok.started": "시작",
+    "settings.report.d1.byok.pinged": "ping",
+    "settings.report.d1.byok.completed": "완료",
   },
   en: {
     "header.title": "Robusta — Day 4 · Persona",
@@ -673,6 +686,19 @@ export const MESSAGES = {
     "settings.copy.locked.label": "🔒 v3 LOCKED",
     "settings.byok.countdown.t5": "🎬 Demo in 5 min",
     "settings.byok.countdown.now": "🎬 Demo NOW",
+    // C-D48-2 (D-2 11h slot, 2026-05-06) — BYOK demo scenario card 6 steps (B-D48-2 / F-D48-2 / D-D48-1~5).
+    "settings.byok.demo.card.label": "BYOK demo scenario",
+    "settings.byok.demo.card.step.1": "① Open settings",
+    "settings.byok.demo.card.step.2": "② Click demo mode",
+    "settings.byok.demo.card.step.3": "③ Verify 4 personas auto-created",
+    "settings.byok.demo.card.step.4": "④ Enter BYOK key",
+    "settings.byok.demo.card.step.5": "⑤ Ping API",
+    "settings.byok.demo.card.step.6": "⑥ Demo conversation 1 turn",
+    // C-D48-4 (D-2 11h slot, 2026-05-06) — D+1 report BYOK demo funnel section (B-D48-4 / F-D48-4).
+    "settings.report.d1.byok.title": "BYOK Demo Funnel",
+    "settings.report.d1.byok.started": "Started",
+    "settings.report.d1.byok.pinged": "Pinged",
+    "settings.report.d1.byok.completed": "Completed",
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 

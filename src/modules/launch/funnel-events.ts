@@ -35,6 +35,14 @@ export const FUNNEL_EVENTS = [
   "share_link_copy",
   "twitter_share",
   "show_hn_comment",
+  // C-D48-3 (D-2 11시 슬롯, 2026-05-06) — BYOK 시연 funnel 4 events (B-D48-4 / F-D48-3).
+  //   자율 정정 D-48-자-1: 명세는 신규 함수 recordFunnelEvent + readFunnelEvents 분리 요구.
+  //     기존 logFunnelEvent / getFunnelCounts (C-D43-4) 동일 패턴 — OCP append 재사용.
+  //     보존 13 db.ts 0 수정 (funnelEvents store v10 그대로 사용).
+  "byok_demo_started",
+  "byok_demo_pinged",
+  "byok_demo_completed",
+  "byok_demo_failed",
 ] as const;
 
 export type LaunchFunnelEvent = (typeof FUNNEL_EVENTS)[number];

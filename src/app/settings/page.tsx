@@ -29,6 +29,7 @@ import { DemoModeButton } from "@/modules/settings/demo-mode-button";
 import { D1ReportButton } from "@/modules/settings/d1-report-button";
 import { LockedLozenge } from "@/modules/settings/locked-lozenge";
 import { ByokCountdownLozenge } from "@/modules/settings/byok-countdown-lozenge";
+import { ByokDemoCard } from "@/modules/settings/byok-demo-card";
 import { ShownhScoreInput } from "@/modules/launch/shownh-score-input";
 import { t } from "@/modules/i18n/messages";
 
@@ -53,6 +54,7 @@ export default function SettingsPage() {
 
       <DemoModeButton />
       <ByokCountdownLozenge />
+      <ByokDemoCard />
 
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-8">
         <p className="text-sm text-robusta-inkDim">
