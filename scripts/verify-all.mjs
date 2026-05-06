@@ -64,6 +64,10 @@ const gates = [
   // 자율 D-49-자-1 (D-2 15시, 2026-05-06) — verify:all 31→32 자동 흡수 (verify:d49).
   // verify:byok-demo-card 5→7 게이트 확장 — verify:d49 내부 호출, 별도 흡수 미필요.
   { id: "verify:d49", cmd: "node", args: ["scripts/verify-d49.mjs"] },
+  // 자율 D-50-자-1 (D-2 19시, 2026-05-06) — verify:all 32→33 자동 흡수 (verify:d50-auto).
+  // sim:byok-window-boundary는 verify:d50-auto 내부 호출 (별도 흡수 미필요).
+  // BYOK 시연(16:00 KST) 종료 후 T+3h09m 시점 — 윈도우 경계 회귀 가드만 추가, 코드 0 수정.
+  { id: "verify:d50-auto", cmd: "node", args: ["scripts/verify-d50-auto.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
