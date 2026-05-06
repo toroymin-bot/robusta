@@ -72,6 +72,11 @@ const gates = [
   // verify:release-snapshot / verify:d51-hero-dimming / sim:release-snapshot은 verify:d51 내부 호출.
   // B-D51-4 release freeze 5/7 23시 진입 직전 마지막 사이클 — 168 정식 26 사이클 도전.
   { id: "verify:d51", cmd: "node", args: ["scripts/verify-d51.mjs"] },
+  // C-D52-1∼5 (D-1 03시, 2026-05-07) — verify:all 34→35 자동 흡수 (verify:d52).
+  // sim:use-hero-dimming-opacity / sim:release-snapshot-cron / verify:freeze-hook /
+  //   sim:post-auth-recover는 verify:d52 내부 호출 (별도 흡수 미필요).
+  // 168 정식 HARD GATE 27 사이클 도전 — D-1 19시간 카운트다운 안정성 사수.
+  { id: "verify:d52", cmd: "node", args: ["scripts/verify-d52.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];

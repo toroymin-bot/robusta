@@ -340,6 +340,9 @@ export const MESSAGES = {
     //   submit 시각 정책 락: 5/7 22:00 KST = 5/7 09:00 ET (HN 목요일 골든타임).
     "launch.shownh.submitted.caption":
       "제출: 5/7 22:00 KST / 5/7 09:00 ET",
+    // C-D52-3 (D-1 03시 슬롯, 2026-05-07) — Show HN final lock 카피 (B-D52-4 / D-1 정책 락).
+    //   5/7 22:00 KST submit 시각 락 — 그 이후 카피 변경 0 의무 (Release Freeze 전조).
+    "launch.shownh.locked": "🔒 Show HN 카피 확정 — 변경 잠김",
     // C-D45-2 (D-3 23시 슬롯, 2026-05-05) — /launch/kpi LIVE watch 모드 라벨 (D-D45-3 / B-D45-3).
     "launch.kpi.live.watch.label": "라이브 watch (5초 갱신)",
     // C-D46-1 (D-2 03시 슬롯, 2026-05-06) — settings 시연 모드 버튼 (B-D46-1 / F-D46-1 / D-D46-1∼2).
@@ -678,6 +681,8 @@ export const MESSAGES = {
     //   submit policy lock: 5/7 22:00 KST = 5/7 09:00 ET (HN Thursday golden window).
     "launch.shownh.submitted.caption":
       "Submitted: 5/7 22:00 KST / 5/7 09:00 ET",
+    // C-D52-3 (D-1 03h slot, 2026-05-07) — Show HN final lock copy (B-D52-4 / D-1 policy lock).
+    "launch.shownh.locked": "🔒 Show HN copy locked — changes frozen",
     // C-D45-2 (D-3 23h slot, 2026-05-05) — /launch/kpi LIVE watch mode label (D-D45-3 / B-D45-3).
     "launch.kpi.live.watch.label": "LIVE watch (5s refresh)",
     // C-D46-1 (D-2 03h slot, 2026-05-06) — settings demo-mode button (B-D46-1 / F-D46-1 / D-D46-1~2).
