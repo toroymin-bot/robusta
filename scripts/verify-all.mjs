@@ -109,6 +109,16 @@ const gates = [
   //   scripts/check-live-phase.mjs (SoT 1:1 미러) + scripts/sim-funnel-events-day1.mjs +
   //   scripts/verify-d58.mjs 모두 신규 — 기존 파일 수정 0건 (L-D58-1 변경 0 락 정합).
   { id: "verify:d58", cmd: "node", args: ["scripts/verify-d58.mjs"] },
+  // C-D59-1∼5 (D-Day 07시 슬롯 §4 처리 큐, 2026-05-08) — verify:all 40→41 자동 흡수 (verify:d59).
+  //   check-live-traffic.mjs / check-release-tag.mjs 는 verify:d59 내부 호출 미필요 (read-only 게이트
+  //   직접 검증). docs/D-DAY-LIVE-5H-CHECKPOINT.md + docs/D-DAY-09-DAILY-REPORT.md 신규 SoP 2건 +
+  //   scripts/verify-d59.mjs + scripts/check-live-traffic.mjs + scripts/check-release-tag.mjs 모두
+  //   신규 — 기존 파일 수정 0건 (L-D59-1 변경 0 락 정합 / scripts/verify-all.mjs 본 OCP append 1건만
+  //   예외, 기존 40 게이트 변경 0).
+  //   168 정식 HARD GATE 33 사이클 도전 — D-Day live phase 진입 +7h 시점.
+  //   D-58-자-2 SoT lock 의무 — release-freeze-cutoff.ts 3 상수 ↔ check-live-phase.mjs ↔
+  //   sim-release-freeze.mjs 산식 미러 sync 회귀 보호 (verify-d59 G7).
+  { id: "verify:d59", cmd: "node", args: ["scripts/verify-d59.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];

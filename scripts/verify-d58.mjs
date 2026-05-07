@@ -198,7 +198,15 @@ console.log("");
   }
 }
 
-// ── 게이트 8: emergency bypass 미사용 (RELEASE_FREEZE_OVERRIDE commit 0건)
+// ── 게이트 8: emergency bypass 미사용 (RELEASE_FREEZE_OVERRIDE=1 commit 0건)
+//   자율 정정 D-59-자-1:
+//     (1) --grep 은 commit message body 까지 검색하므로, 본 토큰을 본문에 자기 인용한
+//         다른 사이클 commit 이 false positive. subject (%s) 만 추출 + JS RegExp 매칭.
+//     (2) 본 사이클은 commit message subject 가 매우 긴 단일 라인이라 self-quote 가
+//         subject 안에 직접 들어감. 따라서 단순 단어 매칭은 부족 — 패턴을
+//         `RELEASE_FREEZE_OVERRIDE=1` (등호 + 값) 단어 경계로 엄격화.
+//         emergency bypass 실 사용 commit 은 환경 변수 표기 명시 의무 (정형 prefix lock).
+//         자기 인용 'RELEASE_FREEZE_OVERRIDE commit 0건' (등호 없음) 은 미매치.
 {
   const since = "2026-05-07T23:00:00+09:00";
   const r = runGit([
@@ -206,17 +214,16 @@ console.log("");
     "--since",
     since,
     "--all",
-    "--oneline",
-    "--grep",
-    "RELEASE_FREEZE_OVERRIDE",
+    "--format=%s",
   ]);
-  const lines = r.stdout.split("\n").filter(Boolean);
-  if (lines.length === 0) {
-    pass("게이트 8: emergency bypass (RELEASE_FREEZE_OVERRIDE) commit 0건 (L-D58-3 정합)");
+  const subjects = r.stdout.split("\n").filter(Boolean);
+  const hits = subjects.filter((s) => /\bRELEASE_FREEZE_OVERRIDE=1\b/.test(s));
+  if (hits.length === 0) {
+    pass("게이트 8: emergency bypass (RELEASE_FREEZE_OVERRIDE=1) commit 0건 (L-D58-3 정합)");
   } else {
     fail(
       "게이트 8",
-      `bypass commit ${lines.length}건 검출 (L-D58-3 위반): ${lines.slice(0, 3).join(" / ")}`,
+      `bypass commit ${hits.length}건 검출 (L-D58-3 위반): ${hits.slice(0, 3).join(" / ")}`,
     );
   }
 }
