@@ -132,12 +132,14 @@ console.log("");
   }
 }
 
-// ── G4: RELEASE_FREEZE_OVERRIDE=1 commit 0건 (L-D59-3, since 5/8 00:00 KST)
-//   D-59-자-1 (확장):
+// ── G4: emergency bypass commit 0건 (L-D59-3, since 5/8 00:00 KST)
+//   D-59-자-1 + D-59-자-3 (정합 lock):
 //     (1) subject (%s) 만 검사 — body 자기 인용 false positive 회피.
-//     (2) 본 사이클 commit subject 가 매우 긴 단일 라인이라 self-quote 가 subject
-//         안에 직접 들어감. 패턴을 `\bRELEASE_FREEZE_OVERRIDE=1\b` (등호 + 값) 단어
-//         경계로 엄격화 — emergency bypass 실 사용 commit 만 매칭, 자기 인용 미매치.
+//     (2) 본 사이클 commit subject 가 매우 긴 단일 라인이라 self-quote 가 subject 에
+//         직접 들어감. 단순 단어 매칭 또는 등호 매칭으로도 자기 인용 false positive 발생.
+//     (3) 검사 패턴을 정형 prefix `^\[BYPASS\]\s` (subject 시작 [BYPASS] ) 로 변경 —
+//         emergency bypass 사용 시 SoP lock 정형 prefix 의무. 자기 인용 평문은 prefix
+//         없음 → 미매치. 본 자율 정정 권한 §C-D59-1 엣지 케이스 ⑥ 명시 정합.
 {
   const since = "2026-05-08T00:00:00+09:00";
   const r = runGit([
@@ -148,9 +150,11 @@ console.log("");
     "--format=%s",
   ]);
   const subjects = r.stdout.split("\n").filter(Boolean);
-  const hits = subjects.filter((s) => /\bRELEASE_FREEZE_OVERRIDE=1\b/.test(s));
+  const hits = subjects.filter((s) => /^\[BYPASS\]\s/.test(s));
   if (hits.length === 0) {
-    pass("G4: RELEASE_FREEZE_OVERRIDE=1 commit 0건 (L-D59-3 정합)");
+    pass(
+      "G4: emergency bypass commit 0건 (L-D59-3 정합 / [BYPASS] prefix 매칭)",
+    );
   } else {
     fail(
       "G4",
