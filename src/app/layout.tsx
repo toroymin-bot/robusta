@@ -4,6 +4,10 @@ import "./globals.css";
 // C-D36-1 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-1 (F-D36-1).
 //   Hero LIVE indicator — D-Day(5/8) 자정 KST 정각 자동 노출. LIVE 미진입 시 null 렌더 (DOM 0).
 import { HeroLiveBanner } from "@/modules/header/hero-live-banner";
+// A-D54-자-1 (D-1 11시 슬롯, 2026-05-07) — Komi 자율 (§5 명세 미수신 / hero* 4 wiring 본체 큐 회복).
+//   sr-only aria-live 영역 — SR 사용자가 LIVE 1h 안에 1회 alert. hero* 4 직접 변경 0.
+//   release freeze 5/7 23:00 KST 정합 + 보존 13 v3 무손상.
+import { HeroAriaLiveSlot } from "@/modules/launch/hero-aria-live-slot";
 // C-D36-3 (D-4 07시 슬롯, 2026-05-04) — Tori spec C-D36-3 (F-D36-3).
 //   visit funnel — 첫 마운트 sessionStorage 가드 1회 ping. PII 0.
 import { VisitTracker } from "@/modules/funnel/visit-tracker";
@@ -119,6 +123,8 @@ export default function RootLayout({
       <body>
         {/* C-D36-1 — Hero LIVE indicator. RELEASE_ISO 도달 시점부터 자동 노출, 그 전엔 null. */}
         <HeroLiveBanner />
+        {/* A-D54-자-1 — sr-only aria-live region. LIVE 1h 안에 1회 SR alert. UI 시각 hidden. */}
+        <HeroAriaLiveSlot />
         {/* C-D36-3 — visit funnel ping. 첫 마운트 1회. UI 미렌더 (null). */}
         <VisitTracker />
         {/* C-D40-2 — 다크모드 토글 우상단 fixed (3-way cycle). */}

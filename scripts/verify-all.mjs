@@ -84,6 +84,12 @@ const gates = [
   // src/ 변경 최소 — hero-aria-live-region.tsx + kq23-banner-expiry.ts 헬퍼 2건만.
   //   나머지 4 명세 .github/workflows/ + scripts/ + i18n (release freeze 정합 최우선).
   { id: "verify:d53", cmd: "node", args: ["scripts/verify-d53.mjs"] },
+  // A-D54-자-1 (D-1 11시, 2026-05-07) — Komi 자율 (§5 명세 미수신).
+  //   hero-aria-live-slot 신규 wiring 본체 (C-D52-1 / C-D53-2 D+1 큐 회복) — sibling 마운트만.
+  //   hero* 4 (transition/pulse/title-slot/live-banner) 직접 변경 0 — release freeze 정합 최우선.
+  //   sim:hero-aria-live-slot은 verify:d54 내부 호출 (별도 흡수 미필요).
+  //   168 정식 HARD GATE 29 사이클 도전 — release freeze 5/7 23시 진입 약 11h 30m 전.
+  { id: "verify:d54", cmd: "node", args: ["scripts/verify-d54.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
