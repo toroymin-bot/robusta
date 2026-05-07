@@ -96,6 +96,12 @@ const gates = [
   //   show-hn-submit-config.ts (URL/title/body 1.0 final lock, length ratio 0.4 SoT) +
   //   manual-run-button-glow.css (D-D55-3 wiring, hero* 4 직접 변경 0) — release freeze 정합 최우선.
   { id: "verify:d55", cmd: "node", args: ["scripts/verify-d55.mjs"] },
+  // C-D56-1∼5 (D-1 19시 슬롯 §9 똘이 명세, 2026-05-07) — verify:all 38→39 자동 흡수 (verify:d56).
+  //   sim:show-hn-submit (case 6 OCP append) + sim:release-freeze (4 케이스) 는 verify:d56 내부 호출.
+  //   168 정식 HARD GATE 31 사이클 도전 — release freeze 5/7 23시 진입 약 4h 전.
+  //   release-freeze-cutoff.ts SoT 단일 (RELEASE_FREEZE_CUTOFF_KST + LIVE_MONITOR_START_KST +
+  //   LIVE_MONITOR_DURATION_MIN + SUBMIT_DEADLINE_KST D-56-자-2 신규 통합) — D-1 정책 락 4건 흡수.
+  { id: "verify:d56", cmd: "node", args: ["scripts/verify-d56.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];

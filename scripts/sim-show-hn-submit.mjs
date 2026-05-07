@@ -26,6 +26,10 @@
  *   4) length ratio 0.5 초과 → ok=false (실패 정합)
  *   5) URL 프로토콜 누락 → ok=false (실패 정합)
  *
+ * C-D56-1 (D-1 19시 슬롯, 2026-05-07) — case 6 OCP append (기존 5 변경 0):
+ *   6) T-30m 사전 경고 — now=2026-05-07T21:30+09:00 → warn: prefix + ok=true 유지.
+ *      'warn:' prefix 분기는 기존 line 122 단계 5 산식 그대로 (분기 추가 0).
+ *
  * 외부 dev-deps +0 (node 표준만).
  */
 
@@ -267,10 +271,31 @@ function main() {
     }
   }
 
+  // 6) T-30m 사전 경고 → warn: prefix + ok=true 유지 (C-D56-1 OCP append).
+  {
+    const r = simShowHnSubmit({
+      now: "2026-05-07T21:30:00+09:00",
+      releaseUrl: "https://robusta.ai4min.com",
+      titleKo: validKoTitle,
+      titleEn: validEnTitle,
+      bodyKo: validKoBody,
+      bodyEn: validEnBody,
+    });
+    const warnFound = r.errors.some((e) => /^warn: T-30m/.test(e));
+    if (r.ok && warnFound) {
+      pass("6. T-30m 사전 경고 → warn: prefix + ok=true (C-D56-1)");
+    } else {
+      fail(
+        "6. T-30m warning",
+        `expected ok=true with 'warn: T-30m' prefix, got ok=${r.ok}, errors=${JSON.stringify(r.errors)}`,
+      );
+    }
+  }
+
   if (process.exitCode === 1) {
     console.error("sim:show-hn-submit — FAIL");
   } else {
-    console.log("sim:show-hn-submit — 5/5 PASS");
+    console.log("sim:show-hn-submit — 6/6 PASS");
   }
 }
 

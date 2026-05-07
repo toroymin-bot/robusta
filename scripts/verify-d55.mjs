@@ -264,11 +264,12 @@ async function main() {
     }
   }
 
-  // 9) sim:show-hn-submit 5/5 PASS.
+  // 9) sim:show-hn-submit 5/5 PASS — D-56-자-3 자율 정정: case 6 (T-30m warning) OCP append 흡수.
+  //    D-53-자-4 정규식 확장 패턴 정합 — 5 → 6 케이스 확장 회귀 보호.
   {
     const r = await runChild("node", ["scripts/sim-show-hn-submit.mjs"]);
-    if (r.code === 0 && /5\/5 PASS/.test(r.stdout)) {
-      pass("9. sim:show-hn-submit 5/5 PASS (URL/title/body/ratio/protocol)");
+    if (r.code === 0 && /(5|6)\/(5|6) PASS/.test(r.stdout)) {
+      pass("9. sim:show-hn-submit (5|6)/(5|6) PASS (URL/title/body/ratio/protocol [+T-30m])");
     } else {
       fail("9. sim:show-hn-submit", `code=${r.code}`);
     }

@@ -62,6 +62,8 @@
     "sim:hero-aria-live-slot": "node scripts/sim-hero-aria-live-slot.mjs",
     "verify:d55": "node scripts/verify-d55.mjs",
     "sim:show-hn-submit": "node scripts/sim-show-hn-submit.mjs",
+    "verify:d56": "node scripts/verify-d56.mjs",
+    "sim:release-freeze": "node scripts/sim-release-freeze.mjs",
     "verify:byok-ping": "node scripts/verify-byok-ping.mjs",
     "verify:byok-demo-card": "node scripts/verify-byok-demo-card.mjs",
     "verify:shownh-copy": "node scripts/verify-shownh-copy.mjs",
