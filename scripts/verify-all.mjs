@@ -102,6 +102,13 @@ const gates = [
   //   release-freeze-cutoff.ts SoT 단일 (RELEASE_FREEZE_CUTOFF_KST + LIVE_MONITOR_START_KST +
   //   LIVE_MONITOR_DURATION_MIN + SUBMIT_DEADLINE_KST D-56-자-2 신규 통합) — D-1 정책 락 4건 흡수.
   { id: "verify:d56", cmd: "node", args: ["scripts/verify-d56.mjs"] },
+  // C-D58-1∼5 (D-Day 03시 슬롯 §2 처리 큐, 2026-05-08) — verify:all 39→40 자동 흡수 (verify:d58).
+  //   sim:funnel-day1 + check:live-phase 는 verify:d58 내부 호출 (별도 흡수 미필요).
+  //   168 정식 HARD GATE 32 사이클 도전 — D-Day live phase 진입 +3h 시점.
+  //   docs/D-DAY-LIVE-MONITOR.md + docs/D-PLUS-1-RETRO-TEMPLATE.md 신규 SoP 2건 +
+  //   scripts/check-live-phase.mjs (SoT 1:1 미러) + scripts/sim-funnel-events-day1.mjs +
+  //   scripts/verify-d58.mjs 모두 신규 — 기존 파일 수정 0건 (L-D58-1 변경 0 락 정합).
+  { id: "verify:d58", cmd: "node", args: ["scripts/verify-d58.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
