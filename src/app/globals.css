@@ -6,6 +6,8 @@
 @import "../styles/animations.css";
 /* C-D19-4 (D6 07시, 2026-05-01) D-30: 다크 모드 노란 톤 토큰 추상화 레이어. */
 @import "../styles/tokens.dark.css";
+/* C-D55-5 (D-1 13시 슬롯, 2026-05-07) D-D55-3 ManualRunButton phase=live 글로우 1s ease-out (OCP append). */
+@import "../modules/launch/manual-run-button-glow.css";
 
 :root {
   /* D-14.5 (Day 8, 2026-04-28) 노란색 밴드 5단계 — 명세 §5.1 표.

@@ -1,0 +1,43 @@
+/*
+ * manual-run-button-glow.css
+ *   - C-D55-5 (D-1 13시 슬롯, 2026-05-07) — Tori spec C-D55-5 (D-D55-3 wiring).
+ *
+ * Why: ManualRunButton phase=live 시 1s ease-out 글로우 — D-Day LIVE 전환 직후 시각 임팩트.
+ *   hero* 4 (transition/pulse/title-slot/live-banner) 직접 변경 0 — 외부 컴포넌트 단일 책임.
+ *
+ * 자율 정정 (D-55-자-2): ManualRunButton 본체에 phase prop 부재 (state: idle|running|queued만).
+ *   본 슬롯은 CSS 파일 + globals.css 1줄 OCP append 만 — A-D54-자-2 hook wiring D+1 이월 정합 동일 패턴.
+ *   data-phase wiring 자체는 D+1 자율 슬롯 큐 (release freeze T-9.5h schedule 모듈 변경 위험 회피).
+ *
+ * 토큰 정합:
+ *   - --robusta-hue: 다크모드 60 hue 정합 (D-D45 락 — 산식 변경 0).
+ *   - --mrb-glow-color: 외부 override 가능 (CSS 변수).
+ *   - prefers-reduced-motion 가드 의무 (a11y).
+ *
+ * Selector:
+ *   .manual-run-button[data-phase="live"] — 외부 컴포넌트가 셋팅 (D+1 wiring).
+ */
+
+@keyframes mrb-glow {
+  0% {
+    box-shadow: 0 0 0 var(--mrb-glow-color, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 12px
+      var(--mrb-glow-color, hsl(var(--robusta-hue, 30) 90% 60% / 0.6));
+  }
+  100% {
+    box-shadow: 0 0 0 var(--mrb-glow-color, transparent);
+  }
+}
+
+.manual-run-button[data-phase="live"] {
+  animation: mrb-glow 1s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manual-run-button[data-phase="live"] {
+    animation: none;
+  }
+}

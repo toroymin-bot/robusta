@@ -90,6 +90,12 @@ const gates = [
   //   sim:hero-aria-live-slot은 verify:d54 내부 호출 (별도 흡수 미필요).
   //   168 정식 HARD GATE 29 사이클 도전 — release freeze 5/7 23시 진입 약 11h 30m 전.
   { id: "verify:d54", cmd: "node", args: ["scripts/verify-d54.mjs"] },
+  // C-D55-1∼5 (D-1 13시 슬롯 §7 똘이 명세, 2026-05-07) — verify:all 37→38 자동 흡수 (verify:d55).
+  //   sim:show-hn-submit은 verify:d55 내부 호출 (별도 흡수 미필요).
+  //   168 정식 HARD GATE 30 사이클 도전 — release freeze 5/7 23시 진입 약 9h 30m 전.
+  //   show-hn-submit-config.ts (URL/title/body 1.0 final lock, length ratio 0.4 SoT) +
+  //   manual-run-button-glow.css (D-D55-3 wiring, hero* 4 직접 변경 0) — release freeze 정합 최우선.
+  { id: "verify:d55", cmd: "node", args: ["scripts/verify-d55.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
