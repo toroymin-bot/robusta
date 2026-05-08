@@ -136,6 +136,17 @@ const gates = [
   //   D-58-자-2 SoT lock 의무 — release-freeze-cutoff.ts SUBMIT_DEADLINE_KST ↔
   //   check-show-hn-t24.mjs DEFAULT_SUBMIT_KST 1:1 미러 sync 회귀 보호 (verify-d63 G6).
   { id: "verify:d63", cmd: "node", args: ["scripts/verify-d63.mjs"] },
+  // C-D64-1∼5 (D+1 03시 §2 슬롯, 2026-05-09) — verify:all 43→44 자동 흡수 (verify:d64).
+  //   scripts/check-d-plus-1-handoff.mjs + scripts/check-show-hn-t48.mjs +
+  //   scripts/sim-d-plus-1-handoff.mjs + docs/D-PLUS-1-RUNBOOK.md +
+  //   tests/check-d-plus-1-handoff.test.mjs + tests/check-show-hn-t48.test.mjs 모두 신규 —
+  //   기존 파일 수정 0건 (L-D64-1 변경 0 락 정합 / scripts/verify-all.mjs 본 OCP append 1건만
+  //   예외, 기존 43 게이트 변경 0).
+  //   168 정식 HARD GATE 36 사이클 도전 — D+1 live phase +27h 시점.
+  //   D_PLUS_1_HANDOFF_KST = '2026-05-09T09:00:00+09:00' 신규 상수 (handoff + sim 1:1 매칭).
+  //   D-58-자-2 SoT lock 의무 — release-freeze-cutoff.ts SUBMIT_DEADLINE_KST ↔
+  //   check-show-hn-t48.mjs DEFAULT_SUBMIT_KST 1:1 미러 sync 회귀 보호 (verify-d64 G6).
+  { id: "verify:d64", cmd: "node", args: ["scripts/verify-d64.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
