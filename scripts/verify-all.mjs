@@ -119,6 +119,15 @@ const gates = [
   //   D-58-자-2 SoT lock 의무 — release-freeze-cutoff.ts 3 상수 ↔ check-live-phase.mjs ↔
   //   sim-release-freeze.mjs 산식 미러 sync 회귀 보호 (verify-d59 G7).
   { id: "verify:d59", cmd: "node", args: ["scripts/verify-d59.mjs"] },
+  // C-D62-1∼5 (D-Day 19시 슬롯 §10 처리 큐, 2026-05-08) — verify:all 41→42 자동 흡수 (verify:d62).
+  //   scripts/check-slot-gap.mjs + scripts/check-show-hn-window.mjs + docs/D-DAY-SLOT-GAP-RECOVERY.md +
+  //   docs/D-DAY-19H-CHECKPOINT.md 모두 신규 — 기존 파일 수정 0건 (L-D62-1 변경 0 락 정합 /
+  //   scripts/verify-all.mjs 본 OCP append 1건만 예외, 기존 41 게이트 변경 0).
+  //   168 정식 HARD GATE 34 사이클 도전 — D-Day live phase 진입 +18h 시점 §5∼§8 GAP 회복 후.
+  //   D-58-자-2 SoT lock 의무 — release-freeze-cutoff.ts 4 상수 ↔ check-live-phase.mjs ↔
+  //   sim-release-freeze.mjs ↔ check-show-hn-window.mjs SUBMIT_DEADLINE_KST 미러 sync 회귀 보호
+  //   (verify-d62 G6).
+  { id: "verify:d62", cmd: "node", args: ["scripts/verify-d62.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
