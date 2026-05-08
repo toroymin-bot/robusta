@@ -128,6 +128,14 @@ const gates = [
   //   sim-release-freeze.mjs ↔ check-show-hn-window.mjs SUBMIT_DEADLINE_KST 미러 sync 회귀 보호
   //   (verify-d62 G6).
   { id: "verify:d62", cmd: "node", args: ["scripts/verify-d62.mjs"] },
+  // C-D63-1∼5 (D-Day 21시 EOD §11 슬롯, 2026-05-08) — verify:all 42→43 자동 흡수 (verify:d63).
+  //   scripts/check-eod-summary.mjs + scripts/check-show-hn-t24.mjs + docs/D-DAY-EOD-CHECKLIST.md +
+  //   docs/D-DAY-INTEGRATED-REPORT.md 모두 신규 — 기존 파일 수정 0건 (L-D63-1 변경 0 락 정합 /
+  //   scripts/verify-all.mjs 본 OCP append 1건만 예외, 기존 42 게이트 변경 0).
+  //   168 정식 HARD GATE 35 사이클 도전 — D-Day live phase EOD +21h → §12 23시 +23h 시점.
+  //   D-58-자-2 SoT lock 의무 — release-freeze-cutoff.ts SUBMIT_DEADLINE_KST ↔
+  //   check-show-hn-t24.mjs DEFAULT_SUBMIT_KST 1:1 미러 sync 회귀 보호 (verify-d63 G6).
+  { id: "verify:d63", cmd: "node", args: ["scripts/verify-d63.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
