@@ -182,6 +182,16 @@ const gates = [
   //   D-68-자-1∼5 자율 큐 5건 — env LIVE_PLUS_72H_WINDOW_MIN / env ANALYTICS_PINGS_PATH override /
   //   SHOWHN-CADENCE-SOP.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
   { id: "verify:d68", cmd: "node", args: ["scripts/verify-d68.mjs"] },
+  // C-D69-1∼5 (D+1 23시 §12 슬롯, 2026-05-09) — verify:all 48→49 자동 흡수 (verify:d69).
+  //   check:live-plus-96h / analyze:byok-cohort-retention / sim:live-plus-96h 는 verify:d69 내부 호출
+  //   (별도 흡수 미필요, 기존 48 게이트 변경 0).
+  //   168 정식 HARD GATE 41 사이클 도전 — D+1 → D+2 전환 슬롯.
+  //   docs/SHOWHN-CADENCE-SOP-v2.md SoT 신규 (H2 8개: T+0/T+12h/T+24h/T+48h/T+72h/T+96h/T+120h/T+168h,
+  //   컬럼 5종 lock ts_iso/comment_count/upvote/dwell_ms_p50/unique_users, DG-D69-2 정합).
+  //   D-69-자-A 자율 정정 권한 행사 1건 — verify-d69 G3 명세 (≥9) ↔ D-D66 G1 lock (정확히 8) 충돌
+  //   → (≥8 단조 비감소) backward-compat 보정 (D-D67/D-D68 패턴 미러). F-D69-4 H2 +1 효과 D+2 §1
+  //   똘이 추인 큐 deferred. D-69-자-1∼5 모두 본체 §24.6 lock 정합 backward-compat (권한 행사 0).
+  { id: "verify:d69", cmd: "node", args: ["scripts/verify-d69.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
