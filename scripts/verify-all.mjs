@@ -166,6 +166,14 @@ const gates = [
   //   D-66-자-1∼5 자율 큐 5건 — env LIVE_PLUS_48H_WINDOW_MIN / providers unknown 흡수 /
   //   timestamp ISO+09:00 정규식 / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
   { id: "verify:d66", cmd: "node", args: ["scripts/verify-d66.mjs"] },
+  // C-D67-1∼5 (D+1 15시 §8 슬롯, 2026-05-09) — verify:all 46→47 자동 흡수 (verify:d67).
+  //   check:live-plus-60h / analyze:byok-weekly / sim:live-plus-60h 는 verify:d67 내부 호출
+  //   (별도 흡수 미필요, 기존 46 게이트 변경 0).
+  //   168 정식 HARD GATE 39 사이클 도전 — D+1 live phase +37h cadence 시점.
+  //   docs/LIVE-MONITORING-SOP.md SoT 신규 (H2 5개: T+19h/T+35h/T+37h/T+48h/T+60h, owner/evidence lock).
+  //   D-67-자-1∼5 자율 큐 5건 — env LIVE_PLUS_60H_WINDOW_MIN / env ANALYTICS_PINGS_PATH override /
+  //   LIVE-MONITORING-SOP.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
+  { id: "verify:d67", cmd: "node", args: ["scripts/verify-d67.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
