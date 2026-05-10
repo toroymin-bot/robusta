@@ -201,6 +201,15 @@ const gates = [
   //   D-70-자-1∼5 자율 큐 — env LIVE_PLUS_120H_WINDOW_MIN / env INSIGHT_MIN_SCORE override /
   //   INSIGHT-RECEIPT-SPEC.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
   { id: "verify:d70", cmd: "node", args: ["scripts/verify-d70.mjs"] },
+  // C-D71-1∼5 (D+2 19시 §4 슬롯 자율 진입, 2026-05-10) — verify:all 50→51 자동 흡수 (verify:d71).
+  //   check:live-plus-144h / extract:conflict-pairs / sim:live-plus-144h 는 verify:d71 내부 호출
+  //   (별도 흡수 미필요, 기존 50 게이트 변경 0).
+  //   168 정식 HARD GATE 43 사이클 도전 — D+2 LIVE 운영 정합 모니터링 단계.
+  //   docs/INSIGHT-LIBRARY-SPEC.md SoT 신규 (H2 정확히 8개: 컨셉/진입/저장모델/카테고리/검색/동기화/보존/검증게이트
+  //   — B-D71-1 ⭐ Insight Library 컨셉 본체).
+  //   D-71-자-1∼5 자율 큐 — env LIVE_PLUS_144H_WINDOW_MIN / env CONFLICT_MAX_LOOKBACK override /
+  //   INSIGHT-LIBRARY-SPEC.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
+  { id: "verify:d71", cmd: "node", args: ["scripts/verify-d71.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
