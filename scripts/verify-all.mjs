@@ -221,6 +221,18 @@ const gates = [
   //   sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
   //   C-D72-2 ⭐ extract-insight-trigger-state 내부 extractConflictPairs (C-D71-2) 1:1 호출 결합.
   { id: "verify:d72", cmd: "node", args: ["scripts/verify-d72.mjs"] },
+  // C-D73-1∼5 (D+2 23시 §6 슬롯, 2026-05-10) — verify:all 52→53 자동 흡수 (verify:d73).
+  //   check:live-plus-192h / merge:insight-receipt / sim:live-plus-192h 는 verify:d73 내부 호출
+  //   (별도 흡수 미필요, 기존 52 게이트 변경 0).
+  //   168 정식 HARD GATE 45 사이클 도전 — D+2 LIVE 운영 정합 모니터링 단계 (T+95h 시점, T+96h 게이트 -1h).
+  //   docs/INSIGHT-RECEIPT-V2-SPEC.md SoT 신규 (H2 정확히 8개: 컨셉/진입/머지로직/카테고리/사용자인터랙션/
+  //   거짓양성방지/보존정책/검증게이트 — B-D73-1 ⭐ Insight Receipt v2 컨셉 본체).
+  //   D-73-자-1∼5 자율 큐 — env LIVE_PLUS_192H_WINDOW_MIN / env INSIGHT_MIN_SCORE /
+  //   CONFLICT_MAX_LOOKBACK / INSIGHT_TRIGGER_MIN_MESSAGES / INSIGHT_TRIGGER_MIN_CONFLICTS override /
+  //   INSIGHT-RECEIPT-V2-SPEC.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
+  //   C-D73-2 ⭐ merge-insight-receipt 내부 extractInsightCandidates (C-D70-2) +
+  //   extractInsightTriggerState (C-D72-2 → 내부 C-D71-2) 1:1 호출 결합 — 통찰 흐름 종착점 4중 일관성.
+  { id: "verify:d73", cmd: "node", args: ["scripts/verify-d73.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
