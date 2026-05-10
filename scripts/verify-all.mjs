@@ -210,6 +210,17 @@ const gates = [
   //   D-71-자-1∼5 자율 큐 — env LIVE_PLUS_144H_WINDOW_MIN / env CONFLICT_MAX_LOOKBACK override /
   //   INSIGHT-LIBRARY-SPEC.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
   { id: "verify:d71", cmd: "node", args: ["scripts/verify-d71.mjs"] },
+  // C-D72-1∼5 (D+2 19시 §8 슬롯, 2026-05-10) — verify:all 51→52 자동 흡수 (verify:d72).
+  //   check:live-plus-168h / extract:insight-trigger-state / sim:live-plus-168h 는 verify:d72 내부 호출
+  //   (별도 흡수 미필요, 기존 51 게이트 변경 0).
+  //   168 정식 HARD GATE 44 사이클 도전 — D+2 LIVE 운영 정합 모니터링 단계 (T+91h 시점, T+96h 게이트 -5h).
+  //   docs/INSIGHT-AUTO-TRIGGER-SPEC.md SoT 신규 (H2 정확히 8개: 컨셉/트리거조건/데이터파이프라인/사용자인터랙션/
+  //   거짓양성방지/환경변수오버라이드/보존정책/검증게이트 — B-D72-1 ⭐ Auto-Trigger 컨셉 본체).
+  //   D-72-자-1∼5 자율 큐 — env LIVE_PLUS_168H_WINDOW_MIN / env INSIGHT_TRIGGER_MIN_MESSAGES /
+  //   env INSIGHT_TRIGGER_MIN_CONFLICTS override / INSIGHT-AUTO-TRIGGER-SPEC.md H2 정규식 grep /
+  //   sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
+  //   C-D72-2 ⭐ extract-insight-trigger-state 내부 extractConflictPairs (C-D71-2) 1:1 호출 결합.
+  { id: "verify:d72", cmd: "node", args: ["scripts/verify-d72.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
