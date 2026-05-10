@@ -233,6 +233,14 @@ const gates = [
   //   C-D73-2 ⭐ merge-insight-receipt 내부 extractInsightCandidates (C-D70-2) +
   //   extractInsightTriggerState (C-D72-2 → 내부 C-D71-2) 1:1 호출 결합 — 통찰 흐름 종착점 4중 일관성.
   { id: "verify:d73", cmd: "node", args: ["scripts/verify-d73.mjs"] },
+  // C-D75-1∼5 (D+3 07시 §4 슬롯, 2026-05-11) — verify:all 53→54 OCP append (verify:d75).
+  //   check:live-plus-240h / check:ocp-append / sim:live-plus-240h 는 verify:d75 내부 호출
+  //   (별도 흡수 미필요, 기존 53 게이트 변경 0).
+  //   168 정식 HARD GATE 46 사이클 도전 — D+3 LIVE 운영 정합 모니터링 단계 (T+97h 시점, T+96h +1h).
+  //   docs/OCP-APPEND-SPEC.md SoT 신규 (H2 정확히 8개: 컨셉/4단계정의/commit컨벤션/version매칭/
+  //   누락검출/누락률정의/알람정책/검증게이트 — B-D75-1 ⭐ OCP append 절차 자동화 게이트 본체).
+  //   D-D74 사이클은 본 슬롯 §4 우선순위 외 — §6 또는 §8 sweep deferred (Task_2026-05-11 §3.2 정정 큐).
+  { id: "verify:d75", cmd: "node", args: ["scripts/verify-d75.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
