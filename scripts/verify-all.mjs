@@ -192,6 +192,15 @@ const gates = [
   //   → (≥8 단조 비감소) backward-compat 보정 (D-D67/D-D68 패턴 미러). F-D69-4 H2 +1 효과 D+2 §1
   //   똘이 추인 큐 deferred. D-69-자-1∼5 모두 본체 §24.6 lock 정합 backward-compat (권한 행사 0).
   { id: "verify:d69", cmd: "node", args: ["scripts/verify-d69.mjs"] },
+  // C-D70-1∼5 (D+2 11시 §6 슬롯, 2026-05-10) — verify:all 49→50 자동 흡수 (verify:d70).
+  //   check:live-plus-120h / extract:insight-candidates / sim:live-plus-120h 는 verify:d70 내부 호출
+  //   (별도 흡수 미필요, 기존 49 게이트 변경 0).
+  //   168 정식 HARD GATE 42 사이클 도전 — D+2 LIVE 운영 정합 모니터링 단계.
+  //   docs/INSIGHT-RECEIPT-SPEC.md SoT 신규 (H2 정확히 8개: 컨셉/트리거/입력/구조/카드분류/포맷/보존/검증게이트
+  //   — B-D70-2 ⭐ Insight Receipt 컨셉 본체).
+  //   D-70-자-1∼5 자율 큐 — env LIVE_PLUS_120H_WINDOW_MIN / env INSIGHT_MIN_SCORE override /
+  //   INSIGHT-RECEIPT-SPEC.md H2 정규식 grep / sim totalMs / G8 git 미가용 fallback (모두 backward-compatible).
+  { id: "verify:d70", cmd: "node", args: ["scripts/verify-d70.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
