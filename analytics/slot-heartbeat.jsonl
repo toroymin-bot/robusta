@@ -1,0 +1,3 @@
+{"ts":"2026-05-11T11:10:29+09:00","slot":"§6","actor":"komi","trigger":"scheduled-task","entry":"on-time+10m","verify_all":"54/54 PASS"}
+{"ts":"2026-05-11T11:15:00+09:00","slot":"§6","actor":"komi","kind":"echo","sec":"§4-absence-confirm","note":"§4 v4 OCP append 부재 사실 echo — 가설 β 확정 (commit 63e29d0 5/11 07:16 KST 존재 + origin/main 푸시 완료 → α 배제 / γ 배제 → β=OCP append 단계만 누락 유일 사실)"}
+{"ts":"2026-05-11T11:15:30+09:00","slot":"§6","actor":"komi","kind":"sweep","sec":"D-D71∼D-D75","note":"5사이클 verify sweep PASS — verify:all 54/54 (d71/d72/d73/d75 PASS · d74 verify 부재 = skip · 168 정식 46 사이클 lock 유지)"}
