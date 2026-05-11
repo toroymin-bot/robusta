@@ -121,6 +121,7 @@
     "check:ocp-append": "node scripts/check-ocp-append.mjs",
     "sim:live-plus-240h": "node scripts/sim-live-plus-240h.mjs",
     "verify:d76": "node scripts/verify-d76.mjs",
+    "verify:meta-d77": "node scripts/verify-meta-d77.mjs",
     "check:live-plus-264h": "node scripts/check-live-plus-264h.mjs",
     "sim:live-plus-264h": "node scripts/sim-live-plus-264h.mjs",
     "verify:byok-ping": "node scripts/verify-byok-ping.mjs",

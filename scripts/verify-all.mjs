@@ -250,6 +250,11 @@ const gates = [
   //   komi:/tori: 한정). L-D76-3 신규 — Confluence write 0 (read scope 한정).
   //   D-D74 verify는 §6 sweep echo로 deferred 유지 (Task_2026-05-11 §3.2 정정 큐 정합).
   { id: "verify:d76", cmd: "node", args: ["scripts/verify-d76.mjs"] },
+  // C-META-D77-1∼5 (D+4 07시 §4 슬롯, 2026-05-12) — verify:all 55→56 OCP append (verify:meta-d77).
+  //   META-D77 보강 사이클: dormant-guard / probe-komi-env / verify-unlock-gate / page-health-snapshot.
+  //   src/ 변경 0. Confluence write 0 (read scope 한정, graceful skip on missing token).
+  //   본 슬롯에서 똘이 §3 methodology error 재발견 echo (footer id=25985054 LIVE 존재 lock).
+  { id: "verify:meta-d77", cmd: "node", args: ["scripts/verify-meta-d77.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];
