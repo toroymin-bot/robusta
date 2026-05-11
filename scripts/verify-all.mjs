@@ -241,6 +241,15 @@ const gates = [
   //   누락검출/누락률정의/알람정책/검증게이트 — B-D75-1 ⭐ OCP append 절차 자동화 게이트 본체).
   //   D-D74 사이클은 본 슬롯 §4 우선순위 외 — §6 또는 §8 sweep deferred (Task_2026-05-11 §3.2 정정 큐).
   { id: "verify:d75", cmd: "node", args: ["scripts/verify-d75.mjs"] },
+  // C-D76-1∼5 (D+3 15시 §8 슬롯, 2026-05-11) — verify:all 54→55 OCP append (verify:d76).
+  //   check:live-plus-264h / sim:live-plus-264h 는 verify:d76 내부 호출 (별도 흡수 미필요, 기존 54 게이트 변경 0).
+  //   168 정식 HARD GATE 47 사이클 도전 — D+3 LIVE 운영 정합 모니터링 단계 (T+111h 시점).
+  //   docs/CI-OCP-APPEND-SPEC.md SoT 신규 (H2 정확히 8개: 컨셉/trigger/scope/token/version/sleep/실패/검증게이트
+  //   — C-D76-3 본체 CI 하드 게이트 SoT). .github/workflows/check-ocp-append.yml 신규 (C-D76-2 ⭐
+  //   GitHub Actions 워크플로 — main push 직후 30분 sleep + Confluence version 비교, prefix 필터
+  //   komi:/tori: 한정). L-D76-3 신규 — Confluence write 0 (read scope 한정).
+  //   D-D74 verify는 §6 sweep echo로 deferred 유지 (Task_2026-05-11 §3.2 정정 큐 정합).
+  { id: "verify:d76", cmd: "node", args: ["scripts/verify-d76.mjs"] },
   { id: "sim:hero-live", cmd: "node", args: ["scripts/sim-hero-live-transition.mjs"] },
   { id: "dry-run:dday-staging", cmd: "node", args: ["scripts/dry-run-dday-staging.mjs"] },
 ];

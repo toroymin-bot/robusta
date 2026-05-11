@@ -1,0 +1,90 @@
+# C-D76-2 (D+3 15시 §8 슬롯, 2026-05-11) — Tori spec C-D76-2 (Task_2026-05-11 §5.6).
+#   OCP append 누락 → GitHub Actions FAIL 강제 차단 (KQ_28 가설 β 무력화 코드 강제 게이트).
+#
+# SoT: docs/CI-OCP-APPEND-SPEC.md (H2 정확히 8개 lock).
+# 정책 락: L-D76-3 (Confluence write 0 — read scope 한정).
+# 자율 큐: D-76-자-1 (CONFLUENCE_TOKEN 발급 의무 — 로이 직접) + D-76-자-2 (PAGE_ID 동적 조회).
+#
+# 트리거: main 브랜치 push (꼬미/똘이 슬롯 commit prefix만 발화).
+# 흐름: pre version → sleep 30분 → post version → POST > PRE 검증 → 실패 시 exit 1.
+
+name: check-ocp-append
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check-ocp-append:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # 꼬미/똘이 슬롯 commit만 OCP append 의무 — 일반 정비 commit (chore:/docs:/ci:) 자체 commit은 skip.
+    if: |
+      startsWith(github.event.head_commit.message, 'komi:') ||
+      startsWith(github.event.head_commit.message, 'tori:')
+    steps:
+      - name: Capture push time
+        id: push_time
+        run: echo "pushed_at=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Get current Confluence page version (pre-sleep baseline)
+        id: pre
+        env:
+          CONFLUENCE_TOKEN: ${{ secrets.CONFLUENCE_TOKEN }}
+        run: |
+          set -e
+          if [ -z "$CONFLUENCE_TOKEN" ]; then
+            echo "CONFLUENCE_TOKEN secret not set — D-76-자-1 발급 대기 (skip)"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          PAGE_TITLE="Task_$(TZ='Asia/Seoul' date +%Y-%m-%d)"
+          echo "Looking up page: $PAGE_TITLE"
+          # D-76-자-2: 동적 PAGE_ID 조회 (Confluence REST API 1 hop).
+          LOOKUP=$(curl -sS -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
+            "https://ai4min.atlassian.net/wiki/rest/api/content?title=${PAGE_TITLE}&spaceKey=Robusta&limit=1")
+          PAGE_ID=$(echo "$LOOKUP" | jq -r '.results[0].id // empty')
+          if [ -z "$PAGE_ID" ]; then
+            echo "Page not found: $PAGE_TITLE"
+            exit 1
+          fi
+          echo "page_id=$PAGE_ID" >> $GITHUB_OUTPUT
+          PRE_VERSION=$(curl -sS -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
+            "https://ai4min.atlassian.net/wiki/api/v2/pages/$PAGE_ID" \
+            | jq -r '.version.number')
+          echo "pre_version=$PRE_VERSION" >> $GITHUB_OUTPUT
+          echo "PRE_VERSION=$PRE_VERSION (page=$PAGE_ID)"
+
+      - name: Sleep 30 minutes
+        if: steps.pre.outputs.skip != 'true'
+        run: sleep 1800
+
+      - name: Get current Confluence page version (post-sleep)
+        id: post
+        if: steps.pre.outputs.skip != 'true'
+        env:
+          CONFLUENCE_TOKEN: ${{ secrets.CONFLUENCE_TOKEN }}
+          PAGE_ID: ${{ steps.pre.outputs.page_id }}
+        run: |
+          set -e
+          POST_VERSION=$(curl -sS -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
+            "https://ai4min.atlassian.net/wiki/api/v2/pages/$PAGE_ID" \
+            | jq -r '.version.number')
+          echo "post_version=$POST_VERSION" >> $GITHUB_OUTPUT
+          echo "POST_VERSION=$POST_VERSION (page=$PAGE_ID)"
+
+      - name: Compare versions
+        if: steps.pre.outputs.skip != 'true'
+        run: |
+          PRE="${{ steps.pre.outputs.pre_version }}"
+          POST="${{ steps.post.outputs.post_version }}"
+          echo "Comparing: PRE=$PRE POST=$POST"
+          if [ -z "$PRE" ] || [ -z "$POST" ]; then
+            echo "missing version data: PRE=$PRE POST=$POST"
+            exit 1
+          fi
+          if [ "$POST" -le "$PRE" ]; then
+            echo "OCP append missing: pre=$PRE post=$POST — 차기 똘이 슬롯 KQ_29 발화 의무"
+            exit 1
+          fi
+          echo "OCP append OK: pre=$PRE post=$POST"
